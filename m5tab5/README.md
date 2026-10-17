@@ -24,6 +24,20 @@ Saves (the game in progress, best scores, language) go in NVS. The SD
 card is not needed for anything yet, so `feckless_storage_handler` is not
 a dependency until something is.
 
+## Testing the rules
+
+`core/` is checked against the web version itself. `test/check.js` loads
+the rules straight out of `../index.html` and compares them with the C
+build, move by move:
+
+    make -C m5tab5/test              # 2000 random games, about a minute
+    make -C m5tab5/test GAMES=200    # a quick run
+
+It compares about 57,000 tile groups (set and points) and every move of
+the games: the table, melds, wall, discard pile, points, penalty, the
+hint's choice and the stranded-honor warning. It needs a C compiler and
+Node.js, and builds with AddressSanitizer and UBSan.
+
 ## Credits
 
 Same as the web version: designed by Sudrien, written with Claude.
