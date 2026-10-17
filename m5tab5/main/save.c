@@ -63,12 +63,15 @@ void save_load_prefs(save_prefs_t *p)
     p->best_penalty = INT32_MIN;
     p->auto_sort = 0;
     p->lang = 0;
+    p->rotation = 1;
     nvs_handle_t h;
     if (nvs_open(NS, NVS_READONLY, &h) != ESP_OK) return;
     nvs_get_i32(h, "best_pts", &p->best_points);
     nvs_get_i32(h, "best_pen", &p->best_penalty);
     nvs_get_u8(h, "autosort", &p->auto_sort);
     nvs_get_u8(h, "lang", &p->lang);
+    nvs_get_u8(h, "rot", &p->rotation);
+    if (p->rotation > 3) p->rotation = 1;
     nvs_close(h);
 }
 
@@ -80,6 +83,7 @@ void save_prefs(const save_prefs_t *p)
     nvs_set_i32(h, "best_pen", p->best_penalty);
     nvs_set_u8(h, "autosort", p->auto_sort);
     nvs_set_u8(h, "lang", p->lang);
+    nvs_set_u8(h, "rot", p->rotation);
     nvs_commit(h);
     nvs_close(h);
 }

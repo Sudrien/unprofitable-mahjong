@@ -42,13 +42,22 @@ dependency until something is.
 
 ## The screen
 
-Landscape, 1280×720, in gfx's shadow buffer: the scores along the top,
-the rail of recent clears, the meld row, the hand (two rows of 9, or 12
-after Add 6), a status line and nine buttons. Tap tiles to select them;
+All four orientations: **Turn**, top right, steps through them a
+quarter turn at a time, so landscape and portrait alternate, and the
+choice is saved. The picture and the touch coordinates always turn
+together.
+
+Landscape is 1280×720: the scores along the top, the rail of recent
+clears, the meld row, the hand (two rows of 9, or 12 after Add 6), a
+status line and nine buttons in a row. Portrait is 720×1280: the hand
+six across in three rows (four after Add 6), the status line under it,
+and the buttons in two rows at the bottom. Tap tiles to select them;
 tap a meld to select all of it. Undo goes back up to 64 moves, and like
 the web version it cannot reach past Add 6 or Discard 6.
 
 ![Two dragon pungs melded, the third on the table](screenshots/melds.png)
+
+![Portrait, the nine dragons selected](screenshots/portrait.png)
 
 Clearing a limit hand plays the celebration: the tiles land one at a
 time, the name, and the points counting up.
@@ -67,7 +76,9 @@ taps, and the screen is saved before each one:
     ./screentest out/shot 660,660 310,290 640,435 75,660
 
 `SCREENTEST_DEAL=dragons` starts from three dragon pungs, for the meld
-row and the celebration. The screenshots above came from it.
+row and the celebration, and `SCREENTEST_ROT=0..3` picks the
+orientation (landscape, 1, by default). The screenshots above came from
+it.
 
 ## Testing the rules
 

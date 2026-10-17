@@ -45,18 +45,27 @@ static const char *TAG = "ui";
 #define C_WARN     RGB(0x9a, 0x3b, 0x1c)
 #define C_GREEN    RGB(0x1e, 0x72, 0x47)
 
-/* Layout, in logical landscape pixels. */
+/* Layout, in logical pixels. The fixed parts: */
 #define M_X        (24)
 #define TOP_Y      (12)
-#define RAIL_Y     (58)
-#define TABLE_Y    (104)
-#define MELD_Y     (116)
-#define HAND_Y     (222)
 #define HAND_LIFT  (12)
-#define STATUS_Y   (512)
-#define BTN_Y      (616)
 #define BTN_H      (88)
 #define TXT        (2)          /* text scale: Ark12 at 24 px */
+
+/* The parts that move with the orientation, filled by relayout() from
+ * gfx_w()/gfx_h() whenever the screen turns. Landscape is 1280x720 with
+ * the hand 9 (or 12) across and one row of buttons; portrait is 720x1280
+ * with the hand 6 across and the buttons in two rows. */
+typedef struct {
+    bool land;
+    int rail_y, table_y;
+    int meld_label_x, meld_label_y;  /* "Melds 2/4" */
+    int meld_x0, meld_y;             /* the melds themselves */
+    int hand_y, cols, cols_wide;     /* cols_wide: after Add 6 */
+    int status_y, status_rows;       /* rows the second status line may wrap to */
+    int btn_y, btn_rows;
+} layout_t;
+static layout_t L;
 
 #define HINT_US    (2400 * 1000)
 #define ARM_US     (2500 * 1000)
@@ -124,7 +133,37 @@ static bool undo_pop(void)
 /* ------------------------------------------------------------------ */
 /* Layout: where each tile and button is, shared by draw and hit test  */
 
-static int hand_cols(void) { return s_g.hand_len > UM_HAND ? 12 : 9; }
+static void relayout(void)
+{
+    L.land = gfx_w() > gfx_h();
+    if (L.land) {
+        L.rail_y = 58; L.table_y = 104;
+        L.meld_label_x = M_X; L.meld_label_y = 140;
+        L.meld_x0 = 200; L.meld_y = 116;
+        L.hand_y = 222; L.cols = 9; L.cols_wide = 12;
+        L.status_y = 512; L.status_rows = 1;
+        L.btn_y = 616; L.btn_rows = 1;
+    } else {
+        L.rail_y = 104; L.table_y = 152;
+        L.meld_label_x = M_X; L.meld_label_y = 164;
+        L.meld_x0 = M_X; L.meld_y = 196;
+        L.hand_y = 304; L.cols = 6; L.cols_wide = 6;
+        L.status_y = 892; L.status_rows = 2;   /* moved up under a short hand: status_top() */
+        L.btn_y = 1068; L.btn_rows = 2;
+    }
+}
+
+static int hand_cols(void) { return s_g.hand_len > UM_HAND ? L.cols_wide : L.cols; }
+
+/* In portrait the hand is three rows, or four after Add 6; the status
+ * line sits under whichever it is rather than under the fourth row's
+ * empty space. Landscape always has room for exactly two. */
+static int status_top(void)
+{
+    if (L.land) return L.status_y;
+    const int rows = (s_g.hand_len + L.cols - 1) / L.cols;
+    return L.hand_y + rows * (tilefaces_L.h + TILEDRAW_EDGE_L + 12) + 8;
+}
 static int hand_pitch(void) { return hand_cols() == 12 ? 102 : 110; }
 
 static void hand_xy(int i, int *x, int *y)
@@ -132,7 +171,7 @@ static void hand_xy(int i, int *x, int *y)
     const int cols = hand_cols(), pitch = hand_pitch();
     const int span = cols * pitch - (pitch - tilefaces_L.w);
     *x = (gfx_w() - span) / 2 + (i % cols) * pitch;
-    *y = HAND_Y + (i / cols) * (tilefaces_L.h + TILEDRAW_EDGE_L + 12);
+    *y = L.hand_y + (i / cols) * (tilefaces_L.h + TILEDRAW_EDGE_L + 12);
 }
 
 /* The meld row uses the medium faces when they fit, the small ones when
@@ -141,7 +180,7 @@ static const tilefaces_size_t *meld_size(int *edge, int *gap)
 {
     int tiles = 0;
     for (int m = 0; m < s_g.meld_n; m++) tiles += s_g.meld_len[m];
-    const int room = gfx_w() - 200 - M_X;
+    const int room = gfx_w() - L.meld_x0 - M_X;
     if (tiles * (tilefaces_M.w + 2) + s_g.meld_n * 18 <= room) { *edge = TILEDRAW_EDGE_M; *gap = 18; return &tilefaces_M; }
     *edge = TILEDRAW_EDGE_S; *gap = 12;
     return &tilefaces_S;
@@ -151,13 +190,13 @@ static int meld_x(int m)
 {
     int edge, gap;
     const tilefaces_size_t *sz = meld_size(&edge, &gap);
-    int x = 200;
+    int x = L.meld_x0;
     for (int i = 0; i < m; i++) x += s_g.meld_len[i] * (sz->w + 2) + gap;
     return x;
 }
 
 enum { B_CLEAR, B_MELD, B_ADD, B_DISCARD, B_HINT, B_SORT, B_AUTO, B_UNDO, B_NEW, B_COUNT };
-typedef struct { int x, w; char label[24]; bool enabled, primary, cost, armed; } button_t;
+typedef struct { int x, y, w; char label[24]; bool enabled, primary, cost, armed; } button_t;
 static button_t s_btn[B_COUNT];
 
 static void layout_buttons(void)
@@ -184,16 +223,34 @@ static void layout_buttons(void)
     s_btn[B_ADD].cost = s_btn[B_DISCARD].cost = true;
     s_btn[B_NEW].armed = now < s_armed_until;
 
-    const int pad = 28, gap = 10, min_w = 104;
-    int total = 0;
+    /* one row in landscape; two in portrait, Clear..Hint over Sort..New */
+    const int pad = L.land ? 28 : 20, gap = L.land ? 10 : 8, min_w = L.land ? 104 : 96;
+    const int split = L.btn_rows == 1 ? B_COUNT : B_SORT;
     for (int b = 0; b < B_COUNT; b++) {
         int w = gfx_text_w(s_btn[b].label, TXT) + pad + (s_btn[b].cost ? gfx_text_w(" -6", TXT) : 0);
-        if (w < min_w) w = min_w;
-        s_btn[b].w = w;
-        total += w + (b ? gap : 0);
+        s_btn[b].w = w < min_w ? min_w : w;
     }
-    int x = (gfx_w() - total) / 2;
-    for (int b = 0; b < B_COUNT; b++) { s_btn[b].x = x; x += s_btn[b].w + gap; }
+    for (int row = 0, first = 0; first < B_COUNT; row++) {
+        const int last = row == 0 ? split : B_COUNT;
+        int total = 0;
+        for (int b = first; b < last; b++) total += s_btn[b].w + (b > first ? gap : 0);
+        int x = (gfx_w() - total) / 2;
+        for (int b = first; b < last; b++) {
+            s_btn[b].x = x;
+            s_btn[b].y = L.btn_y + row * (BTN_H + 12);
+            x += s_btn[b].w + gap;
+        }
+        first = last;
+    }
+}
+
+/* Turn: top right, cycling the four orientations. */
+static void turn_rect(int *x, int *y, int *w, int *h)
+{
+    *w = gfx_text_w("Turn", TXT) + 28;
+    *h = 40;
+    *x = gfx_w() - M_X - *w;
+    *y = 8;
 }
 
 /* ------------------------------------------------------------------ */
@@ -205,25 +262,37 @@ static void draw_top(void)
 {
     char pts[32], pen[32], sub[96], bp[16], bq[16], pv[16];
     text(M_X, TOP_Y, "Unprofitable Mahjong", C_INK);
-    /* the two scores, right-aligned; their bests and the piles under them */
+    int tx, ty, tw, th;
+    turn_rect(&tx, &ty, &tw, &th);
+    gfx_fill_rect(tx, ty, tw, th, C_LINE);
+    gfx_fill_rect(tx + 2, ty + 2, tw - 4, th - 4, C_RAISED);
+    gfx_draw_text(tx + 14, ty + (th - GFX_GLYPH_H(TXT)) / 2, "Turn", TXT, tw, C_INK);
+    /* the two scores, their bests and the piles: right-aligned beside Turn
+     * in landscape, on their own lines under the title in portrait */
     pts_text(um_penalty(&s_g), pv, sizeof pv);
     snprintf(pts, sizeof pts, "Points %d", (int)s_g.points);
     snprintf(pen, sizeof pen, "   Penalty %s", pv);
     if (s_prefs.best_points == INT32_MIN) snprintf(bp, sizeof bp, "none"); else snprintf(bp, sizeof bp, "%d", (int)s_prefs.best_points);
     if (s_prefs.best_penalty == INT32_MIN) snprintf(bq, sizeof bq, "none"); else pts_text(s_prefs.best_penalty, bq, sizeof bq);
     snprintf(sub, sizeof sub, "best %s / %s    wall %d    discards %d", bp, bq, UM_TOTAL - s_g.wall_pos, s_g.disc_n);
-    const int wa = gfx_text_w(pts, TXT), wb = gfx_text_w(pen, TXT);
-    const int x = gfx_w() - M_X - wa - wb;
-    gfx_draw_text(x, TOP_Y, pts, TXT, wa + 2, s_g.points > 0 ? C_GREEN : C_INK);
-    gfx_draw_text(x + wa, TOP_Y, pen, TXT, wb + 2, um_penalty(&s_g) < 0 ? C_WARN : C_INK);
-    const int ws = gfx_text_w(sub, 1);
-    gfx_draw_text(gfx_w() - M_X - ws, TOP_Y + GFX_GLYPH_H(TXT) + 2, sub, 1, ws + 2, C_MUTED);
+    const int wa = gfx_text_w(pts, TXT), wb = gfx_text_w(pen, TXT), ws = gfx_text_w(sub, 1);
+    int x, y, sx, sy;
+    if (L.land) {
+        x = tx - 20 - wa - wb; y = TOP_Y;
+        sx = tx - 20 - ws; sy = TOP_Y + GFX_GLYPH_H(TXT) + 2;
+    } else {
+        x = M_X; y = 56;
+        sx = M_X; sy = y + GFX_GLYPH_H(TXT) + 6;
+    }
+    gfx_draw_text(x, y, pts, TXT, wa + 2, s_g.points > 0 ? C_GREEN : C_INK);
+    gfx_draw_text(x + wa, y, pen, TXT, wb + 2, um_penalty(&s_g) < 0 ? C_WARN : C_INK);
+    gfx_draw_text(sx, sy, sub, 1, ws + 2, C_MUTED);
 }
 
 static void draw_rail(void)
 {
     int x = M_X;
-    if (!s_g.log_n) { gfx_draw_text(x, RAIL_Y + 10, "Cleared sets and penalties will line up here.", TXT, gfx_w() - 2 * M_X, C_MUTED); return; }
+    if (!s_g.log_n) { gfx_draw_text(x, L.rail_y + 10, "Cleared sets and penalties will line up here.", TXT, gfx_w() - 2 * M_X, C_MUTED); return; }
     const int keep = s_g.log_n < UM_LOG_N ? s_g.log_n : UM_LOG_N;
     for (int j = 0; j < keep; j++) {
         const um_log_t *e = &s_g.log[(s_g.log_n - 1 - j) % UM_LOG_N];
@@ -233,20 +302,20 @@ static void draw_rail(void)
             snprintf(v, sizeof v, "+%d", e->n);
             w = gfx_text_w(v, TXT) + 12;
             if (x + w > gfx_w() - M_X) break;
-            gfx_fill_rect(x, RAIL_Y, w, 2, C_WARN); gfx_fill_rect(x, RAIL_Y + 34, w, 2, C_WARN);
-            gfx_fill_rect(x, RAIL_Y, 2, 36, C_WARN); gfx_fill_rect(x + w - 2, RAIL_Y, 2, 36, C_WARN);
-            gfx_draw_text(x + 6, RAIL_Y + 6, v, TXT, w, C_WARN);
+            gfx_fill_rect(x, L.rail_y, w, 2, C_WARN); gfx_fill_rect(x, L.rail_y + 34, w, 2, C_WARN);
+            gfx_fill_rect(x, L.rail_y, 2, 36, C_WARN); gfx_fill_rect(x + w - 2, L.rail_y, 2, 36, C_WARN);
+            gfx_draw_text(x + 6, L.rail_y + 6, v, TXT, w, C_WARN);
         } else {
             w = e->n * (tilefaces_S.w + 1);
             if (x + w > gfx_w() - M_X) break;
-            for (int i = 0; i < e->n; i++) tiledraw_tile(&tilefaces_S, e->k[i], x + i * (tilefaces_S.w + 1), RAIL_Y, TILEDRAW_EDGE_S);
-            if (e->t == UM_LOG_DISCARD) gfx_fill_rect(x, RAIL_Y + tilefaces_S.h + 4, w, 2, C_WARN);
+            for (int i = 0; i < e->n; i++) tiledraw_tile(&tilefaces_S, e->k[i], x + i * (tilefaces_S.w + 1), L.rail_y, TILEDRAW_EDGE_S);
+            if (e->t == UM_LOG_DISCARD) gfx_fill_rect(x, L.rail_y + tilefaces_S.h + 4, w, 2, C_WARN);
         }
         /* what it was worth, beside it */
         char pv[16];
         if (e->t == UM_LOG_ADD || e->t == UM_LOG_DISCARD) pts_text(e->v, pv, sizeof pv);
         else snprintf(pv, sizeof pv, "+%d", e->v);
-        gfx_draw_text(x + w + 4, RAIL_Y + 12, pv, 1, 40, e->v < 0 ? C_WARN : C_MUTED);
+        gfx_draw_text(x + w + 4, L.rail_y + 12, pv, 1, 40, e->v < 0 ? C_WARN : C_MUTED);
         x += w + 4 + gfx_text_w(pv, 1) + 16;
     }
 }
@@ -255,10 +324,12 @@ static void draw_melds(void)
 {
     char s[32];
     snprintf(s, sizeof s, "Melds %d/%d", s_g.meld_n, UM_MAX_MELDS);
-    gfx_draw_text(M_X, MELD_Y + 24, s, TXT, 170, C_MUTED);
+    gfx_draw_text(L.meld_label_x, L.meld_label_y, s, TXT, 170, C_MUTED);
     if (!s_g.meld_n) {
-        gfx_draw_text(200, MELD_Y + 24, "Set sets aside here to build toward a bigger hand.", TXT,
-                      gfx_w() - 200 - M_X, C_MUTED);
+        /* beside the label in landscape, under it in portrait */
+        const int ex = L.land ? L.meld_x0 : M_X, ey = L.land ? L.meld_label_y : L.meld_y + 16;
+        gfx_draw_para(ex, ey, "Set sets aside here to build toward a bigger hand.", TXT, gfx_w() - ex - M_X,
+                      GFX_GLYPH_H(TXT) + 6, 2, C_MUTED);
         return;
     }
     int edge, gap;
@@ -266,7 +337,7 @@ static void draw_melds(void)
     for (int m = 0; m < s_g.meld_n; m++) {
         const int x = meld_x(m);
         const bool sel = s_sel.melds & (1u << m);
-        const int y = MELD_Y + (sel ? 0 : 8);
+        const int y = L.meld_y + (sel ? 0 : 8);
         for (int i = 0; i < s_g.meld_len[m]; i++) tiledraw_tile(sz, s_g.melds[m][i], x + i * (sz->w + 2), y, edge);
         if (sel) {
             const int w = s_g.meld_len[m] * (sz->w + 2) - 2;
@@ -371,8 +442,9 @@ static void draw_status(void)
         }
     }
     const int w = gfx_w() - 2 * M_X;
-    if (l1[0]) gfx_draw_text(M_X, STATUS_Y + 8, l1, TXT, w, C_INK);
-    if (l2[0]) gfx_draw_text(M_X, STATUS_Y + 44, l2, TXT, w, c2);
+    const int sy = status_top();
+    if (l1[0]) gfx_draw_text(M_X, sy + 8, l1, TXT, w, C_INK);
+    if (l2[0]) gfx_draw_para(M_X, sy + 44, l2, TXT, w, GFX_GLYPH_H(TXT) + 6, L.status_rows, c2);
 }
 
 static void draw_buttons(void)
@@ -384,10 +456,10 @@ static void draw_buttons(void)
         const uint16_t fill = bt->primary && on ? C_ACCENT : C_RAISED;
         const uint16_t border = bt->armed ? C_WARN : bt->primary && on ? C_ACCENT : C_LINE;
         const uint16_t fg = !on ? C_LINE : bt->armed ? C_WARN : bt->primary ? C_ON_ACC : C_INK;
-        gfx_fill_rect(bt->x, BTN_Y, bt->w, BTN_H, border);
-        gfx_fill_rect(bt->x + 2, BTN_Y + 2, bt->w - 4, BTN_H - 4, fill);
+        gfx_fill_rect(bt->x, bt->y, bt->w, BTN_H, border);
+        gfx_fill_rect(bt->x + 2, bt->y + 2, bt->w - 4, BTN_H - 4, fill);
         const int tw = gfx_text_w(bt->label, TXT) + (bt->cost ? gfx_text_w(" -6", TXT) : 0);
-        const int tx = bt->x + (bt->w - tw) / 2, ty = BTN_Y + (BTN_H - GFX_GLYPH_H(TXT)) / 2;
+        const int tx = bt->x + (bt->w - tw) / 2, ty = bt->y + (BTN_H - GFX_GLYPH_H(TXT)) / 2;
         gfx_draw_text(tx, ty, bt->label, TXT, bt->w, fg);
         if (bt->cost) gfx_draw_text(tx + gfx_text_w(bt->label, TXT), ty, " -6", TXT, bt->w, on ? C_WARN : C_LINE);
     }
@@ -396,7 +468,7 @@ static void draw_buttons(void)
 static void redraw(void)
 {
     gfx_fill_rect(0, 0, gfx_w(), gfx_h(), C_BG);
-    gfx_fill_rect(M_X / 2, TABLE_Y, gfx_w() - M_X, BTN_Y - TABLE_Y - 12, C_SURFACE);
+    gfx_fill_rect(M_X / 2, L.table_y, gfx_w() - M_X, L.btn_y - L.table_y - 12, C_SURFACE);
     draw_top();
     draw_rail();
     draw_melds();
@@ -422,7 +494,7 @@ static void celebrate(um_set_t t, const uint8_t *kinds, int n, int v)
     const int rows = (n + per_row - 1) / per_row;
     const int row_w = (n < per_row ? n : per_row) * pitch - 4;
     const int x0 = (gfx_w() - row_w) / 2;
-    const int y0 = 170;
+    const int y0 = L.land ? 170 : 420;     /* about the middle of either screen */
 
     gfx_fill_rect(0, 0, gfx_w(), gfx_h(), C_SURFACE);
     const char *kick = "LIMIT HAND";
@@ -438,10 +510,11 @@ static void celebrate(um_set_t t, const uint8_t *kinds, int n, int v)
     char nm[48], ps[16];
     set_name(t, nm, sizeof nm);
     const int ny = y0 + rows * (sz->h + 16) + 30;
-    gfx_draw_text((gfx_w() - gfx_text_w(nm, 5)) / 2, ny, nm, 5, gfx_w(), C_INK);
-    gfx_blit(ny, ny + GFX_GLYPH_H(5));
+    const int ns = gfx_text_w(nm, 5) <= gfx_w() - 2 * M_X ? 5 : 4;   /* portrait is 720 wide */
+    gfx_draw_text((gfx_w() - gfx_text_w(nm, ns)) / 2, ny, nm, ns, gfx_w(), C_INK);
+    gfx_blit(ny, ny + GFX_GLYPH_H(ns));
     /* the points count up, eased out, as on the web */
-    const int py = ny + GFX_GLYPH_H(5) + 24;
+    const int py = ny + GFX_GLYPH_H(ns) + 24;
     for (int f = 0; f <= 30; f++) {
         const float p = (float)f / 30.0f, e = 1.0f - (1.0f - p) * (1.0f - p) * (1.0f - p);
         snprintf(ps, sizeof ps, "+%d", (int)(v * e + 0.5f));
@@ -545,11 +618,35 @@ static void press(int b)
     after_move(was_done);
 }
 
+/* The picture and the touch coordinates turn together, or every tap
+ * lands somewhere other than where it was drawn. */
+static void apply_rotation(int r)
+{
+    gfx_set_rotation(r);
+    touch_set_rotation(r);
+    relayout();
+    touch_swallow();    /* the finger that tapped Turn is on a different control now */
+}
+
+/* 90 -> 180 -> 270 -> 0: landscape and portrait alternate */
+static void turn(void)
+{
+    s_prefs.rotation = (uint8_t)((s_prefs.rotation + 1) % 4);
+    save_prefs(&s_prefs);
+    apply_rotation(s_prefs.rotation);
+}
+
 static void tap(int x, int y)
 {
     /* buttons */
-    if (y >= BTN_Y && y < BTN_Y + BTN_H) {
-        for (int b = 0; b < B_COUNT; b++) if (x >= s_btn[b].x && x < s_btn[b].x + s_btn[b].w) { press(b); return; }
+    {
+        int tx, ty, tw, th;
+        turn_rect(&tx, &ty, &tw, &th);
+        if (x >= tx && x < tx + tw && y >= ty && y < ty + th) { turn(); return; }
+    }
+    if (y >= L.btn_y) {
+        for (int b = 0; b < B_COUNT; b++)
+            if (x >= s_btn[b].x && x < s_btn[b].x + s_btn[b].w && y >= s_btn[b].y && y < s_btn[b].y + BTN_H) { press(b); return; }
         return;
     }
     if (s_g.done) return;
@@ -567,7 +664,7 @@ static void tap(int x, int y)
         }
     }
     /* melds, whole */
-    if (s_g.meld_n && y >= MELD_Y && y < HAND_Y - 16) {
+    if (s_g.meld_n && y >= L.meld_y && y < L.meld_y + tilefaces_M.h + TILEDRAW_EDGE_M + 12) {
         int edge, gap;
         const tilefaces_size_t *sz = meld_size(&edge, &gap);
         for (int m = 0; m < s_g.meld_n; m++) {
@@ -589,6 +686,7 @@ void ui_run(void)
     s_undo = heap_caps_malloc(sizeof(um_game_t) * UNDO_N, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (!s_undo) ESP_LOGW(TAG, "no PSRAM for undo; playing without it");
     save_load_prefs(&s_prefs);
+    apply_rotation(s_prefs.rotation);
     if (save_load_game(&s_g)) ESP_LOGI(TAG, "resumed a saved game");
     else new_deal();
 

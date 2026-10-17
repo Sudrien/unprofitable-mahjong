@@ -67,6 +67,7 @@ bool touch_get(int *x, int *y)
     return true;
 }
 void touch_swallow(void) {}
+void touch_set_rotation(int quarter_turns) { (void)quarter_turns; }
 
 /* NVS: nothing saved, nothing loaded */
 void save_init(void) {}
@@ -84,7 +85,13 @@ bool save_load_game(um_game_t *g)
     return true;
 }
 void save_game(const um_game_t *g) { (void)g; }
-void save_load_prefs(save_prefs_t *p) { p->best_points = INT32_MIN; p->best_penalty = INT32_MIN; p->auto_sort = 0; p->lang = 0; }
+/* SCREENTEST_ROT=0..3 picks the orientation; landscape (1) otherwise */
+void save_load_prefs(save_prefs_t *p)
+{
+    const char *r = getenv("SCREENTEST_ROT");
+    p->best_points = INT32_MIN; p->best_penalty = INT32_MIN; p->auto_sort = 0; p->lang = 0;
+    p->rotation = (uint8_t)(r ? atoi(r) & 3 : 1);
+}
 void save_prefs(const save_prefs_t *p) { (void)p; }
 
 int main(int argc, char **argv)

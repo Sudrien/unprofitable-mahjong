@@ -3,3 +3,4 @@
 #include <stdbool.h>
 bool touch_get(int *x, int *y);
 void touch_swallow(void);
+void touch_set_rotation(int quarter_turns);
