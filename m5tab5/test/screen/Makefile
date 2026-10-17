@@ -13,7 +13,7 @@ INC := -Ifake -I$(GFX)/test -I$(GFX)/test/fake -I$(GFX)/include -I$(GFX)/fonts/a
        -I../../main -I../../core
 CFLAGS ?= -std=c11 -g -O1 -Wall -Wextra -Wno-unused-parameter -D_GNU_SOURCE \
           -fsanitize=address,undefined -fno-omit-frame-pointer
-SRCS := screentest.c ../../main/ui.c ../../main/tiledraw.c ../../main/tilefaces.c ../../core/umcore.c \
+SRCS := screentest.c ../../main/ui.c ../../main/tiledraw.c ../../main/tilefaces.c ../../main/i18n.c ../../main/i18n_tab.c ../../core/umcore.c \
         $(GFX)/test/shim.c $(GFX)/src/gfx.c $(GFX)/fonts/ark12/ark12.c \
         $(GFX)/fonts/arabixel/arabixel_tab.c $(GFX)/fonts/arabixel/arabixel_shape.c
 

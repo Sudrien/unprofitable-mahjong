@@ -1,0 +1,271 @@
+# en -- the screen's text. Edit the values; the keys are the
+# English in the source and are rewritten by ./tools/i18n.py extract.
+# ~ means not translated: the board shows the key. Then run
+# ./tools/i18n.py compile and commit main/i18n_tab.c with this file.
+# Format: tools/i18n.py's docstring.
+
+en:
+  singular:
+    # ui.c
+    " Undo to fix it.": ~
+    # ui.c
+    " and a lone ": ~
+    # ui.c
+    "%d tiles left with no set to make, at -%d each. Undo, or start a new deal.": ~
+    # ui.c
+    "%d tiles out. You can add 6 again once you're back to %d.": ~
+    # ui.c
+    ", ": ~
+    # ui.c
+    "1 Bamboo": ~
+    # ui.c
+    "1 Character": ~
+    # ui.c
+    "1 Dot": ~
+    # ui.c
+    "2 Bamboo": ~
+    # ui.c
+    "2 Characters": ~
+    # ui.c
+    "2 Dots": ~
+    # ui.c
+    "3 Bamboo": ~
+    # ui.c
+    "3 Characters": ~
+    # ui.c
+    "3 Dots": ~
+    # ui.c
+    "4 Bamboo": ~
+    # ui.c
+    "4 Characters": ~
+    # ui.c
+    "4 Dots": ~
+    # ui.c
+    "5 Bamboo": ~
+    # ui.c
+    "5 Characters": ~
+    # ui.c
+    "5 Dots": ~
+    # ui.c
+    "6 Bamboo": ~
+    # ui.c
+    "6 Characters": ~
+    # ui.c
+    "6 Dots": ~
+    # ui.c
+    "7 Bamboo": ~
+    # ui.c
+    "7 Characters": ~
+    # ui.c
+    "7 Dots": ~
+    # ui.c
+    "8 Bamboo": ~
+    # ui.c
+    "8 Characters": ~
+    # ui.c
+    "8 Dots": ~
+    # ui.c
+    "9 Bamboo": ~
+    # ui.c
+    "9 Characters": ~
+    # ui.c
+    "9 Dots": ~
+    # ui.c
+    "A clean sweep with no shortcuts.": ~
+    # ui.c
+    "A lone %s can never be cleared now.": ~
+    # ui.c
+    "Add 6": ~
+    # ui.c
+    "All 136 cleared: %d points, %s penalty.": ~
+    # ui.c
+    "All Green": ~
+    # ui.c
+    "All Honors": ~
+    # ui.c
+    "All Pungs": ~
+    # ui.c
+    "All Simples": ~
+    # ui.c
+    "All Terminals": ~
+    # ui.c
+    "Auto: off": ~
+    # ui.c
+    "Auto: on": ~
+    # ui.c
+    "Big Four Winds": ~
+    # ui.c
+    "Big Three Dragons": ~
+    # ui.c
+    "Clear": ~
+    # ui.c
+    "Cleared sets and penalties will line up here.": ~
+    # ui.c
+    "Dark": ~
+    # ui.c
+    "Discard 6": ~
+    # ui.c
+    "Discard these 6 for -%d.": ~
+    # ui.c
+    "Done": ~
+    # ui.c
+    "East wind": ~
+    # ui.c
+    "Every tile cleared. Try the next deal without shortcuts.": ~
+    # ui.c
+    "Four Kongs": ~
+    # ui.c
+    "Full Flush": ~
+    # ui.c
+    "Game over: %d points, %s penalty.": ~
+    # ui.c
+    "Green dragon": ~
+    # ui.c
+    "Half Flush": ~
+    # ui.c
+    "Hint": ~
+    # ui.c
+    "LIMIT HAND": ~
+    # ui.c
+    "Landscape": ~
+    # ui.c
+    "Landscape, flipped": ~
+    # ui.c
+    "Language": ~
+    # ui.c
+    "Light": ~
+    # ui.c
+    "Little Four Winds": ~
+    # ui.c
+    "Little Three Dragons": ~
+    # ui.c
+    "Make kong": ~
+    # ui.c
+    "Makes %s for +%d, its mahjong sets plus 1 for clearing them together.": ~
+    # ui.c
+    "Makes %s for +%d, poker only.": ~
+    # ui.c
+    "Makes %s for +%d.": ~
+    # ui.c
+    "Makes a %s for +%d, its mahjong sets plus 1 for clearing them together.": ~
+    # ui.c
+    "Makes a %s for +%d, poker only.": ~
+    # ui.c
+    "Makes a %s for +%d.": ~
+    # ui.c
+    "Meld": ~
+    # ui.c
+    "Melds %d/%d": ~
+    # ui.c
+    "Mixed Straight": ~
+    # ui.c
+    "New deal": ~
+    # ui.c
+    "Nine Gates": ~
+    # ui.c
+    "No sets showing. Add 6 or discard 6 to see more tiles.": ~
+    # ui.c
+    "No sets showing. Discard 6 to see more tiles.": ~
+    # ui.c
+    "North wind": ~
+    # ui.c
+    "Not a set yet.": ~
+    # ui.c
+    "Not a set. Pick one more to discard 6.": ~
+    # ui.c
+    "Orientation": ~
+    # ui.c
+    "Outside Hand": ~
+    # ui.c
+    "Penalty %s": ~
+    # ui.c
+    "Pick more tiles.": ~
+    # ui.c
+    "Points %d": ~
+    # ui.c
+    "Portrait": ~
+    # ui.c
+    "Portrait, flipped": ~
+    # ui.c
+    "Red dragon": ~
+    # ui.c
+    "Set sets aside here to build toward a bigger hand.": ~
+    # ui.c
+    "Settings": ~
+    # ui.c
+    "Seven Pairs": ~
+    # ui.c
+    "Sort": ~
+    # ui.c
+    "South wind": ~
+    # ui.c
+    "Tap again": ~
+    # ui.c
+    "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.": ~
+    # ui.c
+    "Tap to continue": ~
+    # ui.c
+    "The glowing tiles make a set.": ~
+    # ui.c
+    "Theme": ~
+    # ui.c
+    "Thirteen Orphans": ~
+    # ui.c
+    "Three Kongs": ~
+    # ui.c
+    "Triple Pung": ~
+    # ui.c
+    "Undo": ~
+    # ui.c
+    "Unprofitable Mahjong": ~
+    # ui.c
+    "West wind": ~
+    # ui.c
+    "White dragon": ~
+    # ui.c
+    "best %s / %s    wall %d    discards %d": ~
+    # ui.c
+    "chow": ~
+    # ui.c
+    "dragon set": ~
+    # ui.c
+    "flush": ~
+    # ui.c
+    "full house": ~
+    # ui.c
+    "full straight": ~
+    # ui.c
+    "kong": ~
+    # ui.c
+    "mixed double chow": ~
+    # ui.c
+    "mixed triple chow": ~
+    # ui.c
+    "none": ~
+    # ui.c
+    "pair": ~
+    # ui.c
+    "pung": ~
+    # ui.c
+    "pure double chow": ~
+    # ui.c
+    "pure triple chow": ~
+    # ui.c
+    "royal flush": ~
+    # ui.c
+    "run of 4": ~
+    # ui.c
+    "run of 5": ~
+    # ui.c
+    "run of 6": ~
+    # ui.c
+    "run of 7": ~
+    # ui.c
+    "run of 8": ~
+    # ui.c
+    "straight": ~
+    # ui.c
+    "two pair": ~
+    # ui.c
+    "wind set": ~
+  plural:

@@ -85,12 +85,16 @@ bool save_load_game(um_game_t *g)
     return true;
 }
 void save_game(const um_game_t *g) { (void)g; }
-/* SCREENTEST_ROT=0..3 picks the orientation; landscape (1) otherwise */
+/* SCREENTEST_ROT=0..3 picks the orientation, landscape (1) otherwise;
+ * SCREENTEST_LANG=0..2 the language (i18n_lang_t) and SCREENTEST_THEME=1
+ * the dark theme. */
 void save_load_prefs(save_prefs_t *p)
 {
-    const char *r = getenv("SCREENTEST_ROT");
-    p->best_points = INT32_MIN; p->best_penalty = INT32_MIN; p->auto_sort = 0; p->lang = 0;
+    const char *r = getenv("SCREENTEST_ROT"), *l = getenv("SCREENTEST_LANG"), *t = getenv("SCREENTEST_THEME");
+    p->best_points = INT32_MIN; p->best_penalty = INT32_MIN; p->auto_sort = 0;
     p->rotation = (uint8_t)(r ? atoi(r) & 3 : 1);
+    p->lang = (uint8_t)(l ? atoi(l) : 0);
+    p->theme = (uint8_t)(t ? atoi(t) & 1 : 0);
 }
 void save_prefs(const save_prefs_t *p) { (void)p; }
 

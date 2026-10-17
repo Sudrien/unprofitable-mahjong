@@ -1,7 +1,8 @@
 /*
  * ui.h -- the game's one screen: scores along the top, the rail of
  * recent clears, the melds, the hand, a status line and the buttons.
- * Landscape, 1280x720 logical, drawn into gfx's shadow buffer.
+ * Any of the four orientations, drawn into gfx's shadow buffer; the
+ * gear opens the settings (orientation, theme, language).
  *
  * SPDX-License-Identifier: MIT
  */

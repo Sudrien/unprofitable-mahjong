@@ -1,0 +1,271 @@
+# ja -- the screen's text. Edit the values; the keys are the
+# English in the source and are rewritten by ./tools/i18n.py extract.
+# ~ means not translated: the board shows the key. Then run
+# ./tools/i18n.py compile and commit main/i18n_tab.c with this file.
+# Format: tools/i18n.py's docstring.
+
+ja:
+  singular:
+    # ui.c
+    " Undo to fix it.": "元に戻して直そう。"
+    # ui.c
+    " and a lone ": "と"
+    # ui.c
+    "%d tiles left with no set to make, at -%d each. Undo, or start a new deal.": "組にできない牌が%d枚残りました（1枚-%d）。元に戻すか、新しく配ろう。"
+    # ui.c
+    "%d tiles out. You can add 6 again once you're back to %d.": "場に%d枚。%d枚に戻れば、また6枚追加できます。"
+    # ui.c
+    ", ": "、"
+    # ui.c
+    "1 Bamboo": "1索"
+    # ui.c
+    "1 Character": "1萬"
+    # ui.c
+    "1 Dot": "1筒"
+    # ui.c
+    "2 Bamboo": "2索"
+    # ui.c
+    "2 Characters": "2萬"
+    # ui.c
+    "2 Dots": "2筒"
+    # ui.c
+    "3 Bamboo": "3索"
+    # ui.c
+    "3 Characters": "3萬"
+    # ui.c
+    "3 Dots": "3筒"
+    # ui.c
+    "4 Bamboo": "4索"
+    # ui.c
+    "4 Characters": "4萬"
+    # ui.c
+    "4 Dots": "4筒"
+    # ui.c
+    "5 Bamboo": "5索"
+    # ui.c
+    "5 Characters": "5萬"
+    # ui.c
+    "5 Dots": "5筒"
+    # ui.c
+    "6 Bamboo": "6索"
+    # ui.c
+    "6 Characters": "6萬"
+    # ui.c
+    "6 Dots": "6筒"
+    # ui.c
+    "7 Bamboo": "7索"
+    # ui.c
+    "7 Characters": "7萬"
+    # ui.c
+    "7 Dots": "7筒"
+    # ui.c
+    "8 Bamboo": "8索"
+    # ui.c
+    "8 Characters": "8萬"
+    # ui.c
+    "8 Dots": "8筒"
+    # ui.c
+    "9 Bamboo": "9索"
+    # ui.c
+    "9 Characters": "9萬"
+    # ui.c
+    "9 Dots": "9筒"
+    # ui.c
+    "A clean sweep with no shortcuts.": "近道なしで全部クリア！"
+    # ui.c
+    "A lone %s can never be cleared now.": "%sが1枚だけ残り、もう消せません。"
+    # ui.c
+    "Add 6": "6枚追加"
+    # ui.c
+    "All 136 cleared: %d points, %s penalty.": "136枚すべて消去：%d点、ペナルティ%s"
+    # ui.c
+    "All Green": "緑一色"
+    # ui.c
+    "All Honors": "字一色"
+    # ui.c
+    "All Pungs": "対々和"
+    # ui.c
+    "All Simples": "断么九"
+    # ui.c
+    "All Terminals": "清老頭"
+    # ui.c
+    "Auto: off": "自動：オフ"
+    # ui.c
+    "Auto: on": "自動：オン"
+    # ui.c
+    "Big Four Winds": "大四喜"
+    # ui.c
+    "Big Three Dragons": "大三元"
+    # ui.c
+    "Clear": "消す"
+    # ui.c
+    "Cleared sets and penalties will line up here.": "消した組とペナルティがここに並びます。"
+    # ui.c
+    "Dark": "ダーク"
+    # ui.c
+    "Discard 6": "6枚捨て"
+    # ui.c
+    "Discard these 6 for -%d.": "この6枚を捨てる：-%d"
+    # ui.c
+    "Done": "完了"
+    # ui.c
+    "East wind": "東"
+    # ui.c
+    "Every tile cleared. Try the next deal without shortcuts.": "全部消せました。次は近道なしで挑戦しよう。"
+    # ui.c
+    "Four Kongs": "四槓子"
+    # ui.c
+    "Full Flush": "清一色"
+    # ui.c
+    "Game over: %d points, %s penalty.": "ゲーム終了：%d点、ペナルティ%s"
+    # ui.c
+    "Green dragon": "發"
+    # ui.c
+    "Half Flush": "混一色"
+    # ui.c
+    "Hint": "ヒント"
+    # ui.c
+    "LIMIT HAND": "役満"
+    # ui.c
+    "Landscape": "横向き"
+    # ui.c
+    "Landscape, flipped": "横向き（反転）"
+    # ui.c
+    "Language": "言語"
+    # ui.c
+    "Light": "ライト"
+    # ui.c
+    "Little Four Winds": "小四喜"
+    # ui.c
+    "Little Three Dragons": "小三元"
+    # ui.c
+    "Make kong": "加槓"
+    # ui.c
+    "Makes %s for +%d, its mahjong sets plus 1 for clearing them together.": "%s：+%d（面子の合計に、まとめて消すボーナス+1）"
+    # ui.c
+    "Makes %s for +%d, poker only.": "%s：+%d（ポーカー役のみ）"
+    # ui.c
+    "Makes %s for +%d.": "%s：+%d"
+    # ui.c
+    "Makes a %s for +%d, its mahjong sets plus 1 for clearing them together.": "%s：+%d（面子の合計に、まとめて消すボーナス+1）"
+    # ui.c
+    "Makes a %s for +%d, poker only.": "%s：+%d（ポーカー役のみ）"
+    # ui.c
+    "Makes a %s for +%d.": "%s：+%d"
+    # ui.c
+    "Meld": "副露"
+    # ui.c
+    "Melds %d/%d": "副露 %d/%d"
+    # ui.c
+    "Mixed Straight": "三色通貫"
+    # ui.c
+    "New deal": "新しく配る"
+    # ui.c
+    "Nine Gates": "九蓮宝燈"
+    # ui.c
+    "No sets showing. Add 6 or discard 6 to see more tiles.": "作れる組がありません。6枚追加か6枚捨てで、もっと牌を見よう。"
+    # ui.c
+    "No sets showing. Discard 6 to see more tiles.": "作れる組がありません。6枚捨てて、もっと牌を見よう。"
+    # ui.c
+    "North wind": "北"
+    # ui.c
+    "Not a set yet.": "まだ組になっていません。"
+    # ui.c
+    "Not a set. Pick one more to discard 6.": "組になっていません。あと1枚選ぶと6枚捨てられます。"
+    # ui.c
+    "Orientation": "画面の向き"
+    # ui.c
+    "Outside Hand": "混全帯么九"
+    # ui.c
+    "Penalty %s": "ペナルティ %s"
+    # ui.c
+    "Pick more tiles.": "もっと牌を選んでください。"
+    # ui.c
+    "Points %d": "得点 %d"
+    # ui.c
+    "Portrait": "縦向き"
+    # ui.c
+    "Portrait, flipped": "縦向き（反転）"
+    # ui.c
+    "Red dragon": "中"
+    # ui.c
+    "Set sets aside here to build toward a bigger hand.": "組をここに置いて、大きな役を育てよう。"
+    # ui.c
+    "Settings": "設定"
+    # ui.c
+    "Seven Pairs": "七対子"
+    # ui.c
+    "Sort": "並べ替え"
+    # ui.c
+    "South wind": "南"
+    # ui.c
+    "Tap again": "もう一度"
+    # ui.c
+    "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.": "牌をタップして組を作ろう。大きな組ほど高得点。6枚選ぶと捨てられます。"
+    # ui.c
+    "Tap to continue": "タップで続ける"
+    # ui.c
+    "The glowing tiles make a set.": "光っている牌で組が作れます。"
+    # ui.c
+    "Theme": "テーマ"
+    # ui.c
+    "Thirteen Orphans": "国士無双"
+    # ui.c
+    "Three Kongs": "三槓子"
+    # ui.c
+    "Triple Pung": "三色同刻"
+    # ui.c
+    "Undo": "元に戻す"
+    # ui.c
+    "Unprofitable Mahjong": "儲からないマージャン"
+    # ui.c
+    "West wind": "西"
+    # ui.c
+    "White dragon": "白"
+    # ui.c
+    "best %s / %s    wall %d    discards %d": "ベスト %s / %s    山 %d    捨て牌 %d"
+    # ui.c
+    "chow": "順子"
+    # ui.c
+    "dragon set": "三元牌セット"
+    # ui.c
+    "flush": "フラッシュ"
+    # ui.c
+    "full house": "フルハウス"
+    # ui.c
+    "full straight": "一気通貫"
+    # ui.c
+    "kong": "槓子"
+    # ui.c
+    "mixed double chow": "二色同順"
+    # ui.c
+    "mixed triple chow": "三色同順"
+    # ui.c
+    "none": "まだなし"
+    # ui.c
+    "pair": "対子"
+    # ui.c
+    "pung": "刻子"
+    # ui.c
+    "pure double chow": "一盃口"
+    # ui.c
+    "pure triple chow": "一色三順"
+    # ui.c
+    "royal flush": "ロイヤルフラッシュ"
+    # ui.c
+    "run of 4": "4連順"
+    # ui.c
+    "run of 5": "5連順"
+    # ui.c
+    "run of 6": "6連順"
+    # ui.c
+    "run of 7": "7連順"
+    # ui.c
+    "run of 8": "8連順"
+    # ui.c
+    "straight": "ストレート"
+    # ui.c
+    "two pair": "ツーペア"
+    # ui.c
+    "wind set": "四風牌セット"
+  plural:

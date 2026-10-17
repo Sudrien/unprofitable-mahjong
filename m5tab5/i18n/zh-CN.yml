@@ -1,0 +1,271 @@
+# zh-CN -- the screen's text. Edit the values; the keys are the
+# English in the source and are rewritten by ./tools/i18n.py extract.
+# ~ means not translated: the board shows the key. Then run
+# ./tools/i18n.py compile and commit main/i18n_tab.c with this file.
+# Format: tools/i18n.py's docstring.
+
+zh-CN:
+  singular:
+    # ui.c
+    " Undo to fix it.": "撤销来补救。"
+    # ui.c
+    " and a lone ": "和"
+    # ui.c
+    "%d tiles left with no set to make, at -%d each. Undo, or start a new deal.": "剩下%d张牌无法组合，每张-%d。撤销，或重新发牌。"
+    # ui.c
+    "%d tiles out. You can add 6 again once you're back to %d.": "场上%d张。回到%d张后才能再加6张。"
+    # ui.c
+    ", ": "、"
+    # ui.c
+    "1 Bamboo": "一条"
+    # ui.c
+    "1 Character": "一万"
+    # ui.c
+    "1 Dot": "一筒"
+    # ui.c
+    "2 Bamboo": "二条"
+    # ui.c
+    "2 Characters": "二万"
+    # ui.c
+    "2 Dots": "二筒"
+    # ui.c
+    "3 Bamboo": "三条"
+    # ui.c
+    "3 Characters": "三万"
+    # ui.c
+    "3 Dots": "三筒"
+    # ui.c
+    "4 Bamboo": "四条"
+    # ui.c
+    "4 Characters": "四万"
+    # ui.c
+    "4 Dots": "四筒"
+    # ui.c
+    "5 Bamboo": "五条"
+    # ui.c
+    "5 Characters": "五万"
+    # ui.c
+    "5 Dots": "五筒"
+    # ui.c
+    "6 Bamboo": "六条"
+    # ui.c
+    "6 Characters": "六万"
+    # ui.c
+    "6 Dots": "六筒"
+    # ui.c
+    "7 Bamboo": "七条"
+    # ui.c
+    "7 Characters": "七万"
+    # ui.c
+    "7 Dots": "七筒"
+    # ui.c
+    "8 Bamboo": "八条"
+    # ui.c
+    "8 Characters": "八万"
+    # ui.c
+    "8 Dots": "八筒"
+    # ui.c
+    "9 Bamboo": "九条"
+    # ui.c
+    "9 Characters": "九万"
+    # ui.c
+    "9 Dots": "九筒"
+    # ui.c
+    "A clean sweep with no shortcuts.": "一路无捷径，完美通关。"
+    # ui.c
+    "A lone %s can never be cleared now.": "%s只剩一张，已经无法清除。"
+    # ui.c
+    "Add 6": "加6张"
+    # ui.c
+    "All 136 cleared: %d points, %s penalty.": "136张全部清除：%d分，罚分%s"
+    # ui.c
+    "All Green": "绿一色"
+    # ui.c
+    "All Honors": "字一色"
+    # ui.c
+    "All Pungs": "碰碰和"
+    # ui.c
+    "All Simples": "断幺"
+    # ui.c
+    "All Terminals": "清幺九"
+    # ui.c
+    "Auto: off": "自动：关"
+    # ui.c
+    "Auto: on": "自动：开"
+    # ui.c
+    "Big Four Winds": "大四喜"
+    # ui.c
+    "Big Three Dragons": "大三元"
+    # ui.c
+    "Clear": "消除"
+    # ui.c
+    "Cleared sets and penalties will line up here.": "已消除的组合和罚分会显示在这里。"
+    # ui.c
+    "Dark": "深色"
+    # ui.c
+    "Discard 6": "弃6张"
+    # ui.c
+    "Discard these 6 for -%d.": "弃掉这6张：-%d"
+    # ui.c
+    "Done": "完成"
+    # ui.c
+    "East wind": "东风"
+    # ui.c
+    "Every tile cleared. Try the next deal without shortcuts.": "全部清除。下一局试试不走捷径。"
+    # ui.c
+    "Four Kongs": "四杠"
+    # ui.c
+    "Full Flush": "清一色"
+    # ui.c
+    "Game over: %d points, %s penalty.": "游戏结束：%d分，罚分%s"
+    # ui.c
+    "Green dragon": "发财"
+    # ui.c
+    "Half Flush": "混一色"
+    # ui.c
+    "Hint": "提示"
+    # ui.c
+    "LIMIT HAND": "大满贯"
+    # ui.c
+    "Landscape": "横屏"
+    # ui.c
+    "Landscape, flipped": "横屏（翻转）"
+    # ui.c
+    "Language": "语言"
+    # ui.c
+    "Light": "浅色"
+    # ui.c
+    "Little Four Winds": "小四喜"
+    # ui.c
+    "Little Three Dragons": "小三元"
+    # ui.c
+    "Make kong": "加杠"
+    # ui.c
+    "Makes %s for +%d, its mahjong sets plus 1 for clearing them together.": "组成%s，得+%d（麻将组合之和，加一起消除加分+1）"
+    # ui.c
+    "Makes %s for +%d, poker only.": "组成%s，得+%d（仅扑克牌型）"
+    # ui.c
+    "Makes %s for +%d.": "组成%s，得+%d"
+    # ui.c
+    "Makes a %s for +%d, its mahjong sets plus 1 for clearing them together.": "组成%s，得+%d（麻将组合之和，加一起消除加分+1）"
+    # ui.c
+    "Makes a %s for +%d, poker only.": "组成%s，得+%d（仅扑克牌型）"
+    # ui.c
+    "Makes a %s for +%d.": "组成%s，得+%d"
+    # ui.c
+    "Meld": "副露"
+    # ui.c
+    "Melds %d/%d": "副露 %d/%d"
+    # ui.c
+    "Mixed Straight": "花龙"
+    # ui.c
+    "New deal": "重新发牌"
+    # ui.c
+    "Nine Gates": "九莲宝灯"
+    # ui.c
+    "No sets showing. Add 6 or discard 6 to see more tiles.": "没有可组成的组合。加6张或弃6张来看更多牌。"
+    # ui.c
+    "No sets showing. Discard 6 to see more tiles.": "没有可组成的组合。弃6张来看更多牌。"
+    # ui.c
+    "North wind": "北风"
+    # ui.c
+    "Not a set yet.": "还不成组合。"
+    # ui.c
+    "Not a set. Pick one more to discard 6.": "不成组合。再选1张就能弃6张。"
+    # ui.c
+    "Orientation": "屏幕方向"
+    # ui.c
+    "Outside Hand": "全带幺"
+    # ui.c
+    "Penalty %s": "罚分 %s"
+    # ui.c
+    "Pick more tiles.": "再多选几张牌。"
+    # ui.c
+    "Points %d": "得分 %d"
+    # ui.c
+    "Portrait": "竖屏"
+    # ui.c
+    "Portrait, flipped": "竖屏（翻转）"
+    # ui.c
+    "Red dragon": "红中"
+    # ui.c
+    "Set sets aside here to build toward a bigger hand.": "把组合放到这里，慢慢凑大牌。"
+    # ui.c
+    "Settings": "设置"
+    # ui.c
+    "Seven Pairs": "七对"
+    # ui.c
+    "Sort": "排序"
+    # ui.c
+    "South wind": "南风"
+    # ui.c
+    "Tap again": "再点一次"
+    # ui.c
+    "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.": "点牌组成组合，组合越大得分越高。选6张可以弃牌。"
+    # ui.c
+    "Tap to continue": "点击继续"
+    # ui.c
+    "The glowing tiles make a set.": "发光的牌可以组成一组。"
+    # ui.c
+    "Theme": "主题"
+    # ui.c
+    "Thirteen Orphans": "十三幺"
+    # ui.c
+    "Three Kongs": "三杠"
+    # ui.c
+    "Triple Pung": "三同刻"
+    # ui.c
+    "Undo": "撤销"
+    # ui.c
+    "Unprofitable Mahjong": "不赚钱的麻将"
+    # ui.c
+    "West wind": "西风"
+    # ui.c
+    "White dragon": "白板"
+    # ui.c
+    "best %s / %s    wall %d    discards %d": "最佳 %s / %s    牌墙 %d    弃牌 %d"
+    # ui.c
+    "chow": "顺子"
+    # ui.c
+    "dragon set": "三元齐"
+    # ui.c
+    "flush": "同花"
+    # ui.c
+    "full house": "葫芦"
+    # ui.c
+    "full straight": "清龙"
+    # ui.c
+    "kong": "杠子"
+    # ui.c
+    "mixed double chow": "喜相逢"
+    # ui.c
+    "mixed triple chow": "三色三同顺"
+    # ui.c
+    "none": "暂无"
+    # ui.c
+    "pair": "对子"
+    # ui.c
+    "pung": "刻子"
+    # ui.c
+    "pure double chow": "一般高"
+    # ui.c
+    "pure triple chow": "一色三同顺"
+    # ui.c
+    "royal flush": "皇家同花顺"
+    # ui.c
+    "run of 4": "4连顺"
+    # ui.c
+    "run of 5": "5连顺"
+    # ui.c
+    "run of 6": "6连顺"
+    # ui.c
+    "run of 7": "7连顺"
+    # ui.c
+    "run of 8": "8连顺"
+    # ui.c
+    "straight": "杂色顺"
+    # ui.c
+    "two pair": "两对"
+    # ui.c
+    "wind set": "四风齐"
+  plural:

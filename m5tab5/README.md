@@ -1,12 +1,12 @@
 # Unprofitable Mahjong for the M5Stack Tab5
 
 The same game as `../index.html`, as firmware for the M5Stack Tab5
-(ESP32-P4, 5″ 1280×720 touch panel), played in landscape.
+(ESP32-P4, 5″ 1280×720 touch panel), in landscape or portrait.
 
-**Status: written, not yet built with ESP-IDF or run on a board.** The
-rules are tested against the web version, and the screen code has been
-run on a PC through the graphics library's own host shim (below), but
-nobody has flashed it yet. English only for now.
+**Status: built with ESP-IDF 6.1 and run on a board** (the panel, touch
+and the four orientations). The settings panel -- theme and language --
+has so far only been run on a PC through the graphics library's own host
+shim (below). The rules are tested against the web version.
 
 ![The table](screenshots/table.png)
 
@@ -32,8 +32,8 @@ manager at the tags in `main/idf_component.yml`; the first build writes
 
 Drawing goes through `gfx`: the shadow buffer is redrawn where something
 changed and blitted a band at a time, so tapping a tile costs one row of
-tiles, not a frame. Text is Ark12 at scale; it already carries the CJK
-the Japanese and Chinese hand names need, except 雀.
+tiles, not a frame. Text is Ark12 at scale; it carries the CJK the
+Japanese and Chinese screens need, except 雀 (see Languages).
 
 Saves (the game in progress, best scores, settings) go in NVS after
 every move, so pulling the power loses nothing. The SD card is not
@@ -42,10 +42,14 @@ dependency until something is.
 
 ## The screen
 
-All four orientations: **Turn**, top right, steps through them a
-quarter turn at a time, so landscape and portrait alternate, and the
-choice is saved. The picture and the touch coordinates always turn
-together.
+The gear, top right, opens the settings: the orientation (landscape,
+portrait, or either one flipped), a light or dark theme, and the
+language -- English, 日本語 or 简体中文. Each takes effect as it is tapped
+and is saved; Done, or a tap outside the panel, closes it. The picture
+and the touch coordinates always turn together. The dark theme is the
+web version's; the tiles keep their ivory faces in both.
+
+![Settings](screenshots/settings.png)
 
 Landscape is 1280×720: the scores along the top, the rail of recent
 clears, the meld row, the hand (two rows of 9, or 12 after Add 6), a
@@ -64,6 +68,28 @@ time, the name, and the points counting up.
 
 ![Big Three Dragons](screenshots/limit-hand.png)
 
+## Languages
+
+Every word on the screen is marked in the source the way
+defeatist-music-player-for-m5tab5 does it, lv_i18n's shape without
+LVGL: `_("Hint")` where it is drawn, `N_()` in a static table, the
+English as the key. `tools/i18n.py` (that project's, cut to three
+locales) extracts them into `i18n/<locale>.yml` and compiles those into
+`main/i18n_tab.c`, which is committed so a build needs no Python:
+
+    python3 m5tab5/tools/i18n.py extract
+    python3 m5tab5/tools/i18n.py compile --ark12 path/to/fonts/ark12/ark12.c
+    python3 m5tab5/tools/i18n.py check   --ark12 path/to/fonts/ark12/ark12.c
+
+The translations are the web version's: riichi names in Japanese, MCR
+names in Chinese. `--ark12` refuses a translation with a character the
+font cannot draw, so the Japanese title is 儲からないマージャン (Ark12 has
+no 雀), and a few lines are reworded around 覇, 脇, 奖 and 即.
+
+![Japanese, dark](screenshots/japanese-dark.png)
+
+![Portrait, the settings in Chinese](screenshots/settings-portrait-zh.png)
+
 ## Seeing the screen without a board
 
 `test/screen/` compiles `main/ui.c`, the tile drawing and the rules
@@ -76,8 +102,9 @@ taps, and the screen is saved before each one:
     ./screentest out/shot 660,660 310,290 640,435 75,660
 
 `SCREENTEST_DEAL=dragons` starts from three dragon pungs, for the meld
-row and the celebration, and `SCREENTEST_ROT=0..3` picks the
-orientation (landscape, 1, by default). The screenshots above came from
+row and the celebration, `SCREENTEST_ROT=0..3` picks the orientation
+(landscape, 1, by default), `SCREENTEST_LANG` the language (0 English,
+1 Chinese, 2 Japanese) and `SCREENTEST_THEME=1` the dark theme. The screenshots above came from
 it.
 
 ## Testing the rules
