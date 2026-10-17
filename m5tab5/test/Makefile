@@ -13,10 +13,14 @@ GAMES  ?= 2000
 umtest: umtest.c ../core/umcore.c ../core/umcore.h
 	$(CC) $(CFLAGS) -I../core -o $@ umtest.c ../core/umcore.c
 
-check: umtest
+tilecheck: tilecheck.c ../main/tilefaces.c ../main/tilefaces.h
+	$(CC) $(CFLAGS) -I../main -o $@ tilecheck.c ../main/tilefaces.c
+
+check: umtest tilecheck
+	./tilecheck
 	node check.js ./umtest $(GAMES)
 
 .DEFAULT_GOAL := check
 .PHONY: check clean
 clean:
-	rm -f umtest
+	rm -f umtest tilecheck
