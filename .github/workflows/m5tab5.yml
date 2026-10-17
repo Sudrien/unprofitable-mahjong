@@ -1,0 +1,121 @@
+name: Build the M5Stack Tab5 firmware
+
+# The same shape as defeatist-music-player-for-m5tab5's main.yml: a tag
+# builds and releases; a manual run builds any ref, with a choice of
+# ESP-IDF, and releases only when asked. The firmware is in m5tab5/,
+# so every IDF step runs from there.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+  workflow_dispatch:
+    inputs:
+      git_ref:
+        description: 'Git tag, branch, or commit to build (e.g. v0.1.0)'
+        required: true
+        default: 'main'
+        type: string
+      idf_version:
+        description: 'ESP-IDF to build with'
+        required: false
+        default: 'v6.1'
+        type: choice
+        options:
+          - v6.1
+          - v5.5.5
+      release:
+        description: 'Also publish a GitHub release with these binaries'
+        required: false
+        default: false
+        type: boolean
+
+# Needed to create a release; the default token may be read-only.
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: m5tab5
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.git_ref || github.ref }}
+
+      # github.ref_name is the branch on a workflow_dispatch, not what was
+      # checked out; the input names the build when there is one.
+      - name: Work out the version string
+        id: ver
+        run: echo "name=${{ github.event.inputs.git_ref || github.ref_name }}" >> "$GITHUB_OUTPUT"
+
+      - name: Install ESP-IDF
+        uses: espressif/install-esp-idf-action@v1
+        with:
+          version: ${{ github.event.inputs.idf_version || 'v6.1' }}
+          target: 'esp32p4'
+
+      # set-target configures, which makes the component manager fetch
+      # feckless_graphics_handler into managed_components/. The i18n
+      # check reads Ark12 from there, and the screen test compiles the
+      # library's gfx.c through its host shim.
+      - name: Resolve components
+        run: idf.py set-target esp32p4
+
+      # The rules against the web version (2000 games, about a minute;
+      # Node is on the runner), the translations against the source and
+      # the font, and ui.c on the host with a few scripted taps.
+      - name: Host tests
+        run: |
+          make -C test
+          python3 tools/i18n.py check --ark12 managed_components/feckless_graphics_handler/fonts/ark12/ark12.c
+          make -C test/screen
+          mkdir -p test/screen/out
+          ./test/screen/screentest test/screen/out/ci 1226,28 1226,28
+          SCREENTEST_ROT=0 SCREENTEST_LANG=2 SCREENTEST_THEME=1 ./test/screen/screentest test/screen/out/ci-ja 670,28 670,28
+
+      - name: Build and Merge Binaries
+        run: |
+          # the release string into esp_app_desc_t.version, so the banner
+          # in the console log says which build this is
+          echo "${{ steps.ver.outputs.name }}" > version.txt
+          idf.py build
+          idf.py merge-bin
+          mv build/merged-binary.bin build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5_standalone.bin
+          mv build/unprofitable_mahjong_m5tab5.bin build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5.bin
+
+      - name: Archive build output artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: unprofitable_mahjong_m5tab5-${{ steps.ver.outputs.name }}
+          path: |
+            m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5_standalone.bin
+            m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5.bin
+
+      # The lock the component manager resolved, to be read and
+      # committed: nothing has committed one yet.
+      - name: Archive the dependency lock
+        uses: actions/upload-artifact@v4
+        with:
+          name: dependencies.lock-${{ steps.ver.outputs.name }}
+          path: m5tab5/dependencies.lock
+          if-no-files-found: ignore
+
+      # Pushing a tag releases; a manual run only with the box ticked,
+      # and only against a tag -- against a branch it fails, and should.
+      - name: Publish release
+        if: startsWith(github.ref, 'refs/tags/') || inputs.release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.ver.outputs.name }}
+          name: ${{ steps.ver.outputs.name }}
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5_standalone.bin
+            m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5.bin
