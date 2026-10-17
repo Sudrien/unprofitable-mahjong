@@ -9,6 +9,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "esp_app_desc.h"
 #include "esp_check.h"
 #include "esp_log.h"
 #include "gfx.h"
@@ -29,6 +30,18 @@ static const char *TAG = "main";
 
 void app_main(void)
 {
+    /* The line to start copying from, as in the player: everything above
+     * it is the ROM, the bootloader and IDF's startup. The version is on
+     * it so a pasted log can be matched to a tree; ESP_LOGW so it
+     * survives a build with the info level turned down; first, so a
+     * failure in the very first init is still below it. */
+    {
+        const esp_app_desc_t *d = esp_app_get_description();
+        ESP_LOGW(TAG, "=== Unprofitable Mahjong === %s, IDF %s, built %s %s",
+                 d ? d->version : "?", d ? d->idf_ver : "?",
+                 d ? d->date : "?", d ? d->time : "?");
+        (void)d;    /* unused when logging is compiled out */
+    }
     ESP_ERROR_CHECK(tab5io_init());
     esp_lcd_panel_handle_t panel = NULL;
     ESP_ERROR_CHECK(lcd_init(&panel));

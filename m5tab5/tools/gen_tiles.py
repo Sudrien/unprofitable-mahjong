@@ -201,7 +201,8 @@ extern const tilefaces_size_t tilefaces_S;   /* the rail */
         c.append('    { ' + ', '.join(f'f{name}{k}' for k in range(34)) + ' },\n')
         c.append('    { ' + ', '.join(str(len(data[(name, k)])) for k in range(34)) + ' },\n};\n\n')
     open(hpath, 'w').write(h)
-    open(cpath, 'w').write(''.join(c))
+    # one newline at the end, not a blank line: git am warns about those
+    open(cpath, 'w').write(''.join(c).rstrip('\n') + '\n')
     return total
 
 
