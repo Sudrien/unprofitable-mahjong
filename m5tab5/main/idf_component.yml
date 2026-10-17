@@ -1,0 +1,26 @@
+## Unprofitable Mahjong for the M5Stack Tab5.
+##
+## The same libraries as defeatist-music-player-for-m5tab5, at the tags
+## it builds with. PINNED TO TAGS: a moving branch would change
+## underneath a build that worked. Changing this file re-resolves
+## dependencies.lock on the next build; read that diff before committing.
+dependencies:
+  idf:
+    version: ">=5.4.2"
+
+  # The panel, the backlight, gfx and Ark12.
+  feckless_graphics_handler:
+    git: https://github.com/Sudrien/feckless-graphics-handler-for-m5tab5.git
+    version: "v0.2.3"
+
+  # tab5io (the I2C bus and expanders) and touch. The rest of the
+  # component (USB host, audio, battery, clock) is built but not started.
+  feckless_drivers:
+    git: https://github.com/Sudrien/feckless-drivers-for-m5tab5.git
+    version: "v0.5.8"
+
+  # feckless_drivers requires usb_host_uac by name and leaves supplying it
+  # to the application (its README). The player vendors 1.5.0 with a
+  # descriptor-parser fix; nothing here uses USB audio, so the registry's
+  # 1.5.0 is enough. Exact, not ^, for the reason at the top.
+  espressif/usb_host_uac: "1.5.0"

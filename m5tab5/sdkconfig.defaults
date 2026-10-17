@@ -1,0 +1,34 @@
+# Unprofitable Mahjong for the M5Stack Tab5.
+#
+# The board lines are the player's (defeatist-music-player-for-m5tab5's
+# sdkconfig.defaults), which have run on Tab5s; see that file for why
+# each one is there. Changing this file needs `rm sdkconfig` before the
+# next build: the defaults only fill keys an existing sdkconfig lacks.
+
+CONFIG_IDF_TARGET="esp32p4"
+# The Tab5s this has run on are silicon v1.3.
+CONFIG_ESP32P4_SELECTS_REV_LESS_V3=y
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_SPEED_200M=y
+CONFIG_IDF_EXPERIMENTAL_FEATURES=y
+CONFIG_CACHE_L2_CACHE_256KB=y
+CONFIG_CACHE_L2_CACHE_LINE_128B=y
+
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
+CONFIG_FREERTOS_HZ=1000
+# The game loop runs on the main task.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=16384
+
+# feckless_drivers builds its USB host even though nothing here plugs
+# into it; these are the player's settings for that host, per the
+# drivers README.
+CONFIG_USB_HOST_HUBS_SUPPORTED=y
+CONFIG_USB_HOST_HUB_MULTI_LEVEL=y
+CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK=y
+CONFIG_USB_HOST_DWC_DMA_CAP_MEMORY_IN_PSRAM=y
