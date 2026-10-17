@@ -43,19 +43,24 @@ dependency until something is.
 ## The screen
 
 The gear, top right, opens the settings: the orientation (landscape,
-portrait, or either one flipped), a light or dark theme, and the
-language -- English, 日本語 or 简体中文. Each takes effect as it is tapped
-and is saved; Done, or a tap outside the panel, closes it. The picture
+portrait, or either one flipped), a light or dark theme, the language
+-- English, 日本語 or 简体中文 -- and auto-sort. Each takes effect as it
+is tapped and is saved; Done, or a tap outside the panel, closes it.
+New deal is there too, and asks for a second tap. The picture
 and the touch coordinates always turn together. The dark theme is the
 web version's; the tiles keep their ivory faces in both.
 
 ![Settings](screenshots/settings.png)
 
+The panel is about 294 pixels to the inch, so text is Ark12 at 36 px
+(about 9 pt); 24 px is left for the line of bests and piles, the
+rail's values, and the list of chosen tiles in landscape.
+
 Landscape is 1280×720: the scores along the top, the rail of recent
-clears, the meld row, the hand (two rows of 9, or 12 after Add 6), a
-status line and nine buttons in a row. Portrait is 720×1280: the hand
-six across in three rows (four after Add 6), the status line under it,
-and the buttons in two rows at the bottom. Tap tiles to select them;
+clears, the meld row, the hand (two rows of 9, or 12 after Add 6), the
+status and seven buttons in a row. Portrait is 720×1280: the hand six
+across in three rows (four after Add 6), the status under it, and the
+buttons in three rows at the bottom. Tap tiles to select them;
 tap a meld to select all of it. Undo goes back up to 64 moves, and like
 the web version it cannot reach past Add 6 or Discard 6.
 

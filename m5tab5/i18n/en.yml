@@ -89,9 +89,7 @@ en:
     # ui.c
     "All Terminals": ~
     # ui.c
-    "Auto: off": ~
-    # ui.c
-    "Auto: on": ~
+    "Auto-sort": ~
     # ui.c
     "Big Four Winds": ~
     # ui.c
@@ -99,7 +97,7 @@ en:
     # ui.c
     "Clear": ~
     # ui.c
-    "Cleared sets and penalties will line up here.": ~
+    "Clears and penalties go here.": ~
     # ui.c
     "Dark": ~
     # ui.c
@@ -173,6 +171,10 @@ en:
     # ui.c
     "Not a set. Pick one more to discard 6.": ~
     # ui.c
+    "Off": ~
+    # ui.c
+    "On": ~
+    # ui.c
     "Orientation": ~
     # ui.c
     "Outside Hand": ~
@@ -189,7 +191,7 @@ en:
     # ui.c
     "Red dragon": ~
     # ui.c
-    "Set sets aside here to build toward a bigger hand.": ~
+    "Set sets aside here to build a bigger hand.": ~
     # ui.c
     "Settings": ~
     # ui.c
@@ -199,7 +201,7 @@ en:
     # ui.c
     "South wind": ~
     # ui.c
-    "Tap again": ~
+    "Tap again to deal": ~
     # ui.c
     "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.": ~
     # ui.c

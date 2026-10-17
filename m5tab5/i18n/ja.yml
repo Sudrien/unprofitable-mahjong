@@ -89,9 +89,7 @@ ja:
     # ui.c
     "All Terminals": "清老頭"
     # ui.c
-    "Auto: off": "自動：オフ"
-    # ui.c
-    "Auto: on": "自動：オン"
+    "Auto-sort": "自動整列"
     # ui.c
     "Big Four Winds": "大四喜"
     # ui.c
@@ -99,7 +97,7 @@ ja:
     # ui.c
     "Clear": "消す"
     # ui.c
-    "Cleared sets and penalties will line up here.": "消した組とペナルティがここに並びます。"
+    "Clears and penalties go here.": "消した組とペナルティがここに。"
     # ui.c
     "Dark": "ダーク"
     # ui.c
@@ -173,6 +171,10 @@ ja:
     # ui.c
     "Not a set. Pick one more to discard 6.": "組になっていません。あと1枚選ぶと6枚捨てられます。"
     # ui.c
+    "Off": "オフ"
+    # ui.c
+    "On": "オン"
+    # ui.c
     "Orientation": "画面の向き"
     # ui.c
     "Outside Hand": "混全帯么九"
@@ -189,7 +191,7 @@ ja:
     # ui.c
     "Red dragon": "中"
     # ui.c
-    "Set sets aside here to build toward a bigger hand.": "組をここに置いて、大きな役を育てよう。"
+    "Set sets aside here to build a bigger hand.": "組をここに置いて、大きな役を育てよう。"
     # ui.c
     "Settings": "設定"
     # ui.c
@@ -199,7 +201,7 @@ ja:
     # ui.c
     "South wind": "南"
     # ui.c
-    "Tap again": "もう一度"
+    "Tap again to deal": "もう一度タップで配牌"
     # ui.c
     "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.": "牌をタップして組を作ろう。大きな組ほど高得点。6枚選ぶと捨てられます。"
     # ui.c

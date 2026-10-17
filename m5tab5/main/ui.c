@@ -64,10 +64,17 @@ static const theme_t *P = &THEMES[0];
 
 /* Layout, in logical pixels. The fixed parts: */
 #define M_X        (24)
-#define TOP_Y      (12)
+#define TOP_Y      (8)
 #define HAND_LIFT  (12)
-#define BTN_H      (88)
-#define TXT        (2)          /* text scale: Ark12 at 24 px */
+#define BTN_H      (80)
+/* Text scales. The panel is about 294 pixels to the inch, so Ark12 at
+ * 24 px (scale 2) is under 6 pt: too small to read across a table.
+ * Everything to read is 36 px (scale 3, about 9 pt); 24 px is kept for
+ * the line of bests and piles and the rail's values, which are glanced
+ * at, not read. */
+#define TXT        (3)
+#define SMALL      (2)
+#define LINE       (GFX_GLYPH_H(TXT) + 4)
 
 /* The parts that move with the orientation, filled by relayout() from
  * gfx_w()/gfx_h() whenever the screen turns. Landscape is 1280x720 with
@@ -79,8 +86,8 @@ typedef struct {
     int meld_label_x, meld_label_y;  /* "Melds 2/4" */
     int meld_x0, meld_y;             /* the melds themselves */
     int hand_y, cols, cols_wide;     /* cols_wide: after Add 6 */
-    int status_y, status_rows;       /* rows the second status line may wrap to */
-    int btn_y, btn_rows;
+    int status_y;
+    int btn_y;
 } layout_t;
 static layout_t L;
 
@@ -170,19 +177,19 @@ static void relayout(void)
 {
     L.land = gfx_w() > gfx_h();
     if (L.land) {
-        L.rail_y = 58; L.table_y = 104;
-        L.meld_label_x = M_X; L.meld_label_y = 140;
-        L.meld_x0 = 200; L.meld_y = 116;
+        L.rail_y = 76; L.table_y = 120;
+        L.meld_label_x = M_X; L.meld_label_y = 138;
+        L.meld_x0 = 240; L.meld_y = 128;
         L.hand_y = 222; L.cols = 9; L.cols_wide = 12;
-        L.status_y = 512; L.status_rows = 1;
-        L.btn_y = 616; L.btn_rows = 1;
+        L.status_y = 506;
+        L.btn_y = 630;
     } else {
-        L.rail_y = 104; L.table_y = 152;
-        L.meld_label_x = M_X; L.meld_label_y = 164;
-        L.meld_x0 = M_X; L.meld_y = 196;
-        L.hand_y = 304; L.cols = 6; L.cols_wide = 6;
-        L.status_y = 892; L.status_rows = 2;   /* moved up under a short hand: status_top() */
-        L.btn_y = 1068; L.btn_rows = 2;
+        L.rail_y = 134; L.table_y = 184;
+        L.meld_label_x = M_X; L.meld_label_y = 196;
+        L.meld_x0 = M_X; L.meld_y = 244;
+        L.hand_y = 330; L.cols = 6; L.cols_wide = 6;
+        L.status_y = 0;                       /* under the hand: status_top() */
+        L.btn_y = 1280 - 8 - 3 * BTN_H - 2 * 8;
     }
 }
 
@@ -195,7 +202,7 @@ static int status_top(void)
 {
     if (L.land) return L.status_y;
     const int rows = (s_g.hand_len + L.cols - 1) / L.cols;
-    return L.hand_y + rows * (tilefaces_L.h + TILEDRAW_EDGE_L + 12) + 8;
+    return L.hand_y + rows * (tilefaces_L.h + TILEDRAW_EDGE_L + 12) - 4;
 }
 static int hand_pitch(void) { return hand_cols() == 12 ? 102 : 110; }
 
@@ -228,19 +235,25 @@ static int meld_x(int m)
     return x;
 }
 
-enum { B_CLEAR, B_MELD, B_ADD, B_DISCARD, B_HINT, B_SORT, B_AUTO, B_UNDO, B_NEW, B_COUNT };
-typedef struct { int x, y, w; const char *label; bool enabled, primary, cost, armed; } button_t;
+/* Auto-sort and New deal live in the gear's panel: they are settings
+ * and a rare act, and at 36 px text the other seven fill a row. */
+enum { B_CLEAR, B_MELD, B_ADD, B_DISCARD, B_HINT, B_SORT, B_UNDO, B_COUNT };
+typedef struct { int x, y, w; const char *label; bool enabled, primary, cost; } button_t;
 static button_t s_btn[B_COUNT];
+
+/* One row in landscape. Three in portrait: what a move is made with,
+ * what costs, and the helpers. */
+static const uint8_t ORDER_LAND[B_COUNT] = { B_CLEAR, B_MELD, B_ADD, B_DISCARD, B_HINT, B_SORT, B_UNDO };
+static const uint8_t ROWS_LAND[] = { 7, 0 };
+static const uint8_t ORDER_PORT[B_COUNT] = { B_CLEAR, B_MELD, B_UNDO, B_ADD, B_DISCARD, B_HINT, B_SORT };
+static const uint8_t ROWS_PORT[] = { 3, 2, 2, 0 };
 
 static void layout_buttons(void)
 {
     static const char *const base[B_COUNT] = { N_("Clear"), N_("Meld"), N_("Add 6"), N_("Discard 6"), N_("Hint"),
-                                               N_("Sort"), N_("Auto: off"), N_("Undo"), N_("New deal") };
-    const int64_t now = esp_timer_get_time();
+                                               N_("Sort"), N_("Undo") };
     for (int b = 0; b < B_COUNT; b++) s_btn[b].label = _(base[b]);
     if (um_is_kong_upgrade(&s_g, s_sel)) s_btn[B_MELD].label = _("Make kong");
-    if (s_prefs.auto_sort) s_btn[B_AUTO].label = _("Auto: on");
-    if (now < s_armed_until) s_btn[B_NEW].label = _("Tap again");
 
     uint8_t k[UM_MAX_SEL];
     const int n = um_sel_kinds(&s_g, s_sel, k);
@@ -250,44 +263,37 @@ static void layout_buttons(void)
     s_btn[B_DISCARD].enabled = um_can_discard(&s_g, s_sel);
     s_btn[B_HINT].enabled = um_in_hand(&s_g) > 0;
     s_btn[B_SORT].enabled = um_in_hand(&s_g) > 0;
-    s_btn[B_AUTO].enabled = true;
     s_btn[B_UNDO].enabled = s_undo_n > 0;
-    s_btn[B_NEW].enabled = true;
     s_btn[B_CLEAR].primary = true;
     s_btn[B_ADD].cost = s_btn[B_DISCARD].cost = true;
-    s_btn[B_NEW].armed = now < s_armed_until;
 
-    /* one row in landscape; two in portrait, Clear..Hint over Sort..New */
+    const uint8_t *order = L.land ? ORDER_LAND : ORDER_PORT, *rows = L.land ? ROWS_LAND : ROWS_PORT;
     const int gap = L.land ? 10 : 8;
-    const int split = L.btn_rows == 1 ? B_COUNT : B_SORT;
     /* As roomy as the widest row allows: Japanese labels are longer than
      * English ones, so the padding gives way before a row overflows. */
-    for (int pad = L.land ? 28 : 20, min_w = L.land ? 104 : 96; ; pad -= 4, min_w -= 8) {
+    for (int pad = 40, min_w = 120; ; pad -= 4, min_w -= 8) {
         for (int b = 0; b < B_COUNT; b++) {
             int w = gfx_text_w(s_btn[b].label, TXT) + pad + (s_btn[b].cost ? gfx_text_w(" -6", TXT) : 0);
             s_btn[b].w = w < min_w ? min_w : w;
         }
         int widest = 0;
-        for (int row = 0, first = 0; first < B_COUNT; row++) {
-            const int last = row == 0 ? split : B_COUNT;
+        for (int r = 0, first = 0; rows[r]; first += rows[r], r++) {
             int total = 0;
-            for (int b = first; b < last; b++) total += s_btn[b].w + (b > first ? gap : 0);
+            for (int i = first; i < first + rows[r]; i++) total += s_btn[order[i]].w + (i > first ? gap : 0);
             if (total > widest) widest = total;
-            first = last;
         }
         if (widest <= gfx_w() - 2 * M_X || pad <= 8) break;
     }
-    for (int row = 0, first = 0; first < B_COUNT; row++) {
-        const int last = row == 0 ? split : B_COUNT;
+    for (int r = 0, first = 0; rows[r]; first += rows[r], r++) {
         int total = 0;
-        for (int b = first; b < last; b++) total += s_btn[b].w + (b > first ? gap : 0);
+        for (int i = first; i < first + rows[r]; i++) total += s_btn[order[i]].w + (i > first ? gap : 0);
         int x = (gfx_w() - total) / 2;
-        for (int b = first; b < last; b++) {
-            s_btn[b].x = x;
-            s_btn[b].y = L.btn_y + row * (BTN_H + 12);
-            x += s_btn[b].w + gap;
+        for (int i = first; i < first + rows[r]; i++) {
+            button_t *bt = &s_btn[order[i]];
+            bt->x = x;
+            bt->y = L.btn_y + r * (BTN_H + gap);
+            x += bt->w + gap;
         }
-        first = last;
     }
 }
 
@@ -351,24 +357,24 @@ static void draw_top(void)
     if (s_prefs.best_points == INT32_MIN) snprintf(bp, sizeof bp, "%s", _("none")); else snprintf(bp, sizeof bp, "%d", (int)s_prefs.best_points);
     if (s_prefs.best_penalty == INT32_MIN) snprintf(bq, sizeof bq, "%s", _("none")); else pts_text(s_prefs.best_penalty, bq, sizeof bq);
     snprintf(sub, sizeof sub, _("best %s / %s    wall %d    discards %d"), bp, bq, UM_TOTAL - s_g.wall_pos, s_g.disc_n);
-    const int wa = gfx_text_w(pts, TXT), wb = gfx_text_w(pen, TXT), ws = gfx_text_w(sub, 1);
+    const int wa = gfx_text_w(pts, TXT), wb = gfx_text_w(pen, TXT), ws = gfx_text_w(sub, SMALL);
     int x, y, sx, sy;
     if (L.land) {
         x = tx - 20 - wa - wb; y = TOP_Y;
-        sx = tx - 20 - ws; sy = TOP_Y + GFX_GLYPH_H(TXT) + 2;
+        sx = tx - 20 - ws; sy = TOP_Y + GFX_GLYPH_H(TXT) + 4;
     } else {
-        x = M_X; y = 56;
+        x = M_X; y = 58;
         sx = M_X; sy = y + GFX_GLYPH_H(TXT) + 6;
     }
     gfx_draw_text(x, y, pts, TXT, wa + 2, s_g.points > 0 ? C_GREEN : C_INK);
     gfx_draw_text(x + wa, y, pen, TXT, wb + 2, um_penalty(&s_g) < 0 ? C_WARN : C_INK);
-    gfx_draw_text(sx, sy, sub, 1, ws + 2, C_MUTED);
+    gfx_draw_text(sx, sy, sub, SMALL, ws + 2, C_MUTED);
 }
 
 static void draw_rail(void)
 {
     int x = M_X;
-    if (!s_g.log_n) { gfx_draw_text(x, L.rail_y + 10, _("Cleared sets and penalties will line up here."), TXT, gfx_w() - 2 * M_X, C_MUTED); return; }
+    if (!s_g.log_n) { gfx_draw_text(x, L.rail_y + 2, _("Clears and penalties go here."), TXT, gfx_w() - 2 * M_X, C_MUTED); return; }
     const int keep = s_g.log_n < UM_LOG_N ? s_g.log_n : UM_LOG_N;
     for (int j = 0; j < keep; j++) {
         const um_log_t *e = &s_g.log[(s_g.log_n - 1 - j) % UM_LOG_N];
@@ -376,11 +382,11 @@ static void draw_rail(void)
         int w;
         if (e->t == UM_LOG_ADD) {
             snprintf(v, sizeof v, "+%d", e->n);
-            w = gfx_text_w(v, TXT) + 12;
+            w = gfx_text_w(v, SMALL) + 12;
             if (x + w > gfx_w() - M_X) break;
             gfx_fill_rect(x, L.rail_y, w, 2, C_WARN); gfx_fill_rect(x, L.rail_y + 34, w, 2, C_WARN);
             gfx_fill_rect(x, L.rail_y, 2, 36, C_WARN); gfx_fill_rect(x + w - 2, L.rail_y, 2, 36, C_WARN);
-            gfx_draw_text(x + 6, L.rail_y + 6, v, TXT, w, C_WARN);
+            gfx_draw_text(x + 6, L.rail_y + 6, v, SMALL, w, C_WARN);
         } else {
             w = e->n * (tilefaces_S.w + 1);
             if (x + w > gfx_w() - M_X) break;
@@ -391,8 +397,8 @@ static void draw_rail(void)
         char pv[16];
         if (e->t == UM_LOG_ADD || e->t == UM_LOG_DISCARD) pts_text(e->v, pv, sizeof pv);
         else snprintf(pv, sizeof pv, "+%d", e->v);
-        gfx_draw_text(x + w + 4, L.rail_y + 12, pv, 1, 40, e->v < 0 ? C_WARN : C_MUTED);
-        x += w + 4 + gfx_text_w(pv, 1) + 16;
+        gfx_draw_text(x + w + 4, L.rail_y + 6, pv, SMALL, 80, e->v < 0 ? C_WARN : C_MUTED);
+        x += w + 4 + gfx_text_w(pv, SMALL) + 18;
     }
 }
 
@@ -400,12 +406,12 @@ static void draw_melds(void)
 {
     char s[32];
     snprintf(s, sizeof s, _("Melds %d/%d"), s_g.meld_n, UM_MAX_MELDS);
-    gfx_draw_text(L.meld_label_x, L.meld_label_y, s, TXT, 170, C_MUTED);
+    gfx_draw_text(L.meld_label_x, L.meld_label_y, s, TXT, L.land ? L.meld_x0 - M_X - 8 : gfx_w() - 2 * M_X, C_MUTED);
     if (!s_g.meld_n) {
         /* beside the label in landscape, under it in portrait */
-        const int ex = L.land ? L.meld_x0 : M_X, ey = L.land ? L.meld_label_y : L.meld_y + 16;
-        gfx_draw_para(ex, ey, _("Set sets aside here to build toward a bigger hand."), TXT, gfx_w() - ex - M_X,
-                      GFX_GLYPH_H(TXT) + 6, 2, C_MUTED);
+        const int ex = L.land ? L.meld_x0 : M_X, ey = L.land ? L.meld_label_y : L.meld_y;
+        gfx_draw_para(ex, ey, _("Set sets aside here to build a bigger hand."), TXT, gfx_w() - ex - M_X,
+                      LINE, L.land ? 1 : 2, C_MUTED);
         return;
     }
     int edge, gap;
@@ -524,10 +530,16 @@ static void draw_status(void)
             c2 = C_WARN;
         }
     }
-    const int w = gfx_w() - 2 * M_X;
-    const int sy = status_top();
-    if (l1[0]) gfx_draw_text(M_X, sy + 8, l1, TXT, w, C_INK);
-    if (l2[0]) gfx_draw_para(M_X, sy + 44, l2, TXT, w, GFX_GLYPH_H(TXT) + 6, L.status_rows, c2);
+    /* The tiles chosen, then what they make, wrapped to as many rows as
+     * reach the buttons. Landscape has room for the tile list only at
+     * 24 px; it repeats what the lifted tiles already show. */
+    const int w = gfx_w() - 2 * M_X, l1s = L.land ? SMALL : TXT;
+    int y = status_top() + (L.land ? 6 : 2);
+    if (l1[0]) { gfx_draw_text(M_X, y, l1, l1s, w, C_INK); y += GFX_GLYPH_H(l1s) + 8; }
+    int rows = (L.btn_y - 16 - y - GFX_GLYPH_H(TXT)) / LINE + 1;
+    if (rows > 3) rows = 3;
+    if (rows < 1) rows = 1;
+    if (l2[0]) gfx_draw_para(M_X, y, l2, TXT, w, LINE, rows, c2);
 }
 
 static void draw_buttons(void)
@@ -537,8 +549,8 @@ static void draw_buttons(void)
         const button_t *bt = &s_btn[b];
         const bool on = bt->enabled;
         const uint16_t fill = bt->primary && on ? C_ACCENT : C_RAISED;
-        const uint16_t border = bt->armed ? C_WARN : bt->primary && on ? C_ACCENT : C_LINE;
-        const uint16_t fg = !on ? C_LINE : bt->armed ? C_WARN : bt->primary ? C_ON_ACC : C_INK;
+        const uint16_t border = bt->primary && on ? C_ACCENT : C_LINE;
+        const uint16_t fg = !on ? C_LINE : bt->primary ? C_ON_ACC : C_INK;
         gfx_fill_rect(bt->x, bt->y, bt->w, BTN_H, border);
         gfx_fill_rect(bt->x + 2, bt->y + 2, bt->w - 4, BTN_H - 4, fill);
         const int tw = gfx_text_w(bt->label, TXT) + (bt->cost ? gfx_text_w(" -6", TXT) : 0);
@@ -551,24 +563,28 @@ static void draw_buttons(void)
 /* ------------------------------------------------------------------ */
 /* Settings: the gear's panel                                          */
 
-/* Three rows of choices and Done. Each choice takes effect as it is
- * tapped -- the panel turns with the screen, recolours with the theme
- * and changes language under the finger -- so there is nothing to
- * confirm and Done only closes it. */
-enum { G_ROT, G_THEME, G_LANG, G_DONE, G_COUNT };
+/* Four rows of choices, then New deal and Done. Each choice takes
+ * effect as it is tapped -- the panel turns with the screen, recolours
+ * with the theme and changes language under the finger -- so there is
+ * nothing to confirm and Done only closes it. New deal asks for a
+ * second tap, as it did as a button. In landscape the four sit in two
+ * columns, since 720 px does not hold them stacked at 36 px text. */
+enum { G_ROT, G_THEME, G_LANG, G_AUTO, G_NEW, G_DONE };
+#define G_SECTIONS (4)
 #define CHIP_H     (72)
-#define CHIP_MAX   (12)
+#define CHIP_MAX   (16)
 typedef struct { int x, y, w, group, value; const char *label; } chip_t;
 static bool s_menu;
 static chip_t s_chip[CHIP_MAX];
-static int s_chip_n, s_head_y[G_DONE], s_pan_x, s_pan_y, s_pan_w, s_pan_h, s_title_y;
+static int s_chip_n, s_head_x[G_SECTIONS], s_head_y[G_SECTIONS], s_pan_x, s_pan_y, s_pan_w, s_pan_h, s_title_y;
 
 /* landscape first, as the board starts; each followed by its flip */
 static const uint8_t ROT_ORDER[4] = { 1, 0, 3, 2 };
 static const char *const ROT_NAMES[4] = { N_("Landscape"), N_("Portrait"), N_("Landscape, flipped"), N_("Portrait, flipped") };
 static const char *const THEME_NAMES[2] = { N_("Light"), N_("Dark") };
+static const char *const AUTO_NAMES[2] = { N_("Off"), N_("On") };
 static const uint8_t LANG_ORDER[I18N_LANG_COUNT] = { I18N_EN, I18N_JA, I18N_ZH_CN };
-static const char *const HEADS[G_DONE] = { N_("Orientation"), N_("Theme"), N_("Language") };
+static const char *const HEADS[G_SECTIONS] = { N_("Orientation"), N_("Theme"), N_("Language"), N_("Auto-sort") };
 
 static bool chip_on(const chip_t *c)
 {
@@ -576,50 +592,64 @@ static bool chip_on(const chip_t *c)
     case G_ROT:   return c->value == s_prefs.rotation;
     case G_THEME: return c->value == s_prefs.theme;
     case G_LANG:  return c->value == (int)i18n_lang();
+    case G_AUTO:  return c->value == (s_prefs.auto_sort ? 1 : 0);
     default:      return false;
     }
 }
 
+static chip_t *add_chip(int group, int value, const char *label, int min_w)
+{
+    chip_t *c = &s_chip[s_chip_n++];
+    c->group = group; c->value = value; c->label = label;
+    c->w = gfx_text_w(label, TXT) + 40;
+    if (c->w < min_w) c->w = min_w;
+    return c;
+}
+
 static void layout_menu(void)
 {
-    const int pw = gfx_w() - 2 * M_X < 960 ? gfx_w() - 2 * M_X : 960;
-    const int ix = 32, iw = pw - 64, gap = 12;
-    int y = 24;
-    s_title_y = y;
-    y += GFX_GLYPH_H(TXT) + 28;
+    const int pw = gfx_w() - 2 * M_X, pad = 28, gap = 12;
+    const int cols = L.land ? 2 : 1, iw = pw - 2 * pad, cw = (iw - (cols - 1) * 32) / cols;
+    s_title_y = 20;
+    const int top = s_title_y + GFX_GLYPH_H(TXT) + 28;
+    int col_y[2] = { top, top };
     s_chip_n = 0;
-    for (int g = 0; g < G_DONE; g++) {
+    for (int g = 0; g < G_SECTIONS; g++) {
+        const int col = cols == 2 ? g / 2 : 0, x0 = pad + col * (cw + 32);
+        int y = col_y[col];
+        s_head_x[g] = x0;
         s_head_y[g] = y;
-        y += GFX_GLYPH_H(TXT) + 12;
-        const int n = g == G_ROT ? 4 : g == G_THEME ? 2 : I18N_LANG_COUNT;
-        int cx = ix;
+        y += GFX_GLYPH_H(TXT) + 10;
+        const int n = g == G_ROT ? 4 : g == G_LANG ? I18N_LANG_COUNT : 2;
+        int cx = x0;
         for (int i = 0; i < n; i++) {
-            chip_t *c = &s_chip[s_chip_n++];
-            c->group = g;
-            c->value = g == G_ROT ? ROT_ORDER[i] : g == G_THEME ? i : LANG_ORDER[i];
             /* the languages by their own names, which no reader needs translated */
-            c->label = g == G_ROT ? _(ROT_NAMES[i]) : g == G_THEME ? _(THEME_NAMES[i]) : i18n_lang_name((i18n_lang_t)c->value);
-            int w = gfx_text_w(c->label, TXT) + 32;    /* 32: the four turns fit one row in landscape */
-            if (w < 128) w = 128;
-            if (cx > ix && cx + w > ix + iw) { cx = ix; y += CHIP_H + gap; }
-            c->x = cx; c->y = y; c->w = w;
-            cx += w + gap;
+            chip_t *c = g == G_ROT ? add_chip(g, ROT_ORDER[i], _(ROT_NAMES[i]), 128)
+                      : g == G_THEME ? add_chip(g, i, _(THEME_NAMES[i]), 128)
+                      : g == G_AUTO ? add_chip(g, i, _(AUTO_NAMES[i]), 128)
+                      : add_chip(g, LANG_ORDER[i], i18n_lang_name((i18n_lang_t)LANG_ORDER[i]), 128);
+            if (cx > x0 && cx + c->w > x0 + cw) { cx = x0; y += CHIP_H + gap; }
+            c->x = cx; c->y = y;
+            cx += c->w + gap;
         }
-        y += CHIP_H + 32;
+        col_y[col] = y + CHIP_H + 26;
     }
-    chip_t *d = &s_chip[s_chip_n++];
-    d->group = G_DONE; d->value = 0; d->label = _("Done");
-    d->w = gfx_text_w(d->label, TXT) + 80;
-    if (d->w < 180) d->w = 180;
-    d->x = ix + iw - d->w; d->y = y;
+    int y = (col_y[0] > col_y[1] ? col_y[0] : col_y[1]) + 4;
+    const bool armed = esp_timer_get_time() < s_armed_until;
+    chip_t *nd = add_chip(G_NEW, 0, armed ? _("Tap again to deal") : _("New deal"), 180);
+    nd->x = pad; nd->y = y;
+    chip_t *d = add_chip(G_DONE, 0, _("Done"), 200);
+    d->x = pw - pad - d->w; d->y = y;
+    if (nd->x + nd->w + gap > d->x) { d->y += CHIP_H + gap; y += CHIP_H + gap; }
     y += CHIP_H + 24;
-    /* across the middle, from a fixed top: a choice that rewraps the
-     * rows (a language, a turn) moves Done, but not what is above it */
+    /* centred across, from a fixed top: a choice that rewraps a row (a
+     * language, a turn) moves what is below it, never what is above */
     s_pan_w = pw; s_pan_h = y;
     s_pan_x = (gfx_w() - pw) / 2;
-    s_pan_y = L.land ? 28 : 160;
+    s_pan_y = L.land ? (gfx_h() - y) / 2 : 120;
+    if (s_pan_y < 4) s_pan_y = 4;
     s_title_y += s_pan_y;
-    for (int g = 0; g < G_DONE; g++) s_head_y[g] += s_pan_y;
+    for (int g = 0; g < G_SECTIONS; g++) { s_head_x[g] += s_pan_x; s_head_y[g] += s_pan_y; }
     for (int i = 0; i < s_chip_n; i++) { s_chip[i].x += s_pan_x; s_chip[i].y += s_pan_y; }
 }
 
@@ -627,16 +657,19 @@ static void draw_menu(void)
 {
     layout_menu();
     box(s_pan_x - 2, s_pan_y - 2, s_pan_w + 4, s_pan_h + 4, C_LINE, C_RAISED);
-    gfx_draw_text(s_pan_x + 32, s_title_y, _("Settings"), TXT, s_pan_w - 64, C_INK);
-    gfx_fill_rect(s_pan_x + 32, s_title_y + GFX_GLYPH_H(TXT) + 12, s_pan_w - 64, 2, C_LINE);
-    for (int g = 0; g < G_DONE; g++)
-        gfx_draw_text(s_pan_x + 32, s_head_y[g], _(HEADS[g]), TXT, s_pan_w - 64, C_MUTED);
+    gfx_draw_text(s_pan_x + 28, s_title_y, _("Settings"), TXT, s_pan_w - 56, C_INK);
+    gfx_fill_rect(s_pan_x + 28, s_title_y + GFX_GLYPH_H(TXT) + 12, s_pan_w - 56, 2, C_LINE);
+    for (int g = 0; g < G_SECTIONS; g++)
+        gfx_draw_text(s_head_x[g], s_head_y[g], _(HEADS[g]), TXT, s_pan_w - 56, C_MUTED);
+    const bool armed = esp_timer_get_time() < s_armed_until;
     for (int i = 0; i < s_chip_n; i++) {
         const chip_t *c = &s_chip[i];
-        const bool on = chip_on(c), primary = c->group == G_DONE;
-        box(c->x, c->y, c->w, CHIP_H, on || primary ? C_ACCENT : C_LINE, on || primary ? C_ACCENT : C_BG);
+        const bool on = chip_on(c) || c->group == G_DONE;
+        const uint16_t border = c->group == G_NEW && armed ? C_WARN : on ? C_ACCENT : C_LINE;
+        const uint16_t fg = c->group == G_NEW && armed ? C_WARN : on ? C_ON_ACC : C_INK;
+        box(c->x, c->y, c->w, CHIP_H, border, on ? C_ACCENT : C_BG);
         gfx_draw_text(c->x + (c->w - gfx_text_w(c->label, TXT)) / 2, c->y + (CHIP_H - GFX_GLYPH_H(TXT)) / 2,
-                      c->label, TXT, c->w, on || primary ? C_ON_ACC : C_INK);
+                      c->label, TXT, c->w, fg);
     }
 }
 
@@ -774,19 +807,10 @@ static void press(int b)
         undo_push();
         um_sort(&s_g);
         break;
-    case B_AUTO:
-        s_prefs.auto_sort = !s_prefs.auto_sort;
-        save_prefs(&s_prefs);
-        if (s_prefs.auto_sort) { undo_push(); um_sort(&s_g); save_game(&s_g); }
-        return;
     case B_UNDO:
         if (!undo_pop()) return;
         s_sel.hand = 0; s_sel.melds = 0;
         save_game(&s_g);
-        return;
-    case B_NEW:
-        if (esp_timer_get_time() < s_armed_until) { s_armed_until = 0; new_deal(); }
-        else s_armed_until = esp_timer_get_time() + ARM_US;
         return;
     default:
         return;
@@ -827,6 +851,14 @@ static void menu_tap(int x, int y)
             s_prefs.lang = (uint8_t)c->value;
             i18n_set_lang((i18n_lang_t)c->value);
             break;
+        case G_AUTO:
+            s_prefs.auto_sort = (uint8_t)c->value;
+            if (s_prefs.auto_sort) { undo_push(); um_sort(&s_g); save_game(&s_g); }
+            break;
+        case G_NEW:
+            if (esp_timer_get_time() < s_armed_until) { s_armed_until = 0; s_menu = false; new_deal(); }
+            else s_armed_until = esp_timer_get_time() + ARM_US;
+            return;
         default:
             s_menu = false;
             return;
@@ -900,7 +932,7 @@ void ui_run(void)
         const bool down = touch_get(&x, &y);
         if (down && !was_down) { tap(x, y); dirty = true; }
         was_down = down;
-        /* the hint glow and the armed New deal both time out on their own */
+        /* the hint glow and the armed New deal (in the panel) time out on their own */
         const int64_t now = esp_timer_get_time();
         const bool hint_on = now < s_hint_until, armed_on = now < s_armed_until;
         if (hint_on != (hint_seen != 0) || armed_on != (armed_seen != 0)) dirty = true;

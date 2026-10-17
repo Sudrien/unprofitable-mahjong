@@ -89,9 +89,7 @@ zh-CN:
     # ui.c
     "All Terminals": "清幺九"
     # ui.c
-    "Auto: off": "自动：关"
-    # ui.c
-    "Auto: on": "自动：开"
+    "Auto-sort": "自动排序"
     # ui.c
     "Big Four Winds": "大四喜"
     # ui.c
@@ -99,7 +97,7 @@ zh-CN:
     # ui.c
     "Clear": "消除"
     # ui.c
-    "Cleared sets and penalties will line up here.": "已消除的组合和罚分会显示在这里。"
+    "Clears and penalties go here.": "已消除的组合和罚分在这里。"
     # ui.c
     "Dark": "深色"
     # ui.c
@@ -173,6 +171,10 @@ zh-CN:
     # ui.c
     "Not a set. Pick one more to discard 6.": "不成组合。再选1张就能弃6张。"
     # ui.c
+    "Off": "关"
+    # ui.c
+    "On": "开"
+    # ui.c
     "Orientation": "屏幕方向"
     # ui.c
     "Outside Hand": "全带幺"
@@ -189,7 +191,7 @@ zh-CN:
     # ui.c
     "Red dragon": "红中"
     # ui.c
-    "Set sets aside here to build toward a bigger hand.": "把组合放到这里，慢慢凑大牌。"
+    "Set sets aside here to build a bigger hand.": "把组合放到这里，慢慢凑大牌。"
     # ui.c
     "Settings": "设置"
     # ui.c
@@ -199,7 +201,7 @@ zh-CN:
     # ui.c
     "South wind": "南风"
     # ui.c
-    "Tap again": "再点一次"
+    "Tap again to deal": "再点一次发牌"
     # ui.c
     "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.": "点牌组成组合，组合越大得分越高。选6张可以弃牌。"
     # ui.c
