@@ -8,7 +8,7 @@ Requires Node.js. Run them from the repository root:
 node sim/hint.js index.html 5                              # follow Hint
 node sim/careful.js index.html 50                          # careful, no leftovers
 node sim/strategies.js index.html 50 8 melds summary noadd # big hands, never add
-node sim/strategies.js index.html 5 8 melds rows windbank  # bank winds, one row per game
+node sim/strategies.js index.html 5 8 melds rows wind       # wind mode, one row per game
 ```
 
 The second argument is the number of games.
@@ -26,4 +26,4 @@ The second argument is the number of games.
   - **min set value:** the smallest set the bot waits for.
   - **melds / nomelds:** whether it may set melds aside.
   - **rows / summary:** one line per game, or totals at the end.
-  - **mode:** `big`, `noadd`, `hybrid<wall>` (careful once the wall drops below `<wall>` tiles), `carefulmelds`, `stash<n>`, `windbank` or `honorbank`.
+  - **mode:** `big`, `noadd`, `hybrid<wall>` (careful once the wall drops below `<wall>` tiles), `carefulmelds`, `stash<n>`, `wind` or `honor`.

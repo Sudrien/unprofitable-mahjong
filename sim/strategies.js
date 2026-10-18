@@ -1,5 +1,5 @@
 // Strategy bots. Usage: node sim/strategies.js index.html [games] [min set value] [melds|nomelds] [rows|summary] [mode]
-// Modes: big, noadd, hybrid<wall>, carefulmelds, stash<n>, windbank, honorbank
+// Modes: big, noadd, hybrid<wall>, carefulmelds, stash<n>, wind, honor
 // "None left" bot: only clears sets that keep every remaining tile (shown + unseen) groupable into sets.
 const fs = require('fs');
 const html = fs.readFileSync(process.argv[2], 'utf8');
@@ -151,8 +151,8 @@ for (let g = 1; g <= N; g++) {
     const byBest = (a, b) => (b.safe - a.safe) || (b.v - a.v) || (b.ks.length - a.ks.length);
     if (!G.pool()) { const c = cands.sort(byBest)[0]; if (!c) { end = 'stranded'; break; } take(c); continue; }
     // bank: keep winds (and dragons) out of ordinary sets and park them in the discard pile 6 at a time
-    const BANKING = MODE === 'windbank' || MODE === 'honorbank';
-    const bank = new Set(MODE === 'honorbank' ? [27, 28, 29, 30, 31, 32, 33] : [27, 28, 29, 30]);
+    const BANKING = MODE === 'wind' || MODE === 'honor';
+    const bank = new Set(MODE === 'honor' ? [27, 28, 29, 30, 31, 32, 33] : [27, 28, 29, 30]);
     const BANK_HANDS = new Set(['big four winds', 'little four winds', 'all honors', 'big three dragons', 'little three dragons', 'thirteen orphans']);
     if (BANKING) {
       const outThere = G.S.wall.concat(G.S.discards).some(k => bank.has(k));
