@@ -509,6 +509,28 @@ void um_new_from_wall(um_game_t *g, const uint8_t *wall)
     for (int i = 0; i < UM_HAND; i++) g->hand[i] = (int8_t)wall[i];
     g->hand_len = UM_HAND;
     g->wall_pos = UM_HAND;
+    g->had = UM_HAD_TRACKED;
+}
+
+/* holdsPair */
+bool um_set_holds_pair(um_set_t t, const uint8_t *kinds, int n)
+{
+    if (t == UM_PAIR || t == UM_THIRTEEN_ORPHANS || t == UM_NINE_GATES) return true;
+    uint8_t out[UM_MAX_SEL], glen[UM_MAX_GROUPS];
+    const int ng = um_limit_groups(t, kinds, n, out, glen);
+    for (int i = 0; i < ng; i++) if (glen[i] == 2) return true;
+    return false;
+}
+
+void um_note_set(um_game_t *g, um_set_t t, const uint8_t *kinds, int n)
+{
+    if (um_set_is_poker_win(t)) g->had |= UM_HAD_POKER;
+    if (um_set_holds_pair(t, kinds, n)) g->had |= UM_HAD_PAIR;
+}
+
+bool um_all_cleared(const um_game_t *g)
+{
+    return um_pool(g) == 0 && um_in_hand(g) == 0 && g->meld_n == 0;
 }
 
 void um_new(um_game_t *g, uint32_t seed)
@@ -682,6 +704,7 @@ bool um_clear(um_game_t *g, um_sel_t s, um_set_t *t_out, int *v_out)
     const int v = um_set_value(t, kinds, n);
     g->points += v;
     log_push(g, t, kinds, n, v);
+    um_note_set(g, t, kinds, n);
     um_finish_check(g);
     if (t_out) *t_out = t;
     if (v_out) *v_out = v;
@@ -1072,6 +1095,7 @@ bool um_valid(const um_game_t *g)
     uint8_t mok;
     memcpy(&mok, &g->moves_ok, 1);
     if (mok > 1 || g->mv_len > UM_MOVES_BYTES) return false;
+    if (g->had & ~(UM_HAD_POKER | UM_HAD_PAIR | UM_HAD_TRACKED)) return false;
     /* now safe to count */
     uint8_t rem[UM_KINDS];
     um_remaining(g, rem);

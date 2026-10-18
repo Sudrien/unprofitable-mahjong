@@ -8,6 +8,8 @@
  *     and the 32 entries that were kept, newest last, renumbered from 0;
  *   - a version 2 game (no move record) is read as it was, with no moves
  *     and moves_ok false, and so are version 1 games;
+ *   - a version 3 game (no game number or had) is read with its moves,
+ *     and both 0;
  *   - a save of the wrong size or version is turned down.
  *
  * SPDX-License-Identifier: MIT
@@ -170,15 +172,30 @@ int main(void)
         CHECK(!back.moves_ok && !back.mv_len && um_valid(&back), "version 2 game: read with moves it never kept");
     }
 
+    /* version 3: today's game up to the game number */
+    {
+        static uint8_t b[4096];
+        const size_t v3 = (offsetof(um_game_t, game_no) + 3) / 4 * 4;
+        const uint32_t hdr[2] = { 3, (uint32_t)v3 };
+        g.game_no = 9; g.had |= UM_HAD_PAIR;     /* not in a version 3 save */
+        memcpy(b, hdr, sizeof hdr);
+        memcpy(b + 8, &g, v3);
+        put("game", b, 8 + v3);
+        CHECK(save_load_game(&back), "version 3 game: not read");
+        CHECK(!memcmp(&g, &back, offsetof(um_game_t, game_no)), "version 3 game: changed in reading");
+        CHECK(back.moves_ok && back.mv_len == g.mv_len, "version 3 game: lost its moves");
+        CHECK(!back.game_no && !back.had && um_valid(&back), "version 3 game: read with a number or tracking it never had");
+    }
+
     const size_t v1 = (offsetof(um_game_t, log) + V1_LOG_N * sizeof(um_log_t) + 3) / 4 * 4;
     save_v1(&g, 1, (uint32_t)v1 + 4, 8 + v1 + 4);
     CHECK(!save_load_game(&back), "a version 1 save of the wrong size was read");
     save_v1(&g, 3, (uint32_t)sizeof(um_game_t), 8 + sizeof(um_game_t));
-    CHECK(!save_load_game(&back), "a version 3 save was read");
+    CHECK(!save_load_game(&back), "a version 3 save of version 4's size was read");
     save_v1(&g, 2, (uint32_t)v1, 8 + v1);
     CHECK(!save_load_game(&back), "a version 2 save of version 1's size was read");
 
     if (s_bad) return 1;
-    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves; foreign saves refused\n");
+    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused\n");
     return 0;
 }

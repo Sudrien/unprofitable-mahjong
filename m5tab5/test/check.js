@@ -12,6 +12,8 @@
 //              them to the same end, and packs the same payload
 //   guide      main/guide.c against the web version's GUIDE: sections,
 //              names, notes, tiles, and the set and points each makes
+//   ach        core/umach.c against the web version's achievements: the
+//              same script of games through both, every record compared
 //
 // Usage: node check.js [umtest path] [games] [guidecheck path]
 //
@@ -31,6 +33,30 @@ const core = js.slice(js.indexOf('const HAND'), js.indexOf('/* ---------- render
 const make = new Function(`function render(){}; ${core};
   return { deal, setS: v => { S = v; }, get S() { return S; }, sel, clearSet, meldSet, addSix, discardSix, discardSet, sortHand,
            findSet, penalty, classify, setValue, hasBonus, remaining, meldKeys, limitGroups, LIMIT, readCode, packGame };`);
+
+// The web version's achievements: its "firsts" section, from the render
+// half, run on the rules above with storage in a Map and the celebration
+// written down rather than drawn.
+function makeAch() {
+  const a = js.indexOf('/* ---------- firsts'), b = js.indexOf('/* ---------- limit hand celebration');
+  const g0 = js.indexOf('const R = (k, n)'), g1 = js.indexOf('function buildGuide');
+  const f0 = js.indexOf('// every kind of set there is a first time for'), f1 = js.indexOf('buildGuide();', f0);
+  return new Function(`
+    const localStorage = (() => { const m = new Map(); return { getItem: k => m.has(k) ? m.get(k) : null, setItem: (k, v) => m.set(k, String(v)), removeItem: k => m.delete(k) }; })();
+    const L = en => en, pick = en => en, celebs = [];
+    function render() {} function buildGuide() {} function celebrate(t, kinds, v, award) { celebs.push(award); }
+    const queueMicrotask = f => f();
+    ${core}
+    ${js.slice(g0, g1)}
+    ${js.slice(f0, f1)}
+    ${js.slice(a, b)}
+    return { setS: v => { S = v; }, get S() { return S; }, nextGame, setAward, winAwards, holdsPair, isPoker, celebs, FIRSTS, WINS, FLOOD_NAME,
+             get firsts() { return firsts; }, get fulls() { return fulls; }, get wins() { return wins; }, get flood() { return flood; }, gamesPlayed };`)();
+}
+const ACH = makeAch();
+// what a game's clears included, as core's g->had: bit 0 poker, bit 1 a pair, bit 7 tracked
+const hadOf = log => log.filter(e => e.t !== 'add' && e.t !== 'discard')
+  .reduce((h, e) => h | (ACH.isPoker(e.t) ? 1 : 0) | (ACH.holdsPair(e) ? 2 : 0), 128);
 
 let failures = 0;
 const fail = msg => { failures++; if (failures <= 20) console.error('MISMATCH ' + msg); };
@@ -80,11 +106,11 @@ function classifyCheck() {
     .toString().trim().split('\n');
   cases.forEach((ks, i) => {
     const t = G.classify(ks);
-    const want = `${t || ''}|${t ? G.setValue(t, ks) : 0}|${t ? (G.hasBonus(t, ks) ? 1 : 0) : 0}` +
+    const want = `${t || ''}|${t ? G.setValue(t, ks) : 0}|${t ? (G.hasBonus(t, ks) ? 1 : 0) : 0}|${t && ACH.holdsPair({ t, k: ks }) ? 1 : 0}` +
       (t && G.LIMIT.has(t) ? '|' + G.limitGroups(t, ks).map(g => g.join(',')).join('/') : '');
     if (out[i] !== want) fail(`classify [${ks}] C=${out[i]} JS=${want}`);
   });
-  console.log(`classify: ${cases.length} groups compared, ${limits} of them limit hands, with their grouping`);
+  console.log(`classify: ${cases.length} groups compared, ${limits} of them limit hands, with their grouping, and whether each holds a pair`);
 }
 
 /* ---------- deal ---------- */
@@ -160,7 +186,7 @@ function jsState(G) {
   return `S ${S.hand.length} ${S.hand.map(k => k === null ? -1 : k).join(' ')} | ${S.melds.length}` +
     (S.melds.length ? ' ' + S.melds.map(m => m.join(',')).join(' ') : '') +
     ` | ${S.wall.length} ${S.discards.length}${S.discards.length ? ' ' + S.discards.join(' ') : ''}` +
-    ` | ${S.points} ${S.score} ${G.penalty()} ${S.done ? 1 : 0} | ${mask(G.findSet(true))} ${mask(G.findSet(false))} | ${lone}`;
+    ` | ${S.points} ${S.score} ${G.penalty()} ${S.done ? 1 : 0} | ${mask(G.findSet(true))} ${mask(G.findSet(false))} | ${lone} | ${hadOf(S.log)}`;
 }
 
 function playCheck() {
@@ -192,7 +218,67 @@ function playCheck() {
   console.log(`play: ${GAMES} games, ${moves} moves compared`);
 }
 
+/* ---------- achievements ---------- */
+// A script of games: each deals, clears some sets and may end in a win.
+// Games lean on a few sets at a time, so Full comes up, some clear no
+// pairs or no poker hands, a few are saved before games were counted, and
+// the last ones clear every set so the river floods.
+function achCheck() {
+  const A = ACH, C = [];   // C: the guide's examples, one or more for each set
+  const g0 = js.indexOf('const R = (k, n)'), g1 = js.indexOf('function buildGuide');
+  const GUIDE = new Function(js.slice(g0, g1) + '; return GUIDE;')();
+  const G = make();
+  for (const [, items] of GUIDE) for (const [, groups] of items) C.push(groups.flat());
+  for (const n of [4, 6, 7, 8]) C.push([...Array(n).keys()].map(i => 9 + i));
+  const sets = C.map(k => ({ t: G.classify(k), k })), byT = new Map(sets.map(e => [e.t, e]));
+  if (A.FIRSTS.some(t => !byT.has(t)) || byT.size !== A.FIRSTS.length) fail(`ach: examples cover ${byT.size} sets, the web counts ${A.FIRSTS.length}`);
+  let seed = 777;
+  const rnd = n => { seed = (seed * 1103515245 + 12345) >>> 0; return (seed >>> 8) % n; };
+  const script = [];
+  const GAMES_N = 400;
+  for (let gi = 0; gi < GAMES_N; gi++) {
+    const legacy = gi > 0 && rnd(25) === 0, s = (rnd(1 << 24) * 256 + rnd(256)) >>> 0;
+    script.push({ op: legacy ? 'U' : 'N', seed: s });
+    const mode = rnd(4);   // 0 any, 1 no pairs, 2 no poker, 3 a few favorites
+    const pool = mode === 1 ? sets.filter(e => !A.holdsPair(e)) : mode === 2 ? sets.filter(e => !A.isPoker(e.t))
+      : mode === 3 ? sets.slice(gi % 7, gi % 7 + 5) : sets;
+    const last = gi >= GAMES_N - 3;
+    const clears = last ? sets.slice() : Array.from({ length: 1 + rnd(10) }, () => pool[rnd(pool.length)]);
+    for (const e of clears) script.push({ op: 'C', e });
+    if (rnd(2) === 0 || last) script.push({ op: 'W' });
+  }
+  const out = execFileSync(UMTEST, ['ach'], {
+    input: script.map(x => x.op === 'C' ? `C ${x.e.t}|${x.e.k.join(',')}` : x.op === 'W' ? 'W' : `${x.op} ${x.seed}`).join('\n') + '\n',
+    maxBuffer: 1 << 28 }).toString().trim().split('\n');
+  const norm = line => line.split(' | ').map(p => p.split(';').sort().join(';')).join(' | ');
+  const recs = (name, m) => [name, ...[...m].map(([t, r]) => `${t}=${r.g}/${r.s}`)].join(';');
+  let flooded = 0, fulls = 0, won = 0, legacy = false, legacyWins = 0;
+  script.forEach((x, i) => {
+    A.celebs.length = 0;
+    let award = '-';
+    if (x.op === 'N' || x.op === 'U') legacy = x.op === 'U';
+    if (x.op === 'N' || x.op === 'U') A.setS({ seed: x.seed, game: x.op === 'N' ? A.nextGame() : undefined, log: [], hand: [], wall: [], discards: [], melds: [] });
+    else if (x.op === 'C') {
+      A.S.log.push({ t: x.e.t, k: x.e.k.slice().sort((a, b) => a - b), v: 0 });
+      const a = A.setAward(x.e.t);
+      award = !a ? '-' : a.kicker.startsWith('First') ? 'first' : a.kicker.startsWith('Full') ? 'full' : '?';
+    } else if (!legacy) A.winAwards();
+    // a game saved before games were counted had nothing tracked on the
+    // Tab5, so it earns no win there; the web version would read its log
+    else legacyWins++;
+    const flood = A.celebs.some(c => c && c.name === A.FLOOD_NAME) ? 1 : 0;
+    const wins = A.celebs.reduce((m, c) => { const w = c && A.WINS.findIndex(([, name]) => name === c.name); return w >= 0 && c ? m | (1 << w) : m; }, 0);
+    const want = `R ${award} ${flood} ${wins} ${A.gamesPlayed()} | ${recs('first', A.firsts)} | ${recs('full', A.fulls)} | ${recs('win', A.wins)} | flood${A.flood ? `;${A.flood.g}/${A.flood.s}` : ''}`;
+    if (norm(out[i] || '') !== norm(want)) fail(`ach step ${i + 1} (${x.op}${x.e ? ' ' + x.e.t : ''})\n   C: ${out[i]}\n  JS: ${want}`);
+    flooded |= flood; fulls += award === 'full'; won |= wins;
+  });
+  if (!flooded || !fulls || won !== 3) fail(`ach: the script never reached everything (flood ${flooded}, fulls ${fulls}, wins ${won})`);
+  if (!legacyWins) fail('ach: no game saved before games were counted ended in a win');
+  console.log(`ach: ${script.length} steps over ${GAMES_N} games, ${fulls} sets full, both wins and the flood, ${legacyWins} older games won; records the same`);
+}
+
 classifyCheck();
+achCheck();
 dealCheck();
 playCheck();
 codeCheck();

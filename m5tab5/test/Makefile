@@ -12,8 +12,8 @@ CFLAGS ?= -std=c11 -O1 -g -Wall -Wextra -Werror -fsanitize=address,undefined -fn
 GAMES  ?= 2000
 DEALS  ?= 500
 
-umtest: umtest.c ../core/umcore.c ../core/umcore.h ../core/umreplay.c ../core/umreplay.h
-	$(CC) $(CFLAGS) -I../core -o $@ umtest.c ../core/umcore.c ../core/umreplay.c
+umtest: umtest.c ../core/umcore.c ../core/umcore.h ../core/umreplay.c ../core/umreplay.h ../core/umach.c ../core/umach.h
+	$(CC) $(CFLAGS) -I../core -o $@ umtest.c ../core/umcore.c ../core/umreplay.c ../core/umach.c
 
 # main/save.c over an in-memory NVS (fake/)
 savecheck: savecheck.c ../main/save.c ../main/save.h ../core/umcore.c ../core/umcore.h fake/*.h

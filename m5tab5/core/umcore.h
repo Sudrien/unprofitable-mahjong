@@ -130,7 +130,28 @@ typedef struct {
     uint8_t  moves_ok;
     uint16_t mv_len;
     uint8_t  mv[UM_MOVES_BYTES];
+    /* For the achievements (umach.h), after the moves so a game saved
+     * before them reads as a prefix of this one, with both 0: a game with
+     * no number, and nothing known about what it cleared.
+     * game_no is the device's count of games when this one was dealt;
+     * had is what its clears included, as the web version reads its
+     * S.log at the end of a game. In the struct, so undo takes it back. */
+    uint32_t game_no;
+    uint8_t  had;
 } um_game_t;
+#define UM_HAD_POKER    (0x01)  /* a poker hand was cleared, royal flush included */
+#define UM_HAD_PAIR     (0x02)  /* a set holding a pair was cleared */
+#define UM_HAD_TRACKED  (0x80)  /* dealt by this build: the bits above cover every clear */
+
+/* A set holds a pair (holdsPair): it is a pair, Thirteen Orphans or Nine
+ * Gates, or it splits into sets one of which is a pair -- two pair, a
+ * full house, a flush made of a chow and a pair, Seven Pairs, any four
+ * sets and a pair. */
+bool um_set_holds_pair(um_set_t t, const uint8_t *kinds, int n);
+/* Poker for the no-poker win: the four poker hands and the royal flush. */
+static inline bool um_set_is_poker_win(um_set_t t) { return t == UM_TWO_PAIR || t == UM_FLUSH || t == UM_STRAIGHT || t == UM_FULL_HOUSE || t == UM_ROYAL_FLUSH; }
+/* Records a clear in g->had; um_clear does this itself. */
+void um_note_set(um_game_t *g, um_set_t t, const uint8_t *kinds, int n);
 
 /* A new solvable deal from `seed` (any value; 0 is remapped). */
 void um_new(um_game_t *g, uint32_t seed);
@@ -182,6 +203,8 @@ bool um_hint(const um_game_t *g, um_sel_t *out);   /* safe first, then any */
  * the game done the first time it is true, and returns true then. */
 bool um_is_over(const um_game_t *g);
 bool um_finish_check(um_game_t *g);
+/* Every tile cleared: nothing on the table, in the melds or left to draw. */
+bool um_all_cleared(const um_game_t *g);
 
 /* Every field a game is read through is in range: tile kinds below
  * UM_KINDS and at most four of each still in play, lengths and counts

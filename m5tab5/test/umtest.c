@@ -23,6 +23,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "umcore.h"
+#include "umach.h"
 #include "umreplay.h"
 
 #include <stdio.h>
@@ -40,9 +41,10 @@ static int classify_mode(void)
         uint8_t k[64];
         int n = 0;
         for (char *p = strtok(line, " \t\r\n"); p && n < 64; p = strtok(NULL, " \t\r\n")) k[n++] = (uint8_t)atoi(p);
-        if (n > UM_MAX_SEL) { puts("|0|0"); continue; }
+        if (n > UM_MAX_SEL) { puts("|0|0|0"); continue; }
         const um_set_t t = um_classify(k, n);
-        printf("%s|%d|%d", um_set_key(t), t ? um_set_value(t, k, n) : 0, t ? (int)um_set_has_bonus(t, k, n) : 0);
+        printf("%s|%d|%d|%d", um_set_key(t), t ? um_set_value(t, k, n) : 0, t ? (int)um_set_has_bonus(t, k, n) : 0,
+               t ? (int)um_set_holds_pair(t, k, n) : 0);
         /* and a limit hand's groups, as the celebration shows them */
         if (um_set_is_limit(t)) {
             uint8_t out[UM_MAX_SEL], glen[UM_MAX_GROUPS];
@@ -74,8 +76,8 @@ static void print_state(const um_game_t *g)
     }
     printf(" | %d %d", UM_TOTAL - g->wall_pos, g->disc_n);
     for (int i = 0; i < g->disc_n; i++) printf(" %d", g->disc[(g->disc_pos + i) % UM_TOTAL]);
-    printf(" | %d %d %d %d | %u %u | %u\n", (int)g->points, (int)g->score, um_penalty(g), (int)g->done,
-           fs ? (unsigned)hs.hand : 0u, fa ? (unsigned)ha.hand : 0u, (unsigned)um_lone_honors(g));
+    printf(" | %d %d %d %d | %u %u | %u | %u\n", (int)g->points, (int)g->score, um_penalty(g), (int)g->done,
+           fs ? (unsigned)hs.hand : 0u, fa ? (unsigned)ha.hand : 0u, (unsigned)um_lone_honors(g), (unsigned)g->had);
 }
 
 /* a random selection of n hand tiles, maybe with a meld */
@@ -277,8 +279,71 @@ static void code_mode(uint32_t seed, int games)
     }
 }
 
+/* ach: a script of games, one line each step --
+ *   N <seed>      a new deal (U <seed>: one saved before games were counted)
+ *   C <key>|<k,k,...>   that set cleared
+ *   W             the game ends with every tile cleared
+ * and after each, the award and every record, for check.js to compare
+ * with the web version's. */
+static um_ach_t s_ach;
+static um_game_t s_ag;
+
+static void ach_recs(const char *name, const um_rec_t *r)
+{
+    printf("%s", name);
+    for (int t = UM_NONE + 1; t < UM_SET_COUNT; t++) if (r[t].game) printf(";%s=%u/%u", um_set_key((um_set_t)t), (unsigned)r[t].game, (unsigned)r[t].seed);
+}
+
+static int ach_mode(void)
+{
+    static char line[512];
+    memset(&s_ach, 0, sizeof s_ach);
+    while (fgets(line, sizeof line, stdin)) {
+        line[strcspn(line, "\r\n")] = 0;
+        const char *award = "-";
+        int flood = 0, wins = 0;
+        if (line[0] == 'N' || line[0] == 'U') {
+            memset(&s_ag, 0, sizeof s_ag);
+            s_ag.rng = (uint32_t)strtoul(line + 2, NULL, 10);
+            s_ag.wall_pos = UM_TOTAL;
+            s_ag.hand_len = UM_HAND;
+            for (int i = 0; i < UM_MAX_HAND; i++) s_ag.hand[i] = UM_EMPTY;
+            if (line[0] == 'N') { s_ag.had = UM_HAD_TRACKED; um_ach_new_game(&s_ach, &s_ag); }
+        } else if (line[0] == 'C') {
+            char *bar = strchr(line, '|');
+            if (!bar) return 2;
+            *bar = 0;
+            um_set_t t = UM_NONE;
+            for (int i = UM_NONE + 1; i < UM_SET_COUNT; i++) if (!strcmp(um_set_key((um_set_t)i), line + 2)) t = (um_set_t)i;
+            uint8_t k[UM_MAX_SEL];
+            int n = 0;
+            for (char *p = strtok(bar + 1, ","); p && n < UM_MAX_SEL; p = strtok(NULL, ",")) k[n++] = (uint8_t)atoi(p);
+            if (!t || um_classify(k, n) != t) { fprintf(stderr, "ach: %s is not %s\n", bar + 1, line + 2); return 2; }
+            um_note_set(&s_ag, t, k, n);
+            s_ag.log_n++;
+            bool f = false;
+            const um_award_t a = um_ach_clear(&s_ach, &s_ag, t, &f);
+            award = a == UM_AWARD_FIRST ? "first" : a == UM_AWARD_FULL ? "full" : "-";
+            flood = f;
+        } else if (line[0] == 'W') {
+            wins = um_ach_win(&s_ach, &s_ag);
+        }
+        if (!um_ach_valid(&s_ach)) { fprintf(stderr, "ach: um_ach_valid refused the records\n"); return 1; }
+        printf("R %s %d %d %u | ", award, flood, wins, (unsigned)s_ach.games);
+        ach_recs("first", s_ach.first); printf(" | ");
+        ach_recs("full", s_ach.full); printf(" | win");
+        static const char *WN[UM_WIN_N] = { "no poker", "no pairs" };
+        for (int w = 0; w < UM_WIN_N; w++) if (s_ach.win[w].game) printf(";%s=%u/%u", WN[w], (unsigned)s_ach.win[w].game, (unsigned)s_ach.win[w].seed);
+        printf(" | flood");
+        if (s_ach.flood.game) printf(";%u/%u", (unsigned)s_ach.flood.game, (unsigned)s_ach.flood.seed);
+        printf("\n");
+    }
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
+    if (argc >= 2 && !strcmp(argv[1], "ach")) return ach_mode();
     if (argc >= 4 && !strcmp(argv[1], "code")) { code_mode((uint32_t)strtoul(argv[2], NULL, 10), atoi(argv[3])); return 0; }
     if (argc >= 4 && !strcmp(argv[1], "deal")) { deal_mode((uint32_t)strtoul(argv[2], NULL, 10), atoi(argv[3])); return 0; }
     if (argc >= 2 && !strcmp(argv[1], "valid")) return valid_mode();

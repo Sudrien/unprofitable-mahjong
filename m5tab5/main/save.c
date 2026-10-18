@@ -14,7 +14,7 @@
 
 static const char *TAG = "save";
 #define NS          "umj"
-#define GAME_VER    (3u)    /* 3: the moves are kept, for replay codes; 2: the rail keeps 64 */
+#define GAME_VER    (4u)    /* 4: the game's number and what it cleared, for achievements; 3: the moves are kept, for replay codes; 2: the rail keeps 64 */
 
 /* Version 1 is version 2 with a 32-entry log: the log is the last member
  * and everything before it is the same, so a version 1 game is read by
@@ -23,7 +23,12 @@ static const char *TAG = "save";
 /* Version 2 is version 3 without the move record, which is last: it is
  * read as it is, with no moves and moves_ok false, so it plays on but
  * gives no replay code -- its moves before now were never kept. */
+/* Version 3 is version 4 without game_no and had, which are last: it is
+ * read with both 0, a game with no number that has tracked nothing, so
+ * it takes a number at its first achievement and earns no win. */
 #define TAIL        offsetof(um_game_t, moves_ok)
+#define V3_TAIL     offsetof(um_game_t, game_no)
+#define V3_SIZE     ((V3_TAIL + _Alignof(um_game_t) - 1) / _Alignof(um_game_t) * _Alignof(um_game_t))
 #define V2_SIZE     ((TAIL + _Alignof(um_game_t) - 1) / _Alignof(um_game_t) * _Alignof(um_game_t))
 #define V1_LOG_N    (32)
 #define V1_SIZE     ((offsetof(um_game_t, log) + V1_LOG_N * sizeof(um_log_t) + _Alignof(um_game_t) - 1) \
@@ -69,6 +74,9 @@ bool save_load_game(um_game_t *g)
         n->log_n = (uint16_t)keep;
         memset((uint8_t *)n + TAIL, 0, sizeof *n - TAIL);
         ESP_LOGI(TAG, "read a version 1 game");
+    } else if (s_blob.ver == 3 && s_blob.size == V3_SIZE && len == offsetof(blob_t, g) + V3_SIZE) {
+        memset((uint8_t *)&s_blob.g + V3_TAIL, 0, sizeof s_blob.g - V3_TAIL);
+        ESP_LOGI(TAG, "read a version 3 game");
     } else if (s_blob.ver == 2 && s_blob.size == V2_SIZE && len == offsetof(blob_t, g) + V2_SIZE) {
         memset((uint8_t *)&s_blob.g + TAIL, 0, sizeof s_blob.g - TAIL);
         ESP_LOGI(TAG, "read a version 2 game");

@@ -174,6 +174,15 @@ kept, are still read. check.js also takes the Tab5's replay codes from
 `umtest code` and has the web version read and replay them, and pack
 the same moves into the same payload, byte for byte.
 
+The achievements are in `core/umach.c`, ahead of the screen that will
+show them. check.js runs one script of 400 games -- deals, clears,
+wins, a few games saved before games were counted -- through it and
+through the web version's own achievement code, and compares every
+record after every step: each set's First and Full, both wins, and The
+Yellow River Floods Again, with the game and seed each was earned in.
+It also checks, for every tile group above, that both agree whether it
+holds a pair, and, move by move, what each game has cleared.
+
 ## Credits
 
 Same as the web version: designed by Sudrien, written with Claude.
