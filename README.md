@@ -61,3 +61,18 @@ The layout targets 1280×720 landscape: two rows of 9 tiles, about 10 mm wide ea
 ## Credits
 
 Designed by Sudrien. Built with [Claude](https://claude.ai) (Anthropic's Claude Opus 5.5), which wrote the game page, the translations and the strategy bots from Sudrien's design, and ran the simulations used to balance the scoring.
+
+## Licence
+
+Unprofitable Mahjong is MIT-licensed; see [LICENSE](LICENSE). That covers the page, the strategy bots, the Tab5 firmware's own code, the tile drawings and the icons.
+
+It uses other people's work under their own licences:
+
+| Work | Where it's used | Licence |
+|---|---|---|
+| [Figtree](https://fonts.google.com/specimen/Figtree), [Shippori Mincho](https://fonts.google.com/specimen/Shippori+Mincho), [Noto Serif SC](https://fonts.google.com/noto/specimen/Noto+Serif+SC) | Web fonts the page loads from Google Fonts; not stored in this repository | SIL Open Font License 1.1 |
+| [Ark Pixel Font](https://github.com/TakWolf/ark-pixel-font) (Ark12), © 2021 TakWolf | The Tab5 firmware's text, compiled in through feckless_graphics_handler | SIL Open Font License 1.1 |
+| [feckless-graphics-handler-for-m5tab5](https://github.com/Sudrien/feckless-graphics-handler-for-m5tab5), [feckless-drivers-for-m5tab5](https://github.com/Sudrien/feckless-drivers-for-m5tab5) | Tab5 firmware, fetched when it's built | MIT |
+| [ESP-IDF](https://github.com/espressif/esp-idf) and the Espressif components it pulls in (touch controllers, USB host) | Tab5 firmware, fetched when it's built | Apache 2.0 |
+
+The firmware binaries on the releases page contain the Tab5 entries in this table, so anyone redistributing them should carry those licences too. Each project's repository has its licence text.
