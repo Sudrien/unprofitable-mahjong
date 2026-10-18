@@ -33,6 +33,14 @@ The in-game **Sets and scores** guide shows every set with example tiles and its
 
 **Firsts:** the first time you clear each kind of set (40 in all, each run length counting on its own), it plays the limit-hand celebration, marked *First time* with the game number. Games are counted on the device, one per deal. Each set celebrates once per device. The guide ticks the sets you've cleared, notes the game each was first cleared in, and counts how many you have. Replays never count, and don't add to the game count.
 
+**More achievements**, each also celebrated once per device:
+
+- **Full** (★ in the guide): clear a set in 3 of any 5 games in a row. Each set, and each run length, has its own.
+- **Win with no poker hands:** clear all 136 without two pair, a flush, a straight, a full house or a royal flush.
+- **Win with no pairs:** clear all 136 with no pair in any set. Pairs, two pair and full houses all count against it, and so do hands with a pair inside them, like All Honors, Seven Pairs, Thirteen Orphans and Nine Gates.
+
+When two come at once, such as the last set's celebration and a win, they play one after the other.
+
 ## Replay codes
 
 **Share**, by New deal, turns the game on the table into a link anyone can open to watch it move by move. On the published site the link is the short `sudrien.github.io/umj/#replay=…`, which forwards here from its own repository. The code is the deal's seed and the moves, about 3 characters a move (around 150 for a whole game), in URL-safe base64. Nothing in it states a score: the page replays every move under the rules and stops at the first one that breaks them, so the only way to show a score is a legal game that earns it. Making a code also takes a small proof of work (MurmurHash2 with 20 leading zero bits, under a second), and every 63 characters carry 2 check characters that put one mistyped character right. Watching a code never touches your own game or best scores. Games dealt before codes existed have none. On the Tab5, Share in the settings shows the same link as a QR code.
