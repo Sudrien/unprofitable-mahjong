@@ -1595,6 +1595,10 @@ let RP = null;
 function showReplayStep(i, celebrateIt) {
   RP.i = Math.max(0, Math.min(RP.snaps.length - 1, i));
   S = JSON.parse(RP.snaps[RP.i]);
+  // A code records tiles by kind, not where they sat, so the table is shown
+  // in tile order, as auto-sort shows it (and as the Tab5 usually is)
+  const t = S.hand.filter(k => k !== null).sort((a, b) => a - b);
+  S.hand = t.concat(Array(Math.max(0, HAND - t.length)).fill(null));
   sel.clear(); hintKeys.clear(); fresh = new Set();
   render();
   const n = RP.snaps.length - 1;
