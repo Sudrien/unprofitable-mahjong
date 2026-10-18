@@ -839,7 +839,30 @@ function kindNameIn(k, lg) {
   const r = k % 9, s = Math.floor(k / 9);
   return lg === 'ja' ? (r + 1) + JA_SUIT[s] : ZH_NUM[r] + ZH_SUIT[s];
 }
-const tilesL = ks => L(ks.map(k => kindNameIn(k, 'en')).join(', '), ks.map(k => kindNameIn(k, 'ja')).join('、'), ks.map(k => kindNameIn(k, 'zh')).join('、'));
+// The selection, sorted, said briefly: a suit's tiles share one suit name
+// and a repeated tile is named once with its count. "1 ×3, 2, 3
+// Characters · North wind ×3"; in Japanese "1112萬、北×3" and in Chinese
+// "一一一二万、北风×3", as the tiles are written there.
+function tilesIn(ks, lg) {
+  const groups = [];
+  for (const k of ks) {
+    const s = isHonor(k) ? 'h' + k : Math.floor(k / 9);
+    let g = groups[groups.length - 1];
+    if (!g || g.s !== s) groups.push(g = { s, items: [] });
+    const it = g.items[g.items.length - 1];
+    if (it && it[0] === k) it[1]++; else g.items.push([k, 1]);
+  }
+  const times = n => n > 1 ? (lg === 'en' ? ` ×${n}` : `×${n}`) : '';
+  return groups.map(({ s, items }) => {
+    const [k0, n0] = items[0];
+    if (typeof s === 'string') return kindNameIn(k0, lg) + times(n0);              // an honor
+    if (lg === 'ja') return items.map(([k, n]) => String(k % 9 + 1).repeat(n)).join('') + JA_SUIT[s];
+    if (lg === 'zh') return items.map(([k, n]) => ZH_NUM[k % 9].repeat(n)).join('') + ZH_SUIT[s];
+    if (items.length === 1) return kindName(k0) + times(n0);                        // "9 Dots ×3"
+    return items.map(([k, n]) => (k % 9 + 1) + times(n)).join(', ') + ' ' + SUITS[s][1];
+  }).join(lg === 'en' ? ' · ' : '、');
+}
+const tilesL = ks => L(tilesIn(ks, 'en'), tilesIn(ks, 'ja'), tilesIn(ks, 'zh'));
 
 const SET_NAMES = {
   pair: ['対子', '对子'], chow: ['順子', '顺子'], pung: ['刻子', '刻子'], kong: ['槓子', '杠子'],
