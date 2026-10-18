@@ -15,6 +15,9 @@ DEALS  ?= 500
 umtest: umtest.c ../core/umcore.c ../core/umcore.h
 	$(CC) $(CFLAGS) -I../core -o $@ umtest.c ../core/umcore.c
 
+guidecheck: guidecheck.c ../main/guide.c ../main/guide.h ../core/umcore.c ../core/umcore.h
+	$(CC) $(CFLAGS) -I../core -I../main -o $@ guidecheck.c ../main/guide.c ../core/umcore.c
+
 # includes ../core/umcore.c itself, to read the plan deal() keeps
 dealcheck: dealcheck.c ../core/umcore.c ../core/umcore.h
 	$(CC) $(CFLAGS) -I../core -o $@ dealcheck.c
@@ -22,13 +25,13 @@ dealcheck: dealcheck.c ../core/umcore.c ../core/umcore.h
 tilecheck: tilecheck.c ../main/tilefaces.c ../main/tilefaces.h
 	$(CC) $(CFLAGS) -I../main -o $@ tilecheck.c ../main/tilefaces.c
 
-check: umtest tilecheck dealcheck
+check: umtest tilecheck dealcheck guidecheck
 	./tilecheck
 	./umtest valid
 	./dealcheck $(DEALS)
-	node check.js ./umtest $(GAMES)
+	node check.js ./umtest $(GAMES) ./guidecheck
 
 .DEFAULT_GOAL := check
 .PHONY: check clean
 clean:
-	rm -f umtest tilecheck dealcheck
+	rm -f umtest tilecheck dealcheck guidecheck

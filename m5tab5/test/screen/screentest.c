@@ -8,10 +8,10 @@
  * random number and NVS are replaced: touch by a script of taps, and the
  * screen is saved as a PPM before each one.
  *
- *   screentest <out-prefix> x,y x,y ...
+ *   screentest <out-prefix> x,y x,y>x2,y2 ...
  *
- * writes <out-prefix>-00.ppm (the first screen), -01 after the first tap,
- * and so on.
+ * writes <out-prefix>-00.ppm (the first screen), -01 after the first tap
+ * (or drag, x,y>x2,y2), and so on.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -50,21 +50,39 @@ static void dump(int n)
     fclose(f);
 }
 
-/* Each call is one pass of ui_run()'s loop. Even calls press the next
- * scripted point, odd calls release it; the screen is saved just before
- * each press, after the previous one was drawn. */
+/* Each call is one pass of ui_run()'s loop. Each scripted point becomes
+ * a few passes: a tap is a press and a release; "x,y>x2,y2" is a drag,
+ * pressed at x,y, moved to x2,y2 over eight passes and released there;
+ * "-ms,0" waits. The screen is saved before each point's first pass,
+ * after the one before it was drawn. */
+#define QMAX (12)
+static int s_qn, s_qi, s_qx[QMAX], s_qy[QMAX], s_point;
+static bool s_qd[QMAX];
+
+static void queue(bool down, int x, int y) { s_qd[s_qn] = down; s_qx[s_qn] = x; s_qy[s_qn] = y; s_qn++; }
+
 bool touch_get(int *x, int *y)
 {
     s_now += 15000;
-    const int call = s_calls++;
-    if (call < 2) return false;                 /* let the first frame draw */
-    if (call % 2) return false;
-    const int tap = (call - 2) / 2;
-    dump(tap);
-    if (s_next >= s_argc) exit(0);
-    if (sscanf(s_argv[s_next++], "%d,%d", x, y) != 2) { fprintf(stderr, "bad point\n"); exit(2); }
-    if (*x < 0) { s_now += (int64_t)(-*x) * 1000; *x = *y = -1; return false; }   /* "-ms,0": wait */
-    return true;
+    if (s_calls++ < 2) return false;            /* let the first frame draw */
+    if (s_qi >= s_qn) {
+        dump(s_point++);
+        if (s_next >= s_argc) exit(0);
+        const char *a = s_argv[s_next++];
+        int x1, y1, x2, y2;
+        s_qn = s_qi = 0;
+        if (sscanf(a, "%d,%d>%d,%d", &x1, &y1, &x2, &y2) == 4) {
+            for (int i = 0; i <= 8; i++) queue(true, x1 + (x2 - x1) * i / 8, y1 + (y2 - y1) * i / 8);
+            queue(false, x2, y2);
+        } else if (sscanf(a, "%d,%d", &x1, &y1) == 2) {
+            if (x1 < 0) { s_now += (int64_t)(-x1) * 1000; queue(false, 0, 0); }   /* wait */
+            else { queue(true, x1, y1); queue(false, x1, y1); }
+        } else { fprintf(stderr, "bad point %s\n", a); exit(2); }
+    }
+    const int i = s_qi++;
+    *x = s_qx[i];
+    *y = s_qy[i];
+    return s_qd[i];
 }
 void touch_swallow(void) {}
 void touch_set_rotation(int quarter_turns) { (void)quarter_turns; }

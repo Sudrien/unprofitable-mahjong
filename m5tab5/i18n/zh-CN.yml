@@ -20,6 +20,12 @@ zh-CN:
     "1 Character": "一万"
     # ui.c
     "1 Dot": "一筒"
+    # guide.c
+    "1 to 9 in one suit.": "同花色一到九。"
+    # guide.c
+    "1-1-1-2-3-4-5-6-7-8-9-9-9 in one suit, plus any tile of that suit.": "同花色一一一二三四五六七八九九九，再加任意一张同花色牌。"
+    # guide.c
+    "1-2-3, 4-5-6 and 7-8-9, each in a different suit.": "一二三、四五六、七八九，各用不同花色。"
     # ui.c
     "2 Bamboo": "二条"
     # ui.c
@@ -44,6 +50,8 @@ zh-CN:
     "5 Characters": "五万"
     # ui.c
     "5 Dots": "五筒"
+    # guide.c
+    "5-6-7-8-9 in one suit. A run of 5 with a small bonus.": "同花色五六七八九。相当于五连顺，再多加一点分。"
     # ui.c
     "6 Bamboo": "六条"
     # ui.c
@@ -72,26 +80,42 @@ zh-CN:
     "A clean sweep with no shortcuts.": "一路无捷径，完美通关。"
     # ui.c
     "A lone %s can never be cleared now.": "%s只剩一张，已经无法清除。"
+    # guide.c
+    "A pung and a pair in one move: 4 + 1, plus 1 bonus. The pung doubles for 1s, 9s and honors.": "一次消一组刻子和一组对子：4 + 1，再加1分。幺九和字牌刻子翻倍。"
+    # guide.c
+    "A pung of each dragon.": "中发白各一组刻子。"
+    # guide.c
+    "A pung of each wind.": "四种风牌各一组刻子。"
+    # guide.c
+    "A pung of the same number in all three suits.": "三种花色相同点数的刻子。"
     # ui.c
     "Add 6": "加6张"
     # ui.c
     "All 136 cleared: %d points, %s penalty.": "136张全部清除：%d分，罚分%s"
-    # ui.c
+    # guide.c, ui.c
     "All Green": "绿一色"
-    # ui.c
+    # guide.c, ui.c
     "All Honors": "字一色"
-    # ui.c
+    # guide.c, ui.c
     "All Pungs": "碰碰和"
-    # ui.c
+    # guide.c, ui.c
     "All Simples": "断幺"
-    # ui.c
+    # guide.c, ui.c
     "All Terminals": "清幺九"
     # ui.c
     "Auto-sort": "自动排序"
-    # ui.c
+    # guide.c
+    "Basic sets": "基本组合"
+    # guide.c, ui.c
     "Big Four Winds": "大四喜"
-    # ui.c
+    # guide.c, ui.c
     "Big Three Dragons": "大三元"
+    # guide.c
+    "Bigger sets": "大组合"
+    # guide.c
+    "Chow": "顺子"
+    # guide.c
+    "Classic hands": "经典牌型"
     # ui.c
     "Clear": "消除"
     # ui.c
@@ -104,22 +128,66 @@ zh-CN:
     "Discard these 6 for -%d.": "弃掉这6张：-%d"
     # ui.c
     "Done": "完成"
+    # guide.c
+    "Double, like the pung.": "和刻子一样翻倍。"
+    # ui.c
+    "Drag to scroll. Tap a set to read about it.": "上下滑动查看更多。点一下组合查看说明。"
+    # guide.c
+    "Dragon set": "三元齐"
     # ui.c
     "East wind": "东风"
     # ui.c
     "Every tile cleared. Try the next deal without shortcuts.": "全部清除。下一局试试不走捷径。"
-    # ui.c
+    # guide.c
+    "Five of one suit that also split into mahjong sets, here a chow and a pair: 3 + 1, plus 1 bonus.": "同花色五张，又能拆成麻将组合（这里是顺子加对子）：3 + 1，再加1分。"
+    # guide.c
+    "Five of one suit that don’t make mahjong sets. Clears strays, scores little.": "同花色五张，但组不成麻将组合。能清掉散牌，分很少。"
+    # guide.c
+    "Five ranks in a row in mixed suits. Never splits into mahjong sets. All in one suit is a run of 5, worth more.": "不同花色的五个连续点数，拆不成麻将组合。若同一花色就是五连顺，分更高。"
+    # guide.c
+    "Flush made of sets": "能拆成组合的同花"
+    # guide.c
+    "Flush, poker only": "纯扑克同花"
+    # guide.c, ui.c
     "Four Kongs": "四杠"
-    # ui.c
+    # guide.c
+    "Four identical tiles.": "四张相同的牌。"
+    # guide.c
+    "Four kongs and a pair, 18 tiles. Meld kongs to build it.": "四组杠子加一对，共18张。用副露的杠子来凑。"
+    # guide.c
+    "Four pungs and a pair, only 1s and 9s.": "只用一和九组成四组刻子加一对。"
+    # guide.c
+    "Four pungs and a pair, only winds and dragons.": "只用字牌组成四组刻子加一对。"
+    # guide.c
+    "Four pungs or kongs and a pair.": "四组刻子或杠子加一对。"
+    # guide.c
+    "Four sets and a pair all in one suit, no honors.": "全部同一花色、没有字牌的四组加一对。"
+    # guide.c
+    "Four sets and a pair in one suit plus winds and dragons.": "一种花色加字牌组成四组加一对。"
+    # guide.c
+    "Four sets and a pair using only 2s to 8s. No 1s, 9s or honors.": "只用二到八组成四组加一对。没有幺九和字牌。"
+    # guide.c
+    "Four sets and a pair using only green tiles: 2, 3, 4, 6 and 8 Bamboo and Green dragons.": "只用绿色的牌组成四组加一对：二三四六八条和发财。"
+    # guide.c
+    "Four sets and a pair where every set has a 1, a 9 or an honor.": "四组加一对，每组都含幺九或字牌。"
+    # guide.c, ui.c
     "Full Flush": "清一色"
+    # guide.c
+    "Full house": "葫芦"
+    # guide.c
+    "Full straight": "清龙"
     # ui.c
     "Game over: %d points, %s penalty.": "游戏结束：%d分，罚分%s"
     # ui.c
     "Green dragon": "发财"
-    # ui.c
+    # guide.c, ui.c
     "Half Flush": "混一色"
     # ui.c
     "Hint": "提示"
+    # guide.c
+    "Kong": "杠子"
+    # guide.c
+    "Kong of 1s, 9s or honors": "幺九或字牌杠子"
     # ui.c
     "LIMIT HAND": "大满贯"
     # ui.c
@@ -130,10 +198,14 @@ zh-CN:
     "Language": "语言"
     # ui.c
     "Light": "浅色"
-    # ui.c
+    # guide.c
+    "Limit hands · tap one to see its animation": "大满贯牌型 · 点一下看动画"
+    # guide.c, ui.c
     "Little Four Winds": "小四喜"
-    # ui.c
+    # guide.c, ui.c
     "Little Three Dragons": "小三元"
+    # guide.c
+    "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.": "同花色连得越长分越高。4连：+6 · 5：+9 · 6：+13 · 7：+18 · 8：+24。"
     # ui.c
     "Make kong": "加杠"
     # ui.c
@@ -152,11 +224,15 @@ zh-CN:
     "Meld": "副露"
     # ui.c
     "Melds %d/%d": "副露 %d/%d"
-    # ui.c
+    # guide.c, ui.c
     "Mixed Straight": "花龙"
+    # guide.c
+    "Mixed double chow": "喜相逢"
+    # guide.c
+    "Mixed triple chow": "三色三同顺"
     # ui.c
     "New deal": "重新发牌"
-    # ui.c
+    # guide.c, ui.c
     "Nine Gates": "九莲宝灯"
     # ui.c
     "No sets showing. Add 6 or discard 6 to see more tiles.": "没有可组成的组合。加6张或弃6张来看更多牌。"
@@ -172,32 +248,62 @@ zh-CN:
     "Off": "关"
     # ui.c
     "On": "开"
+    # guide.c
+    "One of each dragon.": "中发白各一张。"
+    # guide.c
+    "One of each wind.": "东南西北各一张。"
+    # guide.c
+    "One of every 1, 9, wind and dragon, plus one duplicate.": "所有幺九和字牌各一张，再多一张其中任意一种。"
     # ui.c
     "Orientation": "屏幕方向"
-    # ui.c
+    # guide.c, ui.c
     "Outside Hand": "全带幺"
+    # guide.c
+    "Pair": "对子"
     # ui.c
     "Penalty %s": "罚分 %s"
     # ui.c
     "Pick more tiles.": "再多选几张牌。"
     # ui.c
     "Points %d": "得分 %d"
+    # guide.c
+    "Poker hands · easy to make, cheap to score": "扑克牌型 · 容易凑，得分低"
     # ui.c
     "Portrait": "竖屏"
     # ui.c
     "Portrait, flipped": "竖屏（翻转）"
+    # guide.c
+    "Pung": "刻子"
+    # guide.c
+    "Pung of 1s, 9s or honors": "幺九或字牌刻子"
+    # guide.c
+    "Pure double chow": "一般高"
+    # guide.c
+    "Pure triple chow": "一色三同顺"
     # ui.c
     "Red dragon": "红中"
+    # guide.c
+    "Royal flush": "皇家同花顺"
+    # guide.c
+    "Run of 5": "五连顺"
     # ui.c
     "Set sets aside here to build a bigger hand.": "把组合放到这里，慢慢凑大牌。"
     # ui.c
-    "Settings": "设置"
+    "Sets": "牌型"
     # ui.c
+    "Sets and scores": "牌型与得分"
+    # ui.c
+    "Settings": "设置"
+    # guide.c, ui.c
     "Seven Pairs": "七对"
+    # guide.c
+    "Seven different pairs.": "七组不同的对子。"
     # ui.c
     "Sort": "排序"
     # ui.c
     "South wind": "南风"
+    # guide.c
+    "Straight": "杂色顺"
     # ui.c
     "Tap again to deal": "再点一次发牌"
     # ui.c
@@ -206,14 +312,38 @@ zh-CN:
     "Tap to continue": "点击继续"
     # ui.c
     "The glowing tiles make a set.": "发光的牌可以组成一组。"
+    # guide.c
+    "The same three-in-a-row in all three suits.": "三种花色的相同顺子。"
+    # guide.c
+    "The same three-in-a-row in two different suits.": "两种花色的相同顺子。"
+    # guide.c
+    "The same three-in-a-row three times in one suit.": "同花色三组相同顺子。"
+    # guide.c
+    "The same three-in-a-row twice in one suit.": "同花色两组相同顺子。"
     # ui.c
     "Theme": "主题"
-    # ui.c
+    # guide.c, ui.c
     "Thirteen Orphans": "十三幺"
-    # ui.c
+    # guide.c, ui.c
     "Three Kongs": "三杠"
-    # ui.c
+    # guide.c
+    "Three identical tiles.": "三张相同的牌。"
+    # guide.c
+    "Three in a row in one suit. Winds and dragons can’t make chows.": "同花色三张连续的牌。风牌和箭牌不能组成顺子。"
+    # guide.c
+    "Three kongs cleared together.": "三组杠子一起消除。"
+    # guide.c
+    "Three wind pungs and a pair of the fourth.": "三组风牌刻子，加第四种风牌的对子。"
+    # guide.c, ui.c
     "Triple Pung": "三同刻"
+    # guide.c
+    "Two dragon pungs and a pair of the third dragon.": "两组箭牌刻子，加第三种箭牌的对子。"
+    # guide.c
+    "Two identical tiles. The cheapest way to clear.": "两张相同的牌。最便宜的消法。"
+    # guide.c
+    "Two pair": "两对"
+    # guide.c
+    "Two pairs in one move: 1 + 1, plus 1 bonus.": "一次消两组对子：1 + 1，再加1分。"
     # ui.c
     "Undo": "撤销"
     # ui.c
@@ -222,6 +352,10 @@ zh-CN:
     "West wind": "西风"
     # ui.c
     "White dragon": "白板"
+    # guide.c
+    "Wind set": "四风齐"
+    # guide.c
+    "Winds, dragons, 1s and 9s score double.": "风牌、箭牌和一、九得分翻倍。"
     # ui.c
     "best %s / %s    wall %d    discards %d": "最佳 %s / %s    牌墙 %d    弃牌 %d"
     # ui.c

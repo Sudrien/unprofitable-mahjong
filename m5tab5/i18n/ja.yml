@@ -20,6 +20,12 @@ ja:
     "1 Character": "1萬"
     # ui.c
     "1 Dot": "1筒"
+    # guide.c
+    "1 to 9 in one suit.": "同じ種類で1から9まで。"
+    # guide.c
+    "1-1-1-2-3-4-5-6-7-8-9-9-9 in one suit, plus any tile of that suit.": "同じ種類で1112345678999、さらに同じ種類の牌を1枚。"
+    # guide.c
+    "1-2-3, 4-5-6 and 7-8-9, each in a different suit.": "1-2-3、4-5-6、7-8-9をそれぞれ別の種類で。"
     # ui.c
     "2 Bamboo": "2索"
     # ui.c
@@ -44,6 +50,8 @@ ja:
     "5 Characters": "5萬"
     # ui.c
     "5 Dots": "5筒"
+    # guide.c
+    "5-6-7-8-9 in one suit. A run of 5 with a small bonus.": "同じ種類の5-6-7-8-9。5連順に少しボーナス。"
     # ui.c
     "6 Bamboo": "6索"
     # ui.c
@@ -72,26 +80,42 @@ ja:
     "A clean sweep with no shortcuts.": "近道なしで全部クリア！"
     # ui.c
     "A lone %s can never be cleared now.": "%sが1枚だけ残り、もう消せません。"
+    # guide.c
+    "A pung and a pair in one move: 4 + 1, plus 1 bonus. The pung doubles for 1s, 9s and honors.": "刻子と対子を一度に：4 + 1、ボーナス+1。1・9・字牌の刻子は2倍。"
+    # guide.c
+    "A pung of each dragon.": "三元牌すべての刻子。"
+    # guide.c
+    "A pung of each wind.": "風牌すべての刻子。"
+    # guide.c
+    "A pung of the same number in all three suits.": "同じ数の刻子を3種類すべてで。"
     # ui.c
     "Add 6": "6枚追加"
     # ui.c
     "All 136 cleared: %d points, %s penalty.": "136枚すべて消去：%d点、ペナルティ%s"
-    # ui.c
+    # guide.c, ui.c
     "All Green": "緑一色"
-    # ui.c
+    # guide.c, ui.c
     "All Honors": "字一色"
-    # ui.c
+    # guide.c, ui.c
     "All Pungs": "対々和"
-    # ui.c
+    # guide.c, ui.c
     "All Simples": "断么九"
-    # ui.c
+    # guide.c, ui.c
     "All Terminals": "清老頭"
     # ui.c
     "Auto-sort": "自動整列"
-    # ui.c
+    # guide.c
+    "Basic sets": "基本の組"
+    # guide.c, ui.c
     "Big Four Winds": "大四喜"
-    # ui.c
+    # guide.c, ui.c
     "Big Three Dragons": "大三元"
+    # guide.c
+    "Bigger sets": "大きな組"
+    # guide.c
+    "Chow": "順子"
+    # guide.c
+    "Classic hands": "定番の役"
     # ui.c
     "Clear": "消す"
     # ui.c
@@ -104,22 +128,66 @@ ja:
     "Discard these 6 for -%d.": "この6枚を捨てる：-%d"
     # ui.c
     "Done": "完了"
+    # guide.c
+    "Double, like the pung.": "刻子と同じく2倍。"
+    # ui.c
+    "Drag to scroll. Tap a set to read about it.": "ドラッグでスクロール。組をタップすると説明が出ます。"
+    # guide.c
+    "Dragon set": "三元牌セット"
     # ui.c
     "East wind": "東"
     # ui.c
     "Every tile cleared. Try the next deal without shortcuts.": "全部消せました。次は近道なしで挑戦しよう。"
-    # ui.c
+    # guide.c
+    "Five of one suit that also split into mahjong sets, here a chow and a pair: 3 + 1, plus 1 bonus.": "同じ種類の5枚がマージャンの面子にも分けられる場合（ここでは順子と対子）：3 + 1、ボーナス+1。"
+    # guide.c
+    "Five of one suit that don’t make mahjong sets. Clears strays, scores little.": "面子にならない同じ種類の5枚。はぐれ牌は片付くが、得点はわずか。"
+    # guide.c
+    "Five ranks in a row in mixed suits. Never splits into mahjong sets. All in one suit is a run of 5, worth more.": "種類の混ざった5つの連続した数。面子には分けられません。同じ種類なら5連順で、そのほうが高得点。"
+    # guide.c
+    "Flush made of sets": "面子になるフラッシュ"
+    # guide.c
+    "Flush, poker only": "ポーカーだけのフラッシュ"
+    # guide.c, ui.c
     "Four Kongs": "四槓子"
-    # ui.c
+    # guide.c
+    "Four identical tiles.": "同じ牌4枚。"
+    # guide.c
+    "Four kongs and a pair, 18 tiles. Meld kongs to build it.": "槓子4組と対子、18枚。副露した槓子で作ろう。"
+    # guide.c
+    "Four pungs and a pair, only 1s and 9s.": "1と9だけで刻子4組と対子。"
+    # guide.c
+    "Four pungs and a pair, only winds and dragons.": "字牌だけで刻子4組と対子。"
+    # guide.c
+    "Four pungs or kongs and a pair.": "刻子か槓子4組と対子。"
+    # guide.c
+    "Four sets and a pair all in one suit, no honors.": "字牌なし、1種類だけで面子4組と対子。"
+    # guide.c
+    "Four sets and a pair in one suit plus winds and dragons.": "1種類の数牌と字牌だけで面子4組と対子。"
+    # guide.c
+    "Four sets and a pair using only 2s to 8s. No 1s, 9s or honors.": "2から8だけで面子4組と対子。1・9・字牌なし。"
+    # guide.c
+    "Four sets and a pair using only green tiles: 2, 3, 4, 6 and 8 Bamboo and Green dragons.": "緑の牌だけで面子4組と対子：2・3・4・6・8索と發。"
+    # guide.c
+    "Four sets and a pair where every set has a 1, a 9 or an honor.": "面子4組と対子のすべてに1・9・字牌を含む。"
+    # guide.c, ui.c
     "Full Flush": "清一色"
+    # guide.c
+    "Full house": "フルハウス"
+    # guide.c
+    "Full straight": "一気通貫"
     # ui.c
     "Game over: %d points, %s penalty.": "ゲーム終了：%d点、ペナルティ%s"
     # ui.c
     "Green dragon": "發"
-    # ui.c
+    # guide.c, ui.c
     "Half Flush": "混一色"
     # ui.c
     "Hint": "ヒント"
+    # guide.c
+    "Kong": "槓子"
+    # guide.c
+    "Kong of 1s, 9s or honors": "么九牌・字牌の槓子"
     # ui.c
     "LIMIT HAND": "役満"
     # ui.c
@@ -130,10 +198,14 @@ ja:
     "Language": "言語"
     # ui.c
     "Light": "ライト"
-    # ui.c
+    # guide.c
+    "Limit hands · tap one to see its animation": "役満 · タップで演出を見る"
+    # guide.c, ui.c
     "Little Four Winds": "小四喜"
-    # ui.c
+    # guide.c, ui.c
     "Little Three Dragons": "小三元"
+    # guide.c
+    "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.": "同じ種類で長く続くほど高得点。4連：+6 · 5：+9 · 6：+13 · 7：+18 · 8：+24。"
     # ui.c
     "Make kong": "加槓"
     # ui.c
@@ -152,11 +224,15 @@ ja:
     "Meld": "副露"
     # ui.c
     "Melds %d/%d": "副露 %d/%d"
-    # ui.c
+    # guide.c, ui.c
     "Mixed Straight": "三色通貫"
+    # guide.c
+    "Mixed double chow": "二色同順"
+    # guide.c
+    "Mixed triple chow": "三色同順"
     # ui.c
     "New deal": "新しく配る"
-    # ui.c
+    # guide.c, ui.c
     "Nine Gates": "九蓮宝燈"
     # ui.c
     "No sets showing. Add 6 or discard 6 to see more tiles.": "作れる組がありません。6枚追加か6枚捨てで、もっと牌を見よう。"
@@ -172,32 +248,62 @@ ja:
     "Off": "オフ"
     # ui.c
     "On": "オン"
+    # guide.c
+    "One of each dragon.": "三元牌を1枚ずつ。"
+    # guide.c
+    "One of each wind.": "風牌を1枚ずつ。"
+    # guide.c
+    "One of every 1, 9, wind and dragon, plus one duplicate.": "1・9と字牌をすべて1枚ずつ、どれか1種類を2枚に。"
     # ui.c
     "Orientation": "画面の向き"
-    # ui.c
+    # guide.c, ui.c
     "Outside Hand": "混全帯么九"
+    # guide.c
+    "Pair": "対子"
     # ui.c
     "Penalty %s": "ペナルティ %s"
     # ui.c
     "Pick more tiles.": "もっと牌を選んでください。"
     # ui.c
     "Points %d": "得点 %d"
+    # guide.c
+    "Poker hands · easy to make, cheap to score": "ポーカー役 · 作りやすいが安い"
     # ui.c
     "Portrait": "縦向き"
     # ui.c
     "Portrait, flipped": "縦向き（反転）"
+    # guide.c
+    "Pung": "刻子"
+    # guide.c
+    "Pung of 1s, 9s or honors": "么九牌・字牌の刻子"
+    # guide.c
+    "Pure double chow": "一盃口"
+    # guide.c
+    "Pure triple chow": "一色三順"
     # ui.c
     "Red dragon": "中"
+    # guide.c
+    "Royal flush": "ロイヤルフラッシュ"
+    # guide.c
+    "Run of 5": "5連順"
     # ui.c
     "Set sets aside here to build a bigger hand.": "組をここに置いて、大きな役を育てよう。"
     # ui.c
-    "Settings": "設定"
+    "Sets": "役"
     # ui.c
+    "Sets and scores": "役と得点"
+    # ui.c
+    "Settings": "設定"
+    # guide.c, ui.c
     "Seven Pairs": "七対子"
+    # guide.c
+    "Seven different pairs.": "異なる対子7組。"
     # ui.c
     "Sort": "並べ替え"
     # ui.c
     "South wind": "南"
+    # guide.c
+    "Straight": "ストレート"
     # ui.c
     "Tap again to deal": "もう一度タップで配牌"
     # ui.c
@@ -206,14 +312,38 @@ ja:
     "Tap to continue": "タップで続ける"
     # ui.c
     "The glowing tiles make a set.": "光っている牌で組が作れます。"
+    # guide.c
+    "The same three-in-a-row in all three suits.": "同じ順子を3種類すべてで。"
+    # guide.c
+    "The same three-in-a-row in two different suits.": "同じ順子を2種類の牌で。"
+    # guide.c
+    "The same three-in-a-row three times in one suit.": "同じ種類で同じ順子を3組。"
+    # guide.c
+    "The same three-in-a-row twice in one suit.": "同じ種類で同じ順子を2組。"
     # ui.c
     "Theme": "テーマ"
-    # ui.c
+    # guide.c, ui.c
     "Thirteen Orphans": "国士無双"
-    # ui.c
+    # guide.c, ui.c
     "Three Kongs": "三槓子"
-    # ui.c
+    # guide.c
+    "Three identical tiles.": "同じ牌3枚。"
+    # guide.c
+    "Three in a row in one suit. Winds and dragons can’t make chows.": "同じ種類の数牌3枚の連続。字牌は順子になりません。"
+    # guide.c
+    "Three kongs cleared together.": "槓子3組をまとめて消す。"
+    # guide.c
+    "Three wind pungs and a pair of the fourth.": "風牌の刻子3組と、残りの風牌の対子。"
+    # guide.c, ui.c
     "Triple Pung": "三色同刻"
+    # guide.c
+    "Two dragon pungs and a pair of the third dragon.": "三元牌の刻子2組と、残りの三元牌の対子。"
+    # guide.c
+    "Two identical tiles. The cheapest way to clear.": "同じ牌2枚。いちばん安い消し方。"
+    # guide.c
+    "Two pair": "ツーペア"
+    # guide.c
+    "Two pairs in one move: 1 + 1, plus 1 bonus.": "対子2組を一度に：1 + 1、ボーナス+1。"
     # ui.c
     "Undo": "元に戻す"
     # ui.c
@@ -222,6 +352,10 @@ ja:
     "West wind": "西"
     # ui.c
     "White dragon": "白"
+    # guide.c
+    "Wind set": "四風牌セット"
+    # guide.c
+    "Winds, dragons, 1s and 9s score double.": "字牌と1・9は得点2倍。"
     # ui.c
     "best %s / %s    wall %d    discards %d": "ベスト %s / %s    山 %d    捨て牌 %d"
     # ui.c

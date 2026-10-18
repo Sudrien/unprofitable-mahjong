@@ -7,8 +7,10 @@
 //   classify   tens of thousands of tile groups: same set, same points
 //   play       random games, move by move: same table, melds, wall,
 //              discard pile, points, penalty, hint and warnings
+//   guide      main/guide.c against the web version's GUIDE: sections,
+//              names, notes, tiles, and the set and points each makes
 //
-// Usage: node check.js [umtest path] [games]
+// Usage: node check.js [umtest path] [games] [guidecheck path]
 //
 // SPDX-License-Identifier: MIT
 'use strict';
@@ -18,6 +20,7 @@ const { execFileSync } = require('child_process');
 
 const UMTEST = path.resolve(process.argv[2] || path.join(__dirname, 'umtest'));
 const GAMES = +process.argv[3] || 2000;
+const GUIDECHECK = process.argv[4] ? path.resolve(process.argv[4]) : null;
 const html = fs.readFileSync(path.join(__dirname, '..', '..', 'index.html'), 'utf8');
 const js = html.split('<script>')[1].split('</script>')[0];
 const core = js.slice(js.indexOf('const HAND'), js.indexOf('/* ---------- render'));
@@ -59,6 +62,25 @@ function classifyCheck() {
     if (out[i] !== want) fail(`classify [${ks}] C=${out[i]} JS=${want}`);
   });
   console.log(`classify: ${cases.length} groups compared`);
+}
+
+/* ---------- guide ---------- */
+function guideCheck() {
+  const G = make();
+  const a = js.indexOf('const R = (k, n)'), b = js.indexOf('function buildGuide');
+  const GUIDE = new Function(js.slice(a, b) + '; return GUIDE;')();
+  const out = execFileSync(GUIDECHECK).toString().trim().split('\n');
+  const want = [];
+  let first = 0;
+  for (const [head, items] of GUIDE) { want.push(`H ${first} ${items.length} ${head[0]}`); first += items.length; }
+  for (const [head, items] of GUIDE) for (const [name, groups, , note] of items) {
+    const ks = groups.flat(), t = G.classify(ks);
+    want.push(`I ${t || ''}|${t ? G.setValue(t, ks) : 0}|${groups.map(g => g.length).join(',')}|${ks.join(' ')}|${name[0]}|${note[0]}`);
+  }
+  if (out.length !== want.length) fail(`guide: C has ${out.length} lines, the web version ${want.length}`);
+  for (let i = 0; i < Math.max(out.length, want.length); i++)
+    if (out[i] !== want[i]) fail(`guide line ${i + 1}\n   C: ${out[i]}\n  JS: ${want[i]}`);
+  console.log(`guide: ${first} sets in ${GUIDE.length} sections compared`);
 }
 
 /* ---------- play ---------- */
@@ -108,5 +130,6 @@ function playCheck() {
 
 classifyCheck();
 playCheck();
+if (GUIDECHECK) guideCheck();
 if (failures) { console.error(`${failures} mismatches`); process.exit(1); }
 console.log('core matches the web version');

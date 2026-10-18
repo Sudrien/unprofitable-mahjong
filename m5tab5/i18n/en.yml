@@ -20,6 +20,12 @@ en:
     "1 Character": ~
     # ui.c
     "1 Dot": ~
+    # guide.c
+    "1 to 9 in one suit.": ~
+    # guide.c
+    "1-1-1-2-3-4-5-6-7-8-9-9-9 in one suit, plus any tile of that suit.": ~
+    # guide.c
+    "1-2-3, 4-5-6 and 7-8-9, each in a different suit.": ~
     # ui.c
     "2 Bamboo": ~
     # ui.c
@@ -44,6 +50,8 @@ en:
     "5 Characters": ~
     # ui.c
     "5 Dots": ~
+    # guide.c
+    "5-6-7-8-9 in one suit. A run of 5 with a small bonus.": ~
     # ui.c
     "6 Bamboo": ~
     # ui.c
@@ -72,26 +80,42 @@ en:
     "A clean sweep with no shortcuts.": ~
     # ui.c
     "A lone %s can never be cleared now.": ~
+    # guide.c
+    "A pung and a pair in one move: 4 + 1, plus 1 bonus. The pung doubles for 1s, 9s and honors.": ~
+    # guide.c
+    "A pung of each dragon.": ~
+    # guide.c
+    "A pung of each wind.": ~
+    # guide.c
+    "A pung of the same number in all three suits.": ~
     # ui.c
     "Add 6": ~
     # ui.c
     "All 136 cleared: %d points, %s penalty.": ~
-    # ui.c
+    # guide.c, ui.c
     "All Green": ~
-    # ui.c
+    # guide.c, ui.c
     "All Honors": ~
-    # ui.c
+    # guide.c, ui.c
     "All Pungs": ~
-    # ui.c
+    # guide.c, ui.c
     "All Simples": ~
-    # ui.c
+    # guide.c, ui.c
     "All Terminals": ~
     # ui.c
     "Auto-sort": ~
-    # ui.c
+    # guide.c
+    "Basic sets": ~
+    # guide.c, ui.c
     "Big Four Winds": ~
-    # ui.c
+    # guide.c, ui.c
     "Big Three Dragons": ~
+    # guide.c
+    "Bigger sets": ~
+    # guide.c
+    "Chow": ~
+    # guide.c
+    "Classic hands": ~
     # ui.c
     "Clear": ~
     # ui.c
@@ -104,22 +128,66 @@ en:
     "Discard these 6 for -%d.": ~
     # ui.c
     "Done": ~
+    # guide.c
+    "Double, like the pung.": ~
+    # ui.c
+    "Drag to scroll. Tap a set to read about it.": ~
+    # guide.c
+    "Dragon set": ~
     # ui.c
     "East wind": ~
     # ui.c
     "Every tile cleared. Try the next deal without shortcuts.": ~
-    # ui.c
+    # guide.c
+    "Five of one suit that also split into mahjong sets, here a chow and a pair: 3 + 1, plus 1 bonus.": ~
+    # guide.c
+    "Five of one suit that don’t make mahjong sets. Clears strays, scores little.": ~
+    # guide.c
+    "Five ranks in a row in mixed suits. Never splits into mahjong sets. All in one suit is a run of 5, worth more.": ~
+    # guide.c
+    "Flush made of sets": ~
+    # guide.c
+    "Flush, poker only": ~
+    # guide.c, ui.c
     "Four Kongs": ~
-    # ui.c
+    # guide.c
+    "Four identical tiles.": ~
+    # guide.c
+    "Four kongs and a pair, 18 tiles. Meld kongs to build it.": ~
+    # guide.c
+    "Four pungs and a pair, only 1s and 9s.": ~
+    # guide.c
+    "Four pungs and a pair, only winds and dragons.": ~
+    # guide.c
+    "Four pungs or kongs and a pair.": ~
+    # guide.c
+    "Four sets and a pair all in one suit, no honors.": ~
+    # guide.c
+    "Four sets and a pair in one suit plus winds and dragons.": ~
+    # guide.c
+    "Four sets and a pair using only 2s to 8s. No 1s, 9s or honors.": ~
+    # guide.c
+    "Four sets and a pair using only green tiles: 2, 3, 4, 6 and 8 Bamboo and Green dragons.": ~
+    # guide.c
+    "Four sets and a pair where every set has a 1, a 9 or an honor.": ~
+    # guide.c, ui.c
     "Full Flush": ~
+    # guide.c
+    "Full house": ~
+    # guide.c
+    "Full straight": ~
     # ui.c
     "Game over: %d points, %s penalty.": ~
     # ui.c
     "Green dragon": ~
-    # ui.c
+    # guide.c, ui.c
     "Half Flush": ~
     # ui.c
     "Hint": ~
+    # guide.c
+    "Kong": ~
+    # guide.c
+    "Kong of 1s, 9s or honors": ~
     # ui.c
     "LIMIT HAND": ~
     # ui.c
@@ -130,10 +198,14 @@ en:
     "Language": ~
     # ui.c
     "Light": ~
-    # ui.c
+    # guide.c
+    "Limit hands · tap one to see its animation": ~
+    # guide.c, ui.c
     "Little Four Winds": ~
-    # ui.c
+    # guide.c, ui.c
     "Little Three Dragons": ~
+    # guide.c
+    "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.": ~
     # ui.c
     "Make kong": ~
     # ui.c
@@ -152,11 +224,15 @@ en:
     "Meld": ~
     # ui.c
     "Melds %d/%d": ~
-    # ui.c
+    # guide.c, ui.c
     "Mixed Straight": ~
+    # guide.c
+    "Mixed double chow": ~
+    # guide.c
+    "Mixed triple chow": ~
     # ui.c
     "New deal": ~
-    # ui.c
+    # guide.c, ui.c
     "Nine Gates": ~
     # ui.c
     "No sets showing. Add 6 or discard 6 to see more tiles.": ~
@@ -172,32 +248,62 @@ en:
     "Off": ~
     # ui.c
     "On": ~
+    # guide.c
+    "One of each dragon.": ~
+    # guide.c
+    "One of each wind.": ~
+    # guide.c
+    "One of every 1, 9, wind and dragon, plus one duplicate.": ~
     # ui.c
     "Orientation": ~
-    # ui.c
+    # guide.c, ui.c
     "Outside Hand": ~
+    # guide.c
+    "Pair": ~
     # ui.c
     "Penalty %s": ~
     # ui.c
     "Pick more tiles.": ~
     # ui.c
     "Points %d": ~
+    # guide.c
+    "Poker hands · easy to make, cheap to score": ~
     # ui.c
     "Portrait": ~
     # ui.c
     "Portrait, flipped": ~
+    # guide.c
+    "Pung": ~
+    # guide.c
+    "Pung of 1s, 9s or honors": ~
+    # guide.c
+    "Pure double chow": ~
+    # guide.c
+    "Pure triple chow": ~
     # ui.c
     "Red dragon": ~
+    # guide.c
+    "Royal flush": ~
+    # guide.c
+    "Run of 5": ~
     # ui.c
     "Set sets aside here to build a bigger hand.": ~
     # ui.c
-    "Settings": ~
+    "Sets": ~
     # ui.c
+    "Sets and scores": ~
+    # ui.c
+    "Settings": ~
+    # guide.c, ui.c
     "Seven Pairs": ~
+    # guide.c
+    "Seven different pairs.": ~
     # ui.c
     "Sort": ~
     # ui.c
     "South wind": ~
+    # guide.c
+    "Straight": ~
     # ui.c
     "Tap again to deal": ~
     # ui.c
@@ -206,14 +312,38 @@ en:
     "Tap to continue": ~
     # ui.c
     "The glowing tiles make a set.": ~
+    # guide.c
+    "The same three-in-a-row in all three suits.": ~
+    # guide.c
+    "The same three-in-a-row in two different suits.": ~
+    # guide.c
+    "The same three-in-a-row three times in one suit.": ~
+    # guide.c
+    "The same three-in-a-row twice in one suit.": ~
     # ui.c
     "Theme": ~
-    # ui.c
+    # guide.c, ui.c
     "Thirteen Orphans": ~
-    # ui.c
+    # guide.c, ui.c
     "Three Kongs": ~
-    # ui.c
+    # guide.c
+    "Three identical tiles.": ~
+    # guide.c
+    "Three in a row in one suit. Winds and dragons can’t make chows.": ~
+    # guide.c
+    "Three kongs cleared together.": ~
+    # guide.c
+    "Three wind pungs and a pair of the fourth.": ~
+    # guide.c, ui.c
     "Triple Pung": ~
+    # guide.c
+    "Two dragon pungs and a pair of the third dragon.": ~
+    # guide.c
+    "Two identical tiles. The cheapest way to clear.": ~
+    # guide.c
+    "Two pair": ~
+    # guide.c
+    "Two pairs in one move: 1 + 1, plus 1 bonus.": ~
     # ui.c
     "Undo": ~
     # ui.c
@@ -222,6 +352,10 @@ en:
     "West wind": ~
     # ui.c
     "White dragon": ~
+    # guide.c
+    "Wind set": ~
+    # guide.c
+    "Winds, dragons, 1s and 9s score double.": ~
     # ui.c
     "best %s / %s    wall %d    discards %d": ~
     # ui.c

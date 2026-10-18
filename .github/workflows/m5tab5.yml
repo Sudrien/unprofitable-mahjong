@@ -89,9 +89,10 @@ jobs:
       - name: Resolve components
         run: idf.py set-target esp32p4
 
-      # The rules against the web version (2000 games, about a minute;
-      # Node is on the runner), the translations against the source and
-      # the font, and ui.c on the host with a few scripted taps.
+      # The rules and the list of sets against the web version (2000
+      # games, about a minute; Node is on the runner), the translations
+      # against the source and the font, and ui.c on the host with a few
+      # scripted taps and drags.
       - name: Host tests
         run: |
           make -C test
@@ -100,6 +101,8 @@ jobs:
           mkdir -p test/screen/out
           ./test/screen/screentest test/screen/out/ci 1226,28 1226,28
           SCREENTEST_ROT=0 SCREENTEST_LANG=2 SCREENTEST_THEME=1 ./test/screen/screentest test/screen/out/ci-ja 670,28 670,28
+          # Sets: open, scroll down and back, choose a set, close
+          ./test/screen/screentest test/screen/out/ci-sets 1126,28 '640,450>640,100' '640,100>640,450' 300,170 1150,670
 
       - name: Build and Merge Binaries
         env:

@@ -52,6 +52,16 @@ web version's; the tiles keep their ivory faces in both.
 
 ![Settings](screenshots/settings.png)
 
+Sets, beside the gear, opens the list of valid hands: the web
+version's Sets and scores, every set with an example and its points,
+grouped as on the web. It scrolls under a finger, two sets to a row in
+landscape and one in portrait. Tap a set for its note along the bottom;
+tap a limit hand and its celebration plays too. Done goes back to the
+game. The list is `main/guide.c`, and `make -C test` checks it against
+the web version's, points included.
+
+![Sets](screenshots/sets.png)
+
 The panel is about 294 pixels to the inch, so text is Ark12 at 36 px
 (about 9 pt); 24 px is left for the line of bests and piles, the
 rail's values, and the list of chosen tiles in landscape.
@@ -100,7 +110,8 @@ no 雀), and a few lines are reworded around 覇, 脇, 奖 and 即.
 `test/screen/` compiles `main/ui.c`, the tile drawing and the rules
 exactly as they ship, with feckless-graphics-handler's real `gfx.c`
 through that library's own host shim. Touch is replaced by a script of
-taps, and the screen is saved before each one:
+taps, or drags written `x,y>x2,y2`, and the screen is saved before each
+one:
 
     make -C m5tab5/test/screen GFX=/path/to/feckless-graphics-handler-for-m5tab5
     cd m5tab5/test/screen && mkdir -p out

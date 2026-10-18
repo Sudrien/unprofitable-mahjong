@@ -29,6 +29,7 @@
 
 #include "i18n.h"
 #include "save.h"
+#include "guide.h"
 #include "tiledraw.h"
 #include "umcore.h"
 
@@ -103,6 +104,8 @@ static int64_t s_hint_until, s_armed_until;
 static save_prefs_t s_prefs;
 static um_game_t *s_undo;      /* UNDO_N snapshots, a ring, in PSRAM */
 static int s_undo_head, s_undo_n;
+static bool s_guide;                /* the list of valid hands is open */
+static int s_guide_sel = -1;
 
 /* ------------------------------------------------------------------ */
 /* Words                                                               */
@@ -367,6 +370,17 @@ static void gear_rect(int *x, int *y, int *w, int *h)
     *y = 4;
 }
 
+/* Sets: the list of valid hands, just left of the gear. */
+static void sets_rect(int *x, int *y, int *w, int *h)
+{
+    int gx, gy, gw, gh;
+    gear_rect(&gx, &gy, &gw, &gh);
+    *w = gfx_text_w(_("Sets"), TXT) + 32;
+    *h = gh;
+    *x = gx - 12 - *w;
+    *y = gy;
+}
+
 /* ------------------------------------------------------------------ */
 /* Drawing                                                             */
 
@@ -409,6 +423,13 @@ static void draw_top(void)
     gear_rect(&tx, &ty, &tw, &th);
     box(tx, ty, tw, th, C_LINE, C_RAISED);
     draw_gear(tx + tw / 2, ty + th / 2, C_INK, C_RAISED);
+    {
+        int sx0, sy0, sw, sh;
+        sets_rect(&sx0, &sy0, &sw, &sh);
+        box(sx0, sy0, sw, sh, C_LINE, C_RAISED);
+        gfx_draw_text(sx0 + (sw - gfx_text_w(_("Sets"), TXT)) / 2, sy0 + (sh - GFX_GLYPH_H(TXT)) / 2, _("Sets"), TXT, sw, C_INK);
+        tx = sx0;       /* the scores sit left of both buttons */
+    }
     /* the two scores, their bests and the piles: right-aligned beside the
      * gear in landscape, on their own lines under the title in portrait */
     pts_text(um_penalty(&s_g), pv, sizeof pv);
@@ -732,8 +753,11 @@ static void draw_menu(void)
     }
 }
 
+static void draw_guide(void);
+
 static void redraw(void)
 {
+    if (s_guide) { draw_guide(); gfx_blit(0, gfx_h()); return; }
     gfx_fill_rect(0, 0, gfx_w(), gfx_h(), C_BG);
     gfx_fill_rect(M_X / 2, L.table_y, gfx_w() - M_X, L.btn_y - L.table_y - 12, C_SURFACE);
     draw_top();
@@ -802,6 +826,208 @@ static void celebrate(um_set_t t, const uint8_t *kinds, int n, int v)
         vTaskDelay(pdMS_TO_TICKS(20));
     }
     touch_swallow();
+}
+
+/* ------------------------------------------------------------------ */
+/* Sets: the valid hands                                              */
+
+/* The web version's "Sets and scores", from guide.c: every set with an
+ * example, in one list that scrolls under a finger. The points are what
+ * the rules here give the example, as the web version's are. Tapping a
+ * set shows its note along the bottom; tapping a limit hand also plays
+ * its celebration, as a tap on one does on the web. In landscape the
+ * sets sit two to a row; in portrait, one.
+ *
+ * Here a tap is a press and release that did not move, not a press, so
+ * a finger can land on a set to start a drag without choosing it. */
+#define G_NAME_H   (GFX_GLYPH_H(TXT))
+#define G_HEAD_H   (GFX_GLYPH_H(SMALL) + 20)
+#define G_PITCH    (tilefaces_M.w + 2)
+#define G_LINE     (tilefaces_M.h + TILEDRAW_EDGE_M + 8)
+#define G_GROUP    (12)                 /* between a set's groups */
+#define G_COL_GAP  (32)
+#define G_ITEMS    (64)
+#define GD_SECTIONS (8)
+#define G_SLOP     (16)                 /* px a press may wander and still be a tap */
+
+typedef struct { int x, y, h; } gpos_t;     /* in the list, before scrolling */
+static gpos_t s_gpos[G_ITEMS];
+static int s_ghead_y[GD_SECTIONS], s_glist_h, s_gscroll;
+static button_t s_gdone;
+static struct { bool down, drag, ignore; int x0, y0, scroll0; } s_gtouch;   /* ignore: the press that opened the list */
+
+static int guide_cols(void) { return L.land ? 2 : 1; }
+static int guide_col_w(void) { return (gfx_w() - 2 * M_X - (guide_cols() - 1) * G_COL_GAP) / guide_cols(); }
+static int guide_btn_y(void) { return L.land ? L.btn_y : gfx_h() - 8 - BTN_H; }
+static int guide_note_rows(void) { return L.land ? 2 : 3; }
+static int guide_note_y(void) { return guide_btn_y() - 12 - guide_note_rows() * LINE; }
+static int guide_top(void) { return TOP_Y + GFX_GLYPH_H(TXT) + 16; }       /* the list's window */
+static int guide_bottom(void) { return guide_note_y() - 16; }
+static int guide_max_scroll(void) { const int m = s_glist_h - (guide_bottom() - guide_top()); return m > 0 ? m : 0; }
+
+/* Where each of a set's tiles goes, from its tiles' top left: a group
+ * that fits a row is not split across two. Returns the rows used. */
+static int guide_tiles(const guide_item_t *g, int w, int *tx, int *ty)
+{
+    int x = 0, row = 0, i = 0;
+    for (int gi = 0; gi < g->n_groups; gi++) {
+        const int gw = g->glen[gi] * G_PITCH - 2;
+        if (x > 0 && x + gw > w && gw <= w) { x = 0; row++; }
+        for (int j = 0; j < g->glen[gi]; j++, i++) {
+            if (x > 0 && x + tilefaces_M.w > w) { x = 0; row++; }
+            if (tx) { tx[i] = x; ty[i] = row * G_LINE; }
+            x += G_PITCH;
+        }
+        x += G_GROUP - 2;
+    }
+    return row + 1;
+}
+
+static int guide_item_h(const guide_item_t *g, int w) { return G_NAME_H + 8 + guide_tiles(g, w, NULL, NULL) * G_LINE + 12; }
+
+/* Each section: its heading across the width, then its sets, left to
+ * right and down, so the list reads in order as it scrolls. */
+static void guide_layout(void)
+{
+    const int cols = guide_cols(), cw = guide_col_w();
+    int y = 0;
+    for (int s = 0; s < guide_section_count && s < GD_SECTIONS; s++) {
+        const guide_section_t *sec = &guide_sections[s];
+        s_ghead_y[s] = y;
+        y += G_HEAD_H;
+        for (int i = sec->first; i < sec->first + sec->count && i < G_ITEMS; i += cols) {
+            int row_h = 0;
+            for (int c = 0; c < cols && i + c < sec->first + sec->count && i + c < G_ITEMS; c++) {
+                const int h = guide_item_h(&guide_items[i + c], cw);
+                s_gpos[i + c] = (gpos_t){ M_X + c * (cw + G_COL_GAP), y, h };
+                if (h > row_h) row_h = h;
+            }
+            y += row_h;
+        }
+        y += 8;
+    }
+    s_glist_h = y;
+    if (s_gscroll > guide_max_scroll()) s_gscroll = guide_max_scroll();
+    if (s_gscroll < 0) s_gscroll = 0;
+
+    s_gdone.label = _("Done");
+    s_gdone.w = gfx_text_w(s_gdone.label, TXT) + 48;
+    if (s_gdone.w < 200) s_gdone.w = 200;
+    s_gdone.x = gfx_w() - M_X - s_gdone.w;
+    s_gdone.y = guide_btn_y();
+}
+
+static void draw_guide(void)
+{
+    guide_layout();
+    const int cw = guide_col_w(), top = guide_top(), bottom = guide_bottom(), dy = top - s_gscroll;
+    gfx_fill_rect(0, 0, gfx_w(), gfx_h(), C_BG);
+
+    /* the list, drawn whole where it falls; what spills past its window
+     * is painted over by the title and the footer below */
+    for (int s = 0; s < guide_section_count && s < GD_SECTIONS; s++) {
+        const int hy = s_ghead_y[s] + dy;
+        if (hy + G_HEAD_H > top - G_HEAD_H && hy < bottom)
+            gfx_draw_text(M_X, hy + 8, _(guide_sections[s].head), SMALL, gfx_w() - 2 * M_X, C_MUTED);
+    }
+    int tx[GUIDE_MAX_TILES], ty[GUIDE_MAX_TILES];
+    for (int i = 0; i < guide_item_count && i < G_ITEMS; i++) {
+        const gpos_t *p = &s_gpos[i];
+        const int y = p->y + dy;
+        if (y + p->h < top || y > bottom) continue;
+        const guide_item_t *g = &guide_items[i];
+        if (i == s_guide_sel) box(p->x - 10, y - 6, cw + 20, p->h, C_ACCENT, C_RAISED);
+        char v[16];
+        const um_set_t t = um_classify(g->k, g->n);
+        snprintf(v, sizeof v, "+%d", t ? um_set_value(t, g->k, g->n) : 0);
+        const int vw = gfx_text_w(v, TXT);
+        gfx_draw_text(p->x, y, _(g->name), TXT, cw - vw - 16, C_INK);
+        gfx_draw_text(p->x + cw - vw, y, v, TXT, vw + 2, C_GREEN);
+        guide_tiles(g, cw, tx, ty);
+        for (int j = 0; j < g->n; j++)
+            tiledraw_tile(&tilefaces_M, g->k[j], p->x + tx[j], y + G_NAME_H + 8 + ty[j], TILEDRAW_EDGE_M);
+    }
+
+    /* the title over the top of the window, the footer over the bottom */
+    gfx_fill_rect(0, 0, gfx_w(), top, C_BG);
+    text(M_X, TOP_Y, _("Sets and scores"), C_INK);
+    gfx_fill_rect(0, bottom, gfx_w(), gfx_h() - bottom, C_BG);
+    gfx_fill_rect(M_X, top - 2, gfx_w() - 2 * M_X, 2, C_LINE);       /* the window's edges */
+    gfx_fill_rect(M_X, bottom, gfx_w() - 2 * M_X, 2, C_LINE);
+
+    /* where in the list the window is */
+    const int max = guide_max_scroll();
+    if (max > 0) {
+        const int track = bottom - top, bar = track * track / s_glist_h;
+        const int by = top + (track - bar) * s_gscroll / max;
+        gfx_fill_rect(gfx_w() - 8, by, 4, bar, C_LINE);
+    }
+
+    /* the chosen set's note, or how to get one */
+    const int ny = guide_note_y();
+    if (s_guide_sel >= 0) gfx_draw_para(M_X, ny, _(guide_items[s_guide_sel].note), TXT, gfx_w() - 2 * M_X, LINE, guide_note_rows(), C_INK);
+    else gfx_draw_para(M_X, ny, _("Drag to scroll. Tap a set to read about it."), TXT, gfx_w() - 2 * M_X, LINE, guide_note_rows(), C_MUTED);
+
+    box(s_gdone.x, s_gdone.y, s_gdone.w, BTN_H, C_ACCENT, C_ACCENT);
+    gfx_draw_text(s_gdone.x + (s_gdone.w - gfx_text_w(s_gdone.label, TXT)) / 2, s_gdone.y + (BTN_H - GFX_GLYPH_H(TXT)) / 2,
+                  s_gdone.label, TXT, s_gdone.w, C_ON_ACC);
+}
+
+/* A tap: a press and release that stayed within G_SLOP. */
+static void guide_tap(int x, int y)
+{
+    guide_layout();
+    if (x >= s_gdone.x && x < s_gdone.x + s_gdone.w && y >= s_gdone.y && y < s_gdone.y + BTN_H) {
+        s_guide = false;
+        s_guide_sel = -1;
+        return;
+    }
+    if (y < guide_top() || y >= guide_bottom()) return;
+    const int cw = guide_col_w(), ly = y - guide_top() + s_gscroll;
+    for (int i = 0; i < guide_item_count && i < G_ITEMS; i++) {
+        const gpos_t *p = &s_gpos[i];
+        if (x < p->x - 10 || x >= p->x + cw + 10 || ly < p->y - 6 || ly >= p->y - 6 + p->h) continue;
+        s_guide_sel = i;
+        const guide_item_t *g = &guide_items[i];
+        const um_set_t t = um_classify(g->k, g->n);
+        if (um_set_is_limit(t)) celebrate(t, g->k, g->n, um_set_value(t, g->k, g->n));
+        return;
+    }
+}
+
+/* The finger, every pass of the loop while the list is open. Returns
+ * whether the screen needs drawing. */
+static bool guide_touch(bool down, int x, int y)
+{
+    if (s_gtouch.ignore) {
+        if (!down) s_gtouch.ignore = false;
+        return false;
+    }
+    if (down && !s_gtouch.down) {
+        s_gtouch.down = true;
+        s_gtouch.drag = false;
+        s_gtouch.x0 = x;
+        s_gtouch.y0 = y;
+        s_gtouch.scroll0 = s_gscroll;
+        return false;
+    }
+    if (down) {
+        const int d = y - s_gtouch.y0;
+        if (!s_gtouch.drag && (d > G_SLOP || d < -G_SLOP || x - s_gtouch.x0 > G_SLOP || s_gtouch.x0 - x > G_SLOP))
+            s_gtouch.drag = s_gtouch.y0 >= guide_top() && s_gtouch.y0 < guide_bottom();
+        if (!s_gtouch.drag) return false;
+        int to = s_gtouch.scroll0 - d;
+        if (to > guide_max_scroll()) to = guide_max_scroll();
+        if (to < 0) to = 0;
+        if (to == s_gscroll) return false;
+        s_gscroll = to;
+        return true;
+    }
+    if (!s_gtouch.down) return false;
+    s_gtouch.down = false;
+    if (s_gtouch.drag) return false;
+    guide_tap(s_gtouch.x0, s_gtouch.y0);
+    return true;
 }
 
 /* ------------------------------------------------------------------ */
@@ -931,6 +1157,11 @@ static void tap(int x, int y)
 {
     if (s_menu) { menu_tap(x, y); return; }
     {
+        int sx0, sy0, sw, sh;
+        sets_rect(&sx0, &sy0, &sw, &sh);
+        if (x >= sx0 && x < sx0 + sw && y >= sy0 && y < sy0 + sh) { s_guide = true; s_guide_sel = -1; s_hint_until = 0; s_gtouch.ignore = true; return; }
+    }
+    {
         int gx, gy, gw, gh;
         gear_rect(&gx, &gy, &gw, &gh);
         if (x >= gx && x < gx + gw && y >= gy && y < gy + gh) { s_menu = true; s_hint_until = 0; s_armed_until = 0; return; }
@@ -989,7 +1220,12 @@ void ui_run(void)
     for (;;) {
         int x = 0, y = 0;
         const bool down = touch_get(&x, &y);
-        if (down && !was_down) { tap(x, y); dirty = true; }
+        if (s_guide) {
+            if (guide_touch(down, x, y)) dirty = true;
+        } else if (down && !was_down) {
+            tap(x, y);
+            dirty = true;
+        }
         was_down = down;
         /* the hint glow and the armed New deal (in the panel) time out on their own */
         const int64_t now = esp_timer_get_time();
