@@ -291,6 +291,8 @@ zh-CN:
     # guide.c
     "Run of 5": "五连顺"
     # ui.c
+    "Scan to watch this game": "扫码观看这一局"
+    # ui.c
     "Set sets aside here to build a bigger hand.": "把组合放到这里，慢慢凑大牌。"
     # ui.c
     "Sets": "牌型"
@@ -303,6 +305,8 @@ zh-CN:
     # guide.c
     "Seven different pairs.": "七组不同的对子。"
     # ui.c
+    "Share": "分享"
+    # ui.c
     "Sort": "排序"
     # ui.c
     "South wind": "南风"
@@ -314,6 +318,8 @@ zh-CN:
     "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.": "点牌组成组合，组合越大得分越高。选6张可以弃牌。"
     # ui.c
     "Tap tiles to make a set. Bigger sets score more. Select 6, or a set, to discard.": "点牌组成组合，组合越大得分越高。选6张或一组可以弃牌。"
+    # ui.c
+    "Tap to close": "点击关闭"
     # ui.c
     "Tap to continue": "点击继续"
     # ui.c
@@ -330,6 +336,8 @@ zh-CN:
     "Theme": "主题"
     # guide.c, ui.c
     "Thirteen Orphans": "十三幺"
+    # ui.c
+    "This game cannot be shared: it was dealt before replay codes, or ran too long. Start a new deal to get one.": "这一局无法分享：它在回放码功能之前发的牌，或者太长。重新发牌后就能用。"
     # guide.c, ui.c
     "Three Kongs": "三杠"
     # guide.c
@@ -362,6 +370,8 @@ zh-CN:
     "Wind set": "四风齐"
     # guide.c
     "Winds, dragons, 1s and 9s score double.": "风牌、箭牌和一、九得分翻倍。"
+    # ui.c
+    "Working…": "计算中…"
     # ui.c
     "best %s / %s    wall %d    discards %d": "最佳 %s / %s    牌墙 %d    弃牌 %d"
     # ui.c

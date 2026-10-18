@@ -106,6 +106,8 @@ jobs:
           SCREENTEST_DEAL=dragons SCREENTEST_DSET=1 ./test/screen/screentest test/screen/out/ci-dset 200,286 310,286 420,286 690,670
           # a long rail: drag it to the older end and back
           SCREENTEST_DEAL=played ./test/screen/screentest test/screen/out/ci-rail '1000,95>300,95' '1000,95>200,95' '300,95>1100,95'
+          # Share: the settings, then the replay link's QR code, then close
+          SCREENTEST_DEAL=played ./test/screen/screentest test/screen/out/ci-share 1226,28 347,620 640,360
           # Sets: open, scroll down and back, choose a set, close
           ./test/screen/screentest test/screen/out/ci-sets 1126,28 '640,450>640,100' '640,100>640,450' 300,170 1150,670
 

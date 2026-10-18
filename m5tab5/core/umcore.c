@@ -518,6 +518,7 @@ void um_new(um_game_t *g, uint32_t seed)
     deal(flat, &rng);
     g->rng = seed;
     um_new_from_wall(g, flat);
+    g->moves_ok = 1;        /* dealt from a seed, so its moves make a code */
 }
 
 /* ------------------------------------------------------------------ */
@@ -623,6 +624,34 @@ static void log_push(um_game_t *g, int t, const uint8_t *k, int n, int v)
     g->log_n++;
 }
 
+/* One move onto g->mv: the letter, the tiles, one more byte. A move that
+ * does not fit ends the record: moves_ok goes false and stays false. */
+static void move_push(um_game_t *g, char op, const uint8_t *k, int n, uint8_t extra)
+{
+    if (!g->moves_ok) return;
+    if (g->mv_len + 3 + n > UM_MOVES_BYTES) { g->moves_ok = 0; return; }
+    uint8_t *p = g->mv + g->mv_len;
+    p[0] = (uint8_t)op;
+    p[1] = (uint8_t)n;
+    if (n) memcpy(p + 2, k, (size_t)n);
+    p[2 + n] = extra;
+    g->mv_len = (uint16_t)(g->mv_len + 3 + n);
+}
+
+bool um_sel_by_kinds(const um_game_t *g, const uint8_t *kinds, int n, um_sel_t *out)
+{
+    out->hand = 0;
+    out->melds = 0;
+    for (int j = 0; j < n; j++) {
+        int slot = -1;
+        for (int i = 0; i < g->hand_len && slot < 0; i++)
+            if (g->hand[i] == kinds[j] && !(out->hand & (1u << i))) slot = i;
+        if (slot < 0) return false;
+        out->hand |= 1u << slot;
+    }
+    return true;
+}
+
 /* ------------------------------------------------------------------ */
 /* Actions                                                             */
 
@@ -633,6 +662,13 @@ bool um_clear(um_game_t *g, um_sel_t s, um_set_t *t_out, int *v_out)
     if (n < 2) return false;
     const um_set_t t = um_classify(kinds, n);
     if (t == UM_NONE) return false;
+    {   /* the record: table tiles ascending, then the melds that go */
+        uint8_t tk[UM_MAX_SEL];
+        int tn = 0;
+        for (int i = 0; i < g->hand_len; i++) if (s.hand & (1u << i)) tk[tn++] = (uint8_t)g->hand[i];
+        sort_kinds(tk, tn);
+        move_push(g, 'C', tk, tn, (uint8_t)(s.melds & ((1u << g->meld_n) - 1)));
+    }
     /* melds that go, keeping the rest in order */
     int keep = 0;
     for (int m = 0; m < g->meld_n; m++) {
@@ -674,6 +710,7 @@ bool um_meld(um_game_t *g, um_sel_t s)
     if (!um_can_meld(g, s)) return false;
     if (um_is_kong_upgrade(g, s)) {
         const int m = __builtin_ctz(s.melds), h = __builtin_ctz(s.hand);
+        move_push(g, 'K', NULL, 0, (uint8_t)m);
         g->melds[m][g->meld_len[m]++] = (uint8_t)g->hand[h];
         g->hand[h] = UM_EMPTY;
         settle(g);
@@ -683,6 +720,7 @@ bool um_meld(um_game_t *g, um_sel_t s)
     uint8_t kinds[UM_MAX_SEL];
     const int n = um_sel_kinds(g, s, kinds);
     sort_kinds(kinds, n);
+    move_push(g, 'M', kinds, n, 0);
     memcpy(g->melds[g->meld_n], kinds, (size_t)n);
     g->meld_len[g->meld_n++] = (uint8_t)n;
     for (int i = 0; i < g->hand_len; i++) if (s.hand & (1u << i)) g->hand[i] = UM_EMPTY;
@@ -707,6 +745,7 @@ bool um_add_six(um_game_t *g)
     }
     g->score -= UM_ADD_COST;
     log_push(g, UM_LOG_ADD, NULL, n, -UM_ADD_COST);
+    move_push(g, 'A', NULL, 0, 0);
     um_finish_check(g);
     return true;
 }
@@ -718,22 +757,37 @@ bool um_can_discard(const um_game_t *g, um_sel_t s)
     return um_sel_kinds(g, s, kinds) == UM_DISCARD_N;
 }
 
-bool um_discard_six(um_game_t *g, um_sel_t s)
+/* Discard 6 and Discard set: the tiles go to the pile in table order, or
+ * in `order` when given (which must be the same tiles), for `cost`. */
+static bool discard_tiles(um_game_t *g, um_sel_t s, const uint8_t *order, int cost, char op)
 {
-    if (!um_can_discard(g, s)) return false;
     uint8_t kinds[UM_MAX_SEL];
     const int n = um_sel_kinds(g, s, kinds);
+    if (order) {
+        uint8_t a[UM_KINDS] = { 0 };
+        for (int i = 0; i < n; i++) a[kinds[i]]++;
+        for (int i = 0; i < n; i++) { if (order[i] >= UM_KINDS || !a[order[i]]) return false; a[order[i]]--; }
+        memcpy(kinds, order, (size_t)n);
+    }
     for (int i = 0; i < g->hand_len; i++) if (s.hand & (1u << i)) g->hand[i] = UM_EMPTY;
     for (int i = 0; i < n; i++) {
         g->disc[(g->disc_pos + g->disc_n) % UM_TOTAL] = kinds[i];
         g->disc_n++;
     }
+    move_push(g, op, kinds, n, 0);
     settle(g);
-    g->score -= UM_DISCARD_COST;
-    log_push(g, UM_LOG_DISCARD, kinds, n, -UM_DISCARD_COST);
+    g->score -= cost;
+    log_push(g, UM_LOG_DISCARD, kinds, n, -cost);
     um_finish_check(g);
     return true;
 }
+
+bool um_discard_six_as(um_game_t *g, um_sel_t s, const uint8_t *order)
+{
+    return um_can_discard(g, s) && discard_tiles(g, s, order, UM_DISCARD_COST, 'D');
+}
+
+bool um_discard_six(um_game_t *g, um_sel_t s) { return um_discard_six_as(g, s, NULL); }
 
 bool um_can_discard_set(const um_game_t *g, um_sel_t s)
 {
@@ -743,24 +797,18 @@ bool um_can_discard_set(const um_game_t *g, um_sel_t s)
     return n >= 2 && um_classify(kinds, n) != UM_NONE;
 }
 
-bool um_discard_set(um_game_t *g, um_sel_t s, int *cost_out)
+bool um_discard_set_as(um_game_t *g, um_sel_t s, const uint8_t *order, int *cost_out)
 {
     if (!um_can_discard_set(g, s)) return false;
     uint8_t kinds[UM_MAX_SEL];
     const int n = um_sel_kinds(g, s, kinds);
     const int v = um_set_value(um_classify(kinds, n), kinds, n);
-    for (int i = 0; i < g->hand_len; i++) if (s.hand & (1u << i)) g->hand[i] = UM_EMPTY;
-    for (int i = 0; i < n; i++) {
-        g->disc[(g->disc_pos + g->disc_n) % UM_TOTAL] = kinds[i];
-        g->disc_n++;
-    }
-    settle(g);
-    g->score -= v;
-    log_push(g, UM_LOG_DISCARD, kinds, n, -v);
-    um_finish_check(g);
+    if (!discard_tiles(g, s, order, v, 'X')) return false;
     if (cost_out) *cost_out = v;
     return true;
 }
+
+bool um_discard_set(um_game_t *g, um_sel_t s, int *cost_out) { return um_discard_set_as(g, s, NULL, cost_out); }
 
 void um_sort(um_game_t *g)
 {
@@ -1020,6 +1068,10 @@ bool um_valid(const um_game_t *g)
         if (e->n > UM_MAX_SEL) return false;
         for (int i = 0; i < e->n; i++) if (e->k[i] >= UM_KINDS) return false;
     }
+    /* the move record */
+    uint8_t mok;
+    memcpy(&mok, &g->moves_ok, 1);
+    if (mok > 1 || g->mv_len > UM_MOVES_BYTES) return false;
     /* now safe to count */
     uint8_t rem[UM_KINDS];
     um_remaining(g, rem);

@@ -10,6 +10,8 @@
  *
  * and one that checks itself:
  *
+ *   umtest code <seed> <games> random games, then each one's replay
+ *                              payload, code (light work, 8 bits) and end
  *   umtest valid               um_valid passes games mid-play and fails
  *                              each kind of corruption; exits 1 if not
  *
@@ -21,6 +23,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "umcore.h"
+#include "umreplay.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -212,8 +215,71 @@ static void deal_mode(uint32_t first, int n)
     }
 }
 
+/* Where a game is, independent of which slot holds which tile: what a
+ * replay must reproduce. check.js prints the web version's the same way. */
+static void print_end(const um_game_t *g)
+{
+    uint8_t h[UM_MAX_HAND];
+    int n = 0;
+    for (int i = 0; i < g->hand_len; i++) if (g->hand[i] != UM_EMPTY) h[n++] = (uint8_t)g->hand[i];
+    for (int i = 1; i < n; i++) { const uint8_t v = h[i]; int j = i - 1; while (j >= 0 && h[j] > v) { h[j + 1] = h[j]; j--; } h[j + 1] = v; }
+    printf("E %d %d %d |", (int)g->points, (int)g->score, (int)g->done);
+    for (int i = 0; i < n; i++) printf(" %d", h[i]);
+    printf(" |");
+    for (int m = 0; m < g->meld_n; m++) { printf(" "); for (int i = 0; i < g->meld_len[m]; i++) printf("%s%d", i ? "," : "", g->melds[m][i]); }
+    printf(" |");
+    for (int i = g->wall_pos; i < UM_TOTAL; i++) printf(" %d", g->wall[i]);
+    printf(" |");
+    for (int i = 0; i < g->disc_n; i++) printf(" %d", g->disc[(g->disc_pos + i) % UM_TOTAL]);
+    printf("\n");
+}
+
+/* Random games with every kind of move, as play_mode's player makes them,
+ * then the replay code of each. */
+static void code_mode(uint32_t seed, int games)
+{
+    static um_game_t g;
+    static char code[UM_CODE_MAX];
+    static char head[1], rest[UM_CODE_MAX];
+    for (int gi = 0; gi < games; gi++) {
+        s_rng = seed * 2654435761u + (uint32_t)gi * 40503u + 7u;
+        um_new(&g, seed * 7919u + (uint32_t)gi);
+        for (int step = 0; step < 500 && !g.done; step++) {
+            const int r = below(100);
+            um_sel_t s = { 0, 0 };
+            if (r < 45) { if (um_hint(&g, &s)) um_clear(&g, s, NULL, NULL); }
+            else if (r < 55) { if (g.meld_n) { s.melds = (uint8_t)(1u << below(g.meld_n)); if (below(2)) { um_sel_t h; if (um_hint(&g, &h)) s.hand = h.hand; } um_clear(&g, s, NULL, NULL); } }
+            else if (r < 67) {
+                bool up = false;
+                for (int m = 0; m < g.meld_n && !up; m++) {
+                    if (g.meld_len[m] != 3 || g.melds[m][0] != g.melds[m][2]) continue;
+                    for (int i = 0; i < g.hand_len; i++)
+                        if (g.hand[i] == g.melds[m][0]) { s.hand = 1u << i; s.melds = (uint8_t)(1u << m); up = true; break; }
+                }
+                if (!up) {   /* meld a pung if one shows, else the hint's set */
+                    uint8_t c[UM_KINDS] = { 0 };
+                    for (int i = 0; i < g.hand_len; i++) if (g.hand[i] != UM_EMPTY) c[g.hand[i]]++;
+                    for (int k = 0; k < UM_KINDS && !s.hand; k++) if (c[k] >= 3) { const uint8_t t[3] = { (uint8_t)k, (uint8_t)k, (uint8_t)k }; um_sel_by_kinds(&g, t, 3, &s); }
+                    if (!s.hand) um_hint(&g, &s);
+                }
+                um_meld(&g, s);
+            }
+            else if (r < 74) um_add_six(&g);
+            else if (r < 82) { s = random_sel(&g, 6, false); um_discard_six(&g, s); }
+            else if (r < 88) { if (um_hint(&g, &s)) um_discard_set(&g, s, NULL); }
+            else { s = random_sel(&g, 2 + below(4), below(4) == 0); um_clear(&g, s, NULL, NULL); }
+        }
+        const int rl = um_replay_pack(&g, head, rest, sizeof rest);
+        const int cl = um_replay_code(&g, s_rng, 8, code, sizeof code);
+        if (rl < 0 || cl < 0) { printf("X %d\n", gi); continue; }
+        printf("R %.1s%.*s %s %u\n", head, rl, rest, code, (unsigned)g.rng);
+        print_end(&g);
+    }
+}
+
 int main(int argc, char **argv)
 {
+    if (argc >= 4 && !strcmp(argv[1], "code")) { code_mode((uint32_t)strtoul(argv[2], NULL, 10), atoi(argv[3])); return 0; }
     if (argc >= 4 && !strcmp(argv[1], "deal")) { deal_mode((uint32_t)strtoul(argv[2], NULL, 10), atoi(argv[3])); return 0; }
     if (argc >= 2 && !strcmp(argv[1], "valid")) return valid_mode();
     if (argc >= 2 && !strcmp(argv[1], "classify")) return classify_mode();

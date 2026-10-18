@@ -14,12 +14,17 @@
 
 static const char *TAG = "save";
 #define NS          "umj"
-#define GAME_VER    (2u)    /* 2: the rail keeps 64 entries, not 32 */
+#define GAME_VER    (3u)    /* 3: the moves are kept, for replay codes; 2: the rail keeps 64 */
 
 /* Version 1 is version 2 with a 32-entry log: the log is the last member
  * and everything before it is the same, so a version 1 game is read by
  * copying what precedes the log and moving the 32 kept entries to where
  * a 64-entry ring keeps them. A game in progress survives the update. */
+/* Version 2 is version 3 without the move record, which is last: it is
+ * read as it is, with no moves and moves_ok false, so it plays on but
+ * gives no replay code -- its moves before now were never kept. */
+#define TAIL        offsetof(um_game_t, moves_ok)
+#define V2_SIZE     ((TAIL + _Alignof(um_game_t) - 1) / _Alignof(um_game_t) * _Alignof(um_game_t))
 #define V1_LOG_N    (32)
 #define V1_SIZE     ((offsetof(um_game_t, log) + V1_LOG_N * sizeof(um_log_t) + _Alignof(um_game_t) - 1) \
                      / _Alignof(um_game_t) * _Alignof(um_game_t))
@@ -30,7 +35,7 @@ typedef struct {
     um_game_t g;
 } blob_t;
 
-static blob_t s_blob;   /* 2 KB: off the stack */
+static blob_t s_blob;   /* 3 KB: off the stack */
 static um_log_t s_v1_log[V1_LOG_N];
 
 void save_init(void)
@@ -62,7 +67,11 @@ bool save_load_game(um_game_t *g)
         const int keep = n->log_n < V1_LOG_N ? n->log_n : V1_LOG_N;
         for (int j = 0; j < keep; j++) n->log[keep - 1 - j] = s_v1_log[(n->log_n - 1 - j) % V1_LOG_N];
         n->log_n = (uint16_t)keep;
+        memset((uint8_t *)n + TAIL, 0, sizeof *n - TAIL);
         ESP_LOGI(TAG, "read a version 1 game");
+    } else if (s_blob.ver == 2 && s_blob.size == V2_SIZE && len == offsetof(blob_t, g) + V2_SIZE) {
+        memset((uint8_t *)&s_blob.g + TAIL, 0, sizeof s_blob.g - TAIL);
+        ESP_LOGI(TAG, "read a version 2 game");
     } else if (len != sizeof s_blob || s_blob.ver != GAME_VER || s_blob.size != sizeof(um_game_t)) {
         return false;
     }

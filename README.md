@@ -33,7 +33,7 @@ The in-game **Sets and scores** guide shows every set with example tiles and its
 
 ## Replay codes
 
-**Share**, by New deal, turns the game on the table into a link anyone can open to watch it move by move. The code is the deal's seed and the moves, about 3 characters a move (around 150 for a whole game), in URL-safe base64. Nothing in it states a score: the page replays every move under the rules and stops at the first one that breaks them, so the only way to show a score is a legal game that earns it. Making a code also takes a small proof of work (MurmurHash2 with 20 leading zero bits, under a second), and every 63 characters carry 2 check characters that put one mistyped character right. Watching a code never touches your own game or best scores. Games dealt before codes existed have none.
+**Share**, by New deal, turns the game on the table into a link anyone can open to watch it move by move. The code is the deal's seed and the moves, about 3 characters a move (around 150 for a whole game), in URL-safe base64. Nothing in it states a score: the page replays every move under the rules and stops at the first one that breaks them, so the only way to show a score is a legal game that earns it. Making a code also takes a small proof of work (MurmurHash2 with 20 leading zero bits, under a second), and every 63 characters carry 2 check characters that put one mistyped character right. Watching a code never touches your own game or best scores. Games dealt before codes existed have none. On the Tab5, Share in the settings shows the same link as a QR code.
 
 `node test/replaycheck.js` plays random games with every kind of move, and checks that each code replays to the same end, that a typo is put right, and that changed codes are refused.
 
@@ -61,5 +61,6 @@ It uses other people's work under their own licences:
 | [Ark Pixel Font](https://github.com/TakWolf/ark-pixel-font) (Ark12), © 2021 TakWolf | The Tab5 firmware's text, compiled in through feckless_graphics_handler | SIL Open Font License 1.1 |
 | [feckless-graphics-handler-for-m5tab5](https://github.com/Sudrien/feckless-graphics-handler-for-m5tab5), [feckless-drivers-for-m5tab5](https://github.com/Sudrien/feckless-drivers-for-m5tab5) | Tab5 firmware, fetched when it's built | MIT |
 | [ESP-IDF](https://github.com/espressif/esp-idf) and the Espressif components it pulls in (touch controllers, USB host) | Tab5 firmware, fetched when it's built | Apache 2.0 |
+| [QR Code generator library](https://github.com/nayuki/QR-Code-generator) (C), © Project Nayuki | The Tab5's replay QR code, vendored in `m5tab5/components/qrcodegen` | MIT |
 
 The firmware binaries on the releases page contain the Tab5 entries in this table, so anyone redistributing them should carry those licences too. Each project's repository has its licence text.

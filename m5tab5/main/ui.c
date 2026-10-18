@@ -30,8 +30,10 @@
 #include "i18n.h"
 #include "save.h"
 #include "guide.h"
+#include "qrcodegen.h"
 #include "tiledraw.h"
 #include "umcore.h"
+#include "umreplay.h"
 
 static const char *TAG = "ui";
 
@@ -735,7 +737,7 @@ static void draw_buttons(void)
  * nothing to confirm and Done only closes it. New deal asks for a
  * second tap, as it did as a button. In landscape the four sit in two
  * columns, since 720 px does not hold them stacked at 36 px text. */
-enum { G_ROT, G_THEME, G_LANG, G_AUTO, G_DSET, G_NEW, G_DONE };
+enum { G_ROT, G_THEME, G_LANG, G_AUTO, G_DSET, G_NEW, G_SHARE, G_DONE };
 #define G_SECTIONS (5)
 #define CHIP_H     (72)
 #define CHIP_MAX   (16)
@@ -806,9 +808,11 @@ static void layout_menu(void)
     const bool armed = esp_timer_get_time() < s_armed_until;
     chip_t *nd = add_chip(G_NEW, 0, armed ? _("Tap again to deal") : _("New deal"), 180);
     nd->x = pad; nd->y = y;
+    chip_t *sh = add_chip(G_SHARE, 0, _("Share"), 150);
+    sh->x = nd->x + nd->w + gap; sh->y = y;
     chip_t *d = add_chip(G_DONE, 0, _("Done"), 200);
     d->x = pw - pad - d->w; d->y = y;
-    if (nd->x + nd->w + gap > d->x) { d->y += CHIP_H + gap; y += CHIP_H + gap; }
+    if (sh->x + sh->w + gap > d->x) { d->y += CHIP_H + gap; y += CHIP_H + gap; }
     y += CHIP_H + 24;
     /* centred across, from a fixed top: a choice that rewraps a row (a
      * language, a turn) moves what is below it, never what is above */
@@ -842,10 +846,13 @@ static void draw_menu(void)
 }
 
 static void draw_guide(void);
+static void draw_share(void);
+static bool s_share;
 
 static void redraw(void)
 {
     if (s_guide) { draw_guide(); gfx_blit(0, gfx_h()); return; }
+    if (s_share) { draw_share(); gfx_blit(0, gfx_h()); return; }
     gfx_fill_rect(0, 0, gfx_w(), gfx_h(), C_BG);
     gfx_fill_rect(M_X / 2, L.table_y, gfx_w() - M_X, L.btn_y - L.table_y - 12, C_SURFACE);
     draw_top();
@@ -1294,6 +1301,91 @@ static void press(int b)
     after_move(was_done);
 }
 
+/* ------------------------------------------------------------------ */
+/* Share: the game's replay link as a QR code                          */
+
+/* The full link, so a phone's camera opens the replay on the web: the
+ * page reads the code, checks it and plays the game back move by move.
+ * Error correction is the highest (H, about 30% of the code can be lost),
+ * which leaves room for the 1 Bamboo over the middle; the site is written
+ * underneath. The QR is black on white whatever the theme, which is what
+ * scanners expect. */
+#define REPLAY_URL  "https://sudrien.github.io/unprofitable-mahjong/#replay="
+#define REPLAY_SITE "sudrien.github.io/unprofitable-mahjong"
+#ifndef UI_REPLAY_WORK
+#define UI_REPLAY_WORK UM_REPLAY_WORK   /* test/screen may lower it, under the sanitizers */
+#endif
+
+static bool s_share_ok;      /* s_share, the view's open flag, is declared above redraw() */
+/* about 12 KB between them: in PSRAM, made the first time Share is used */
+static struct {
+    uint8_t qr[qrcodegen_BUFFER_LEN_MAX], tmp[qrcodegen_BUFFER_LEN_MAX];
+    char code[UM_CODE_MAX], url[sizeof REPLAY_URL + UM_CODE_MAX];
+} *s_sh;
+
+static void share_open(void)
+{
+    /* the proof of work takes a moment: say so first */
+    gfx_fill_rect(0, 0, gfx_w(), gfx_h(), C_BG);
+    const char *wk = _("Working…");
+    gfx_draw_text((gfx_w() - gfx_text_w(wk, TXT)) / 2, gfx_h() / 2 - GFX_GLYPH_H(TXT) / 2, wk, TXT, gfx_w(), C_MUTED);
+    gfx_blit(0, gfx_h());
+    const int64_t t0 = esp_timer_get_time();
+    if (!s_sh) s_sh = heap_caps_malloc(sizeof *s_sh, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+    const int n = s_sh ? um_replay_code(&s_g, esp_random(), UI_REPLAY_WORK, s_sh->code, sizeof s_sh->code) : -1;
+    s_share_ok = n > 0;
+    if (s_share_ok) {
+        snprintf(s_sh->url, sizeof s_sh->url, "%s%s", REPLAY_URL, s_sh->code);
+        s_share_ok = qrcodegen_encodeText(s_sh->url, s_sh->tmp, s_sh->qr, qrcodegen_Ecc_HIGH,
+                                          qrcodegen_VERSION_MIN, qrcodegen_VERSION_MAX, qrcodegen_Mask_AUTO, false);
+        ESP_LOGI(TAG, "replay code: %d chars, QR %d modules, %lld ms", n, s_share_ok ? qrcodegen_getSize(s_sh->qr) : 0,
+                 (long long)((esp_timer_get_time() - t0) / 1000));
+        ESP_LOGI(TAG, "%s", s_sh->url);
+    }
+    (void)t0;   /* only the log reads it */
+    s_share = true;
+    touch_swallow();
+}
+
+static void draw_share(void)
+{
+    gfx_fill_rect(0, 0, gfx_w(), gfx_h(), C_BG);
+    const char *tap = _("Tap to close");
+    if (!s_share_ok) {
+        gfx_draw_para(M_X * 2, gfx_h() / 2 - LINE * 2,
+                      _("This game cannot be shared: it was dealt before replay codes, or ran too long. Start a new deal to get one."),
+                      TXT, gfx_w() - 4 * M_X, LINE, 4, C_INK);
+        gfx_draw_text((gfx_w() - gfx_text_w(tap, SMALL)) / 2, gfx_h() - 60, tap, SMALL, gfx_w(), C_MUTED);
+        return;
+    }
+    const char *title = _("Scan to watch this game");
+    const int top = TOP_Y + GFX_GLYPH_H(TXT) + 24, foot = GFX_GLYPH_H(TXT) + 16 + GFX_GLYPH_H(SMALL) + 24;
+    gfx_draw_text((gfx_w() - gfx_text_w(title, TXT)) / 2, TOP_Y + 8, title, TXT, gfx_w(), C_INK);
+
+    /* the code, four modules of quiet zone round it, as large as fits */
+    const int size = qrcodegen_getSize(s_sh->qr), span = size + 8;
+    const int aw = gfx_w() - 2 * M_X, ah = gfx_h() - top - foot;
+    const int m = (aw < ah ? aw : ah) / span;
+    const int px = m * span, x0 = (gfx_w() - px) / 2, y0 = top + (ah - px) / 2;
+    const uint16_t white = RGB(0xff, 0xff, 0xff), black = RGB(0, 0, 0);
+    gfx_fill_rect(x0, y0, px, px, white);
+    for (int y = 0; y < size; y++)
+        for (int x = 0; x < size; x++)
+            if (qrcodegen_getModule(s_sh->qr, x, y)) gfx_fill_rect(x0 + (x + 4) * m, y0 + (y + 4) * m, m, m, black);
+
+    /* the 1 Bamboo over the middle, on a white margin a module wide */
+    const int cx = x0 + px / 2, cy = y0 + px / 2;
+    const int iw = tilefaces_M.w, ih = tilefaces_M.h + TILEDRAW_EDGE_M;
+    gfx_fill_rect(cx - iw / 2 - m, cy - ih / 2 - m, iw + 2 * m, ih + 2 * m, white);
+    tiledraw_tile(&tilefaces_M, 18, cx - iw / 2, cy - ih / 2, TILEDRAW_EDGE_M);
+
+    /* the site, and how to leave */
+    const int sy = y0 + px + 16;
+    const int ss = gfx_text_w(REPLAY_SITE, TXT) <= gfx_w() - 2 * M_X ? TXT : SMALL;    /* portrait is 720 wide */
+    gfx_draw_text((gfx_w() - gfx_text_w(REPLAY_SITE, ss)) / 2, sy, REPLAY_SITE, ss, gfx_w(), C_INK);
+    gfx_draw_text((gfx_w() - gfx_text_w(tap, SMALL)) / 2, sy + GFX_GLYPH_H(ss) + 16, tap, SMALL, gfx_w(), C_MUTED);
+}
+
 /* The picture and the touch coordinates turn together, or every tap
  * lands somewhere other than where it was drawn. */
 static void apply_rotation(int r)
@@ -1334,6 +1426,10 @@ static void menu_tap(int x, int y)
         case G_DSET:
             s_prefs.discard_set = (uint8_t)c->value;
             break;
+        case G_SHARE:
+            s_menu = false;
+            share_open();
+            return;
         case G_NEW:
             if (esp_timer_get_time() < s_armed_until) { s_armed_until = 0; s_menu = false; new_deal(); }
             else s_armed_until = esp_timer_get_time() + ARM_US;
@@ -1349,6 +1445,7 @@ static void menu_tap(int x, int y)
 
 static void tap(int x, int y)
 {
+    if (s_share) { s_share = false; return; }   /* any tap closes the QR */
     if (s_menu) { menu_tap(x, y); return; }
     {
         int sx0, sy0, sw, sh;

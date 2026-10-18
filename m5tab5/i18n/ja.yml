@@ -291,6 +291,8 @@ ja:
     # guide.c
     "Run of 5": "5連順"
     # ui.c
+    "Scan to watch this game": "スキャンしてこの対局を見る"
+    # ui.c
     "Set sets aside here to build a bigger hand.": "組をここに置いて、大きな役を育てよう。"
     # ui.c
     "Sets": "役"
@@ -303,6 +305,8 @@ ja:
     # guide.c
     "Seven different pairs.": "異なる対子7組。"
     # ui.c
+    "Share": "共有"
+    # ui.c
     "Sort": "並べ替え"
     # ui.c
     "South wind": "南"
@@ -314,6 +318,8 @@ ja:
     "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.": "牌をタップして組を作ろう。大きな組ほど高得点。6枚選ぶと捨てられます。"
     # ui.c
     "Tap tiles to make a set. Bigger sets score more. Select 6, or a set, to discard.": "牌をタップして組を作ろう。大きな組ほど高得点。6枚か組を選ぶと捨てられます。"
+    # ui.c
+    "Tap to close": "タップで閉じる"
     # ui.c
     "Tap to continue": "タップで続ける"
     # ui.c
@@ -330,6 +336,8 @@ ja:
     "Theme": "テーマ"
     # guide.c, ui.c
     "Thirteen Orphans": "国士無双"
+    # ui.c
+    "This game cannot be shared: it was dealt before replay codes, or ran too long. Start a new deal to get one.": "この対局は共有できません。リプレイコードの導入前に配られたか、長すぎます。新しく配ると使えます。"
     # guide.c, ui.c
     "Three Kongs": "三槓子"
     # guide.c
@@ -362,6 +370,8 @@ ja:
     "Wind set": "四風牌セット"
     # guide.c
     "Winds, dragons, 1s and 9s score double.": "字牌と1・9は得点2倍。"
+    # ui.c
+    "Working…": "計算中…"
     # ui.c
     "best %s / %s    wall %d    discards %d": "ベスト %s / %s    山 %d    捨て牌 %d"
     # ui.c

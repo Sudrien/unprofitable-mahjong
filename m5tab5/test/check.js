@@ -8,6 +8,8 @@
 //   play       random games, move by move: same table, melds, wall,
 //              discard pile, points, penalty, hint and warnings
 //   deal       the walls dealt from 400 seeds, C and web, tile for tile
+//   code       the Tab5's replay codes: the web version reads them, replays
+//              them to the same end, and packs the same payload
 //   guide      main/guide.c against the web version's GUIDE: sections,
 //              names, notes, tiles, and the set and points each makes
 //
@@ -22,12 +24,13 @@ const { execFileSync } = require('child_process');
 const UMTEST = path.resolve(process.argv[2] || path.join(__dirname, 'umtest'));
 const GAMES = +process.argv[3] || 2000;
 const GUIDECHECK = process.argv[4] ? path.resolve(process.argv[4]) : null;
+const CODES = +process.env.CODES || 300;
 const html = fs.readFileSync(path.join(__dirname, '..', '..', 'index.html'), 'utf8');
 const js = html.split('<script>')[1].split('</script>')[0];
 const core = js.slice(js.indexOf('const HAND'), js.indexOf('/* ---------- render'));
 const make = new Function(`function render(){}; ${core};
   return { deal, setS: v => { S = v; }, get S() { return S; }, sel, clearSet, meldSet, addSix, discardSix, discardSet, sortHand,
-           findSet, penalty, classify, setValue, hasBonus, remaining, meldKeys, limitGroups, LIMIT };`);
+           findSet, penalty, classify, setValue, hasBonus, remaining, meldKeys, limitGroups, LIMIT, readCode, packGame };`);
 
 let failures = 0;
 const fail = msg => { failures++; if (failures <= 20) console.error('MISMATCH ' + msg); };
@@ -101,6 +104,30 @@ function dealCheck() {
   console.log(`deal: ${n} seeds dealt the same`);
 }
 
+/* ---------- replay codes ---------- */
+// The Tab5's codes (core/umreplay.c) against the web version's reader:
+// each must read, replay to exactly where the C game ended, and the web
+// version packing the same moves must make the same payload, byte for byte.
+function codeCheck() {
+  const G = make();
+  const lines = execFileSync(UMTEST, ['code', '5', String(CODES)], { maxBuffer: 1 << 28 }).toString().trim().split('\n');
+  let n = 0, chars = 0;
+  for (let i = 0; i < lines.length; i++) {
+    if (!lines[i].startsWith('R ')) { if (lines[i].startsWith('X ')) fail(`code: C made no code for game ${lines[i].slice(2)}`); continue; }
+    const [, payload, code, seed] = lines[i].split(' '), end = lines[i + 1];
+    const r = G.readCode(code, 8);
+    if (r.error) { fail(`code ${n}: the web version read it as ${r.error} ${r.at || ''}: ${code.slice(0, 40)}...`); continue; }
+    const S = JSON.parse(r.snaps[r.snaps.length - 1]);
+    const hand = S.hand.filter(k => k !== null).sort((a, b) => a - b);
+    const js = `E ${S.points} ${S.score} ${S.done ? 1 : 0} |${hand.map(k => ' ' + k).join('')} |${S.melds.map(m => ' ' + m.join(',')).join('')} |${S.wall.map(k => ' ' + k).join('')} |${S.discards.map(k => ' ' + k).join('')}`;
+    if (js !== end) fail(`code ${n}: replayed to a different end\n   C: ${end}\n  JS: ${js}`);
+    const p = G.packGame(+seed, r.moves);
+    if (p.head + p.rest !== payload) fail(`code ${n}: payloads differ\n   C: ${payload.slice(0, 60)}...\n  JS: ${(p.head + p.rest).slice(0, 60)}...`);
+    n++; chars += code.length;
+  }
+  console.log(`code: ${n} Tab5 codes read and replayed by the web version, same payloads (${Math.round(chars / n)} chars on average)`);
+}
+
 /* ---------- guide ---------- */
 function guideCheck() {
   const G = make();
@@ -168,6 +195,7 @@ function playCheck() {
 classifyCheck();
 dealCheck();
 playCheck();
+codeCheck();
 if (GUIDECHECK) guideCheck();
 if (failures) { console.error(`${failures} mismatches`); process.exit(1); }
 console.log('core matches the web version');

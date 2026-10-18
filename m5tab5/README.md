@@ -64,6 +64,18 @@ the web version's, points included.
 
 ![Sets](screenshots/sets.png)
 
+Share, in the gear's panel beside New deal, shows the game's replay link
+as a QR code: point a phone's camera at it and the web version opens the
+game and plays it back move by move. The code is the web version's
+(`core/umreplay.c` makes the same one, character for character), with
+the same proof of work, which takes a moment. The QR is the full link
+at error correction H, so the 1 Bamboo can sit over the middle, with
+the site written underneath. The QR is drawn by Project Nayuki's
+qrcodegen, vendored in `components/qrcodegen`. A game saved before the
+Tab5 kept its moves has no code, and Share says so.
+
+![Share](screenshots/share.png)
+
 The panel is about 294 pixels to the inch, so text is Ark12 at 36 px
 (about 9 pt); 24 px is left for the line of bests and piles, the
 rail's values, and the list of chosen tiles in landscape.
@@ -152,8 +164,11 @@ out by the plan it was built from, using the game's own clears: every
 clear must be allowed and the game must end with every tile gone and a
 penalty of 0. `umtest valid` checks that a saved game with a value out
 of range is refused before the board plays it, and `test/savecheck` runs
-`main/save.c` over an in-memory NVS: settings and games round trip, and a
-game saved before the rail kept 64 entries is still read.
+`main/save.c` over an in-memory NVS: settings and games round trip, and
+games saved before the rail kept 64 entries, or before the moves were
+kept, are still read. check.js also takes the Tab5's replay codes from
+`umtest code` and has the web version read and replay them, and pack
+the same moves into the same payload, byte for byte.
 
 ## Credits
 

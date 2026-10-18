@@ -5,5 +5,6 @@ idf_component_register(
     REQUIRES esp_timer nvs_flash esp_hw_support esp_lcd esp_app_format
              feckless_graphics_handler   # gfx, lcd, ark12
              feckless_drivers            # tab5io, touch
-             umcore                      # the rules, from ../core
+             umcore                      # the rules and replay codes, from ../core
+             qrcodegen                   # the replay link's QR code
 )

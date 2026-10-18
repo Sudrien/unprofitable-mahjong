@@ -37,6 +37,7 @@ extern "C" {
 #define UM_COMBO_BONUS  (1)
 #define UM_LOG_N        (64)    /* recent clears kept for the rail: a whole ordinary game */
 #define UM_EMPTY        (-1)
+#define UM_MOVES_BYTES  (1024)  /* a game's moves, about 5 bytes each */
 
 static inline bool um_is_honor(int k) { return k >= 27; }
 static inline bool um_is_edge(int k)  { return k >= 27 || k % 9 == 0 || k % 9 == 8; }
@@ -114,6 +115,21 @@ typedef struct {
     uint32_t rng;                   /* the deal's generator, kept for the record */
     uint16_t log_n;                 /* entries ever logged; the last UM_LOG_N are kept */
     um_log_t log[UM_LOG_N];
+    /* The moves, as they were played, for a replay code (umreplay.h).
+     * Last, so a game saved before them reads as a prefix of this one.
+     * Each move is: its letter (A C M K D X, as the web version's
+     * S.moves), a tile count n, n tile kinds, and one more byte --
+     *   C  the table tiles cleared, ascending; the melds cleared, a bit each
+     *   M  the tiles melded, ascending; 0
+     *   K  no tiles; the meld made a kong
+     *   A  no tiles; 0
+     *   D, X  the tiles thrown, in the order they went to the pile; 0
+     * moves_ok is false when the moves are not all here: a game read
+     * from an older save, dealt from a wall rather than a seed, or one
+     * whose moves outgrew the buffer. */
+    uint8_t  moves_ok;
+    uint16_t mv_len;
+    uint8_t  mv[UM_MOVES_BYTES];
 } um_game_t;
 
 /* A new solvable deal from `seed` (any value; 0 is remapped). */
@@ -147,6 +163,14 @@ bool um_discard_six(um_game_t *g, um_sel_t s);
  * Discard 6 instead, which is never dearer. */
 bool um_can_discard_set(const um_game_t *g, um_sel_t s);
 bool um_discard_set(um_game_t *g, um_sel_t s, int *cost_out);
+/* The same, sending the tiles to the pile in a given order (order: the
+ * selection's kinds, each once per tile) rather than table order. A
+ * replay needs this to rebuild the pile exactly; NULL is table order. */
+bool um_discard_six_as(um_game_t *g, um_sel_t s, const uint8_t *order);
+bool um_discard_set_as(um_game_t *g, um_sel_t s, const uint8_t *order, int *cost_out);
+/* Table tiles by kind: for each of kinds[0..n), the first slot holding
+ * it not already chosen. False if the table lacks one. */
+bool um_sel_by_kinds(const um_game_t *g, const uint8_t *kinds, int n, um_sel_t *out);
 void um_sort(um_game_t *g);
 
 /* The hint: the best-scoring set on the table, without looking ahead.

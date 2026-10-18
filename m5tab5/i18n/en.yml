@@ -291,6 +291,8 @@ en:
     # guide.c
     "Run of 5": ~
     # ui.c
+    "Scan to watch this game": ~
+    # ui.c
     "Set sets aside here to build a bigger hand.": ~
     # ui.c
     "Sets": ~
@@ -303,6 +305,8 @@ en:
     # guide.c
     "Seven different pairs.": ~
     # ui.c
+    "Share": ~
+    # ui.c
     "Sort": ~
     # ui.c
     "South wind": ~
@@ -314,6 +318,8 @@ en:
     "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.": ~
     # ui.c
     "Tap tiles to make a set. Bigger sets score more. Select 6, or a set, to discard.": ~
+    # ui.c
+    "Tap to close": ~
     # ui.c
     "Tap to continue": ~
     # ui.c
@@ -330,6 +336,8 @@ en:
     "Theme": ~
     # guide.c, ui.c
     "Thirteen Orphans": ~
+    # ui.c
+    "This game cannot be shared: it was dealt before replay codes, or ran too long. Start a new deal to get one.": ~
     # guide.c, ui.c
     "Three Kongs": ~
     # guide.c
@@ -362,6 +370,8 @@ en:
     "Wind set": ~
     # guide.c
     "Winds, dragons, 1s and 9s score double.": ~
+    # ui.c
+    "Working…": ~
     # ui.c
     "best %s / %s    wall %d    discards %d": ~
     # ui.c

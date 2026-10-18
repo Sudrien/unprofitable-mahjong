@@ -6,6 +6,8 @@
  *   - a game saved by a version 1 build (a 32-entry rail log) is read
  *     into today's 64-entry one: everything before the log as it was,
  *     and the 32 entries that were kept, newest last, renumbered from 0;
+ *   - a version 2 game (no move record) is read as it was, with no moves
+ *     and moves_ok false, and so are version 1 games;
  *   - a save of the wrong size or version is turned down.
  *
  * SPDX-License-Identifier: MIT
@@ -126,6 +128,7 @@ static void check_v1(uint32_t seed, int entries)
         CHECK(a->t == b->t && a->n == b->n && a->v == b->v && !memcmp(a->k, b->k, a->n), what);
     }
     CHECK(um_valid(&got), "version 1 game: not um_valid after reading");
+    CHECK(!got.moves_ok && !got.mv_len, "version 1 game: read with moves it never kept");
 }
 
 int main(void)
@@ -152,6 +155,21 @@ int main(void)
     check_v1(12, 45);           /* more: the last 32 */
     check_v1(13, 200);          /* as many as the game makes */
 
+    CHECK(g.moves_ok && g.mv_len > 0 && back.mv_len == g.mv_len && !memcmp(back.mv, g.mv, g.mv_len), "game: the moves did not round trip");
+
+    /* version 2: today's game up to the move record */
+    {
+        static uint8_t b[4096];
+        const size_t v2 = (offsetof(um_game_t, moves_ok) + 3) / 4 * 4;
+        const uint32_t hdr[2] = { 2, (uint32_t)v2 };
+        memcpy(b, hdr, sizeof hdr);
+        memcpy(b + 8, &g, v2);
+        put("game", b, 8 + v2);
+        CHECK(save_load_game(&back), "version 2 game: not read");
+        CHECK(!memcmp(&g, &back, offsetof(um_game_t, moves_ok)), "version 2 game: changed in reading");
+        CHECK(!back.moves_ok && !back.mv_len && um_valid(&back), "version 2 game: read with moves it never kept");
+    }
+
     const size_t v1 = (offsetof(um_game_t, log) + V1_LOG_N * sizeof(um_log_t) + 3) / 4 * 4;
     save_v1(&g, 1, (uint32_t)v1 + 4, 8 + v1 + 4);
     CHECK(!save_load_game(&back), "a version 1 save of the wrong size was read");
@@ -161,6 +179,6 @@ int main(void)
     CHECK(!save_load_game(&back), "a version 2 save of version 1's size was read");
 
     if (s_bad) return 1;
-    printf("savecheck: settings and games round trip; version 1 games read with their rail; foreign saves refused\n");
+    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves; foreign saves refused\n");
     return 0;
 }
