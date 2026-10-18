@@ -7,6 +7,11 @@
  *   umtest play <seed> <games> random games: the wall, then each move
  *                              with the state after it
  *
+ * and one that checks itself:
+ *
+ *   umtest valid               um_valid passes games mid-play and fails
+ *                              each kind of corruption; exits 1 if not
+ *
  * The games are played by a deliberately careless random player, so the
  * odd corners get visited: invalid selections, melds cleared alone,
  * kong upgrades, Add 6 at the limit, discards cycling back.
@@ -39,6 +44,8 @@ static int classify_mode(void)
 
 static void print_state(const um_game_t *g)
 {
+    /* every state these games reach is one um_valid must take back */
+    if (!um_valid(g)) { fprintf(stderr, "um_valid refused a game in play\n"); exit(1); }
     um_sel_t hs = { 0, 0 }, ha = { 0, 0 };
     const bool fs = um_find_set(g, true, &hs);
     const bool fa = um_find_set(g, false, &ha);
@@ -132,10 +139,55 @@ static void play_mode(uint32_t seed, int games)
     }
 }
 
+/* um_valid: a game mid-play passes; each corruption, made on a copy of
+ * it, fails. The copies are what a save from a different build or a
+ * damaged NVS page would hand save_load_game. */
+static int valid_mode(void)
+{
+    static um_game_t g, c;
+    int bad = 0;
+    um_new(&g, 99);
+    /* play a while by the hint, with an Add 6 and a meld, so the hand,
+     * the melds, the discards and the log all have something in them */
+    um_sel_t s = { 0, 0 };
+    for (int i = 0; i < 6 && um_hint(&g, &s); i++) um_clear(&g, s, NULL, NULL);
+    um_add_six(&g);
+    if (um_hint(&g, &s)) um_meld(&g, s);
+    s.hand = 0; s.melds = 0;
+    for (int i = 0, n = 0; i < g.hand_len && n < UM_DISCARD_N; i++) if (g.hand[i] != UM_EMPTY) { s.hand |= 1u << i; n++; }
+    um_discard_six(&g, s);
+    if (!um_valid(&g) || !g.meld_n || !g.disc_n || !g.log_n) { fprintf(stderr, "valid: setup failed\n"); return 1; }
+
+#define BAD(what, stmt) do { c = g; stmt; if (um_valid(&c)) { fprintf(stderr, "valid: passed with %s\n", what); bad++; } } while (0)
+    BAD("done not 0 or 1", { uint8_t v = 2; memcpy(&c.done, &v, 1); });
+    BAD("wall_pos past the end", c.wall_pos = UM_TOTAL + 1);
+    BAD("disc_pos past the end", c.disc_pos = UM_TOTAL);
+    BAD("disc_n past the end", c.disc_n = UM_TOTAL + 1);
+    BAD("hand_len short", c.hand_len = UM_HAND - 1);
+    BAD("hand_len long", c.hand_len = UM_MAX_HAND + 1);
+    BAD("meld_n too many", c.meld_n = UM_MAX_MELDS + 1);
+    BAD("a meld too long", c.meld_len[0] = UM_MELD_MAX + 1);
+    BAD("a meld of one", c.meld_len[0] = 1);
+    BAD("a wall kind", c.wall[UM_TOTAL - 1] = UM_KINDS);
+    BAD("a discard kind", c.disc[c.disc_pos] = 200);
+    BAD("a hand kind", { for (int i = 0; i < c.hand_len; i++) if (c.hand[i] != UM_EMPTY) { c.hand[i] = UM_KINDS; break; } });
+    BAD("a negative hand kind", { for (int i = 0; i < c.hand_len; i++) if (c.hand[i] != UM_EMPTY) { c.hand[i] = -2; break; } });
+    BAD("a meld kind", c.melds[0][0] = UM_KINDS);
+    BAD("a log entry too long", c.log[(c.log_n - 1) % UM_LOG_N].n = UM_MAX_SEL + 1);
+    BAD("a log kind", { um_log_t *e = &c.log[(c.log_n - 1) % UM_LOG_N]; e->k[0] = UM_KINDS; });
+    BAD("a log type", c.log[(c.log_n - 1) % UM_LOG_N].t = UM_SET_COUNT);
+    BAD("five of a kind", { for (int i = 0; i < c.hand_len; i++) if (c.hand[i] != UM_EMPTY) c.hand[i] = 0; });
+#undef BAD
+    if (bad) return 1;
+    printf("valid: a game in play passes, 18 corruptions fail\n");
+    return 0;
+}
+
 int main(int argc, char **argv)
 {
+    if (argc >= 2 && !strcmp(argv[1], "valid")) return valid_mode();
     if (argc >= 2 && !strcmp(argv[1], "classify")) return classify_mode();
     if (argc >= 4 && !strcmp(argv[1], "play")) { play_mode((uint32_t)strtoul(argv[2], NULL, 10), atoi(argv[3])); return 0; }
-    fprintf(stderr, "usage: umtest classify | umtest play <seed> <games>\n");
+    fprintf(stderr, "usage: umtest classify | umtest play <seed> <games> | umtest valid\n");
     return 2;
 }

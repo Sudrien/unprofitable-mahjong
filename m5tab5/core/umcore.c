@@ -902,6 +902,37 @@ bool um_finish_check(um_game_t *g)
     return true;
 }
 
+bool um_valid(const um_game_t *g)
+{
+    uint8_t done;
+    memcpy(&done, &g->done, 1);         /* a bool read as anything but 0 or 1 is undefined */
+    if (sizeof g->done != 1 || done > 1) return false;
+    if (g->wall_pos > UM_TOTAL || g->disc_pos >= UM_TOTAL || g->disc_n > UM_TOTAL) return false;
+    if (g->hand_len < UM_HAND || g->hand_len > UM_MAX_HAND) return false;
+    if (g->meld_n > UM_MAX_MELDS) return false;
+    for (int i = 0; i < UM_TOTAL; i++) if (g->wall[i] >= UM_KINDS) return false;
+    for (int i = 0; i < g->disc_n; i++) if (g->disc[(g->disc_pos + i) % UM_TOTAL] >= UM_KINDS) return false;
+    for (int i = 0; i < g->hand_len; i++) if (g->hand[i] != UM_EMPTY && (g->hand[i] < 0 || g->hand[i] >= UM_KINDS)) return false;
+    for (int m = 0; m < g->meld_n; m++) {
+        if (g->meld_len[m] < 2 || g->meld_len[m] > UM_MELD_MAX) return false;
+        for (int i = 0; i < g->meld_len[m]; i++) if (g->melds[m][i] >= UM_KINDS) return false;
+    }
+    /* the rail draws the last UM_LOG_N entries' tiles */
+    const int keep = g->log_n < UM_LOG_N ? g->log_n : UM_LOG_N;
+    for (int j = 0; j < keep; j++) {
+        const um_log_t *e = &g->log[(g->log_n - 1 - j) % UM_LOG_N];
+        if (e->t == UM_LOG_ADD) { if (e->n > UM_ADD_N) return false; continue; }
+        if (e->t != UM_LOG_DISCARD && (e->t <= UM_NONE || e->t >= UM_SET_COUNT)) return false;
+        if (e->n > UM_MAX_SEL) return false;
+        for (int i = 0; i < e->n; i++) if (e->k[i] >= UM_KINDS) return false;
+    }
+    /* now safe to count */
+    uint8_t rem[UM_KINDS];
+    um_remaining(g, rem);
+    for (int k = 0; k < UM_KINDS; k++) if (rem[k] > 4) return false;
+    return true;
+}
+
 uint8_t um_lone_honors(const um_game_t *g)
 {
     uint8_t rem[UM_KINDS], out = 0;

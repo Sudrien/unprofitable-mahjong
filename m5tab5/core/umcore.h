@@ -144,6 +144,13 @@ bool um_hint(const um_game_t *g, um_sel_t *out);   /* safe first, then any */
 bool um_is_over(const um_game_t *g);
 bool um_finish_check(um_game_t *g);
 
+/* Every field a game is read through is in range: tile kinds below
+ * UM_KINDS and at most four of each still in play, lengths and counts
+ * within their arrays. For a game read back from storage, which may be
+ * corrupt or written by a build whose struct differed at the same size;
+ * a game made by these functions always passes. */
+bool um_valid(const um_game_t *g);
+
 /* Honors with one tile left that can never be cleared, as a bit per
  * honor (bit 0 East .. bit 6 White). */
 uint8_t um_lone_honors(const um_game_t *g);

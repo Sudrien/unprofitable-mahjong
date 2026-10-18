@@ -18,6 +18,7 @@ tilecheck: tilecheck.c ../main/tilefaces.c ../main/tilefaces.h
 
 check: umtest tilecheck
 	./tilecheck
+	./umtest valid
 	node check.js ./umtest $(GAMES)
 
 .DEFAULT_GOAL := check

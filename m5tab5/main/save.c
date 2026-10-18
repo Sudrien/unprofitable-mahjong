@@ -42,6 +42,14 @@ bool save_load_game(um_game_t *g)
     const esp_err_t err = nvs_get_blob(h, "game", &s_blob, &len);
     nvs_close(h);
     if (err != ESP_OK || len != sizeof s_blob || s_blob.ver != GAME_VER || s_blob.size != sizeof(um_game_t)) return false;
+    /* The version and size catch most other builds' saves, not all: a
+     * struct reordered at the same size, or a damaged page, still gets
+     * here. Out-of-range kinds would index past the tile names and the
+     * hint's tables, so such a game is dropped for a new deal. */
+    if (!um_valid(&s_blob.g)) {
+        ESP_LOGW(TAG, "saved game out of range; starting a new deal");
+        return false;
+    }
     memcpy(g, &s_blob.g, sizeof *g);
     return true;
 }

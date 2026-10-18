@@ -21,7 +21,7 @@ typedef struct {
 } save_prefs_t;
 
 void save_init(void);                       /* nvs_flash_init, erasing an unusable partition */
-bool save_load_game(um_game_t *g);          /* false: nothing saved, or saved by another build */
+bool save_load_game(um_game_t *g);          /* false: nothing saved, saved by another build, or not um_valid */
 void save_game(const um_game_t *g);
 void save_load_prefs(save_prefs_t *p);      /* defaults when nothing is saved */
 void save_prefs(const save_prefs_t *p);
