@@ -15,8 +15,6 @@ zh-CN:
     # ui.c
     "%d tiles out. You can add 6 again once you're back to %d.": "场上%d张。回到%d张后才能再加6张。"
     # ui.c
-    ", ": "、"
-    # ui.c
     "1 Bamboo": "一条"
     # ui.c
     "1 Character": "一万"

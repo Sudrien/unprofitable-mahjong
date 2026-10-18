@@ -14,6 +14,7 @@
  */
 #include "ui.h"
 
+#include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -143,6 +144,66 @@ static const char *const SET_NAMES[UM_SET_COUNT] = {
     [UM_ALL_GREEN] = N_("All Green"), [UM_FOUR_KONGS] = N_("Four Kongs"),
 };
 static const char *set_name(um_set_t t) { return (t > UM_NONE && t < UM_SET_COUNT) ? _(SET_NAMES[t]) : ""; }
+
+/* printf onto the end of out, never past cap */
+static void put(char *out, size_t cap, size_t *at, const char *fmt, ...)
+{
+    if (*at + 1 >= cap) return;
+    va_list ap;
+    va_start(ap, fmt);
+    const int w = vsnprintf(out + *at, cap - *at, fmt, ap);
+    va_end(ap);
+    if (w > 0) *at += (size_t)w;
+    if (*at >= cap) *at = cap - 1;
+}
+
+/* The selection, sorted, said briefly, as the web version's tilesIn():
+ * a suit's tiles share one suit name and a repeated tile is named once
+ * with its count. "1 ×3, 2, 3 Characters · North wind ×3"; in Japanese
+ * "1112萬、北×3" and in Chinese "一一一二万、北风×3", as the tiles are
+ * written there. The shape differs by language, not just the words, so
+ * this asks which language it is rather than going through a key. */
+static void tiles_text(const uint8_t *k, int n, char *out, size_t cap)
+{
+    static const char *const EN_SUIT[3] = { "Characters", "Dots", "Bamboo" };
+    static const char *const JA_SUIT[3] = { "萬", "筒", "索" };
+    static const char *const ZH_SUIT[3] = { "万", "筒", "条" };
+    static const char *const ZH_NUM[9] = { "一", "二", "三", "四", "五", "六", "七", "八", "九" };
+    const i18n_lang_t lang = i18n_lang();
+    const bool en = lang != I18N_JA && lang != I18N_ZH_CN;
+    size_t at = 0;
+    out[0] = 0;
+    for (int i = 0; i < n; ) {
+        /* a group: one honor's tiles, or one suit's */
+        const int suit = um_is_honor(k[i]) ? -1 : k[i] / 9;
+        int j = i, kinds = 0;
+        while (j < n && (suit < 0 ? k[j] == k[i] : (!um_is_honor(k[j]) && k[j] / 9 == suit))) {
+            if (j == i || k[j] != k[j - 1]) kinds++;
+            j++;
+        }
+        if (i) put(out, cap, &at, "%s", en ? " · " : "、");
+        if (suit < 0 || (en && kinds == 1)) {                    /* "North wind ×3", "9 Dots ×3" */
+            put(out, cap, &at, "%s", kind_name(k[i]));
+            if (j - i > 1) put(out, cap, &at, en ? " ×%d" : "×%d", j - i);
+        } else if (en) {                                         /* "1 ×3, 2, 3 Characters" */
+            for (int x = i; x < j; ) {
+                int y = x;
+                while (y < j && k[y] == k[x]) y++;
+                put(out, cap, &at, "%s%d", x > i ? ", " : "", k[x] % 9 + 1);
+                if (y - x > 1) put(out, cap, &at, " ×%d", y - x);
+                x = y;
+            }
+            put(out, cap, &at, " %s", EN_SUIT[suit]);
+        } else {                                                 /* "1112萬", "一一一二万" */
+            for (int x = i; x < j; x++) {
+                if (lang == I18N_JA) put(out, cap, &at, "%d", k[x] % 9 + 1);
+                else put(out, cap, &at, "%s", ZH_NUM[k[x] % 9]);
+            }
+            put(out, cap, &at, "%s", lang == I18N_JA ? JA_SUIT[suit] : ZH_SUIT[suit]);
+        }
+        i = j;
+    }
+}
 
 static void pts_text(int v, char *out, size_t n)
 {
@@ -502,9 +563,7 @@ static void draw_status(void)
         uint8_t sk[UM_MAX_SEL];
         memcpy(sk, k, (size_t)n);
         for (int i = 1; i < n; i++) { uint8_t v = sk[i]; int j = i - 1; while (j >= 0 && sk[j] > v) { sk[j + 1] = sk[j]; j--; } sk[j + 1] = v; }
-        size_t at = 0;
-        for (int i = 0; i < n && at < sizeof l1 - 40; i++)
-            at += (size_t)snprintf(l1 + at, sizeof l1 - at, "%s%s", i ? _(", ") : "", kind_name(sk[i]));
+        tiles_text(sk, n, l1, sizeof l1);
         const um_set_t t = um_classify(k, n);
         c2 = C_INK;
         if (t != UM_NONE) {

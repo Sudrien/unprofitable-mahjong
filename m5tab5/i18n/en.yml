@@ -15,8 +15,6 @@ en:
     # ui.c
     "%d tiles out. You can add 6 again once you're back to %d.": ~
     # ui.c
-    ", ": ~
-    # ui.c
     "1 Bamboo": ~
     # ui.c
     "1 Character": ~

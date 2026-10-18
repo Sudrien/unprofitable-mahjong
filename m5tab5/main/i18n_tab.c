@@ -9,13 +9,12 @@
 #include <stddef.h>
 #include "i18n.h"
 
-const unsigned i18n_count = 132;
+const unsigned i18n_count = 131;
 const char *const i18n_keys[] = {
     " Undo to fix it.",
     " and a lone ",
     "%d tiles left with no set to make, at -%d each. Undo, or start a new deal.",
     "%d tiles out. You can add 6 again once you're back to %d.",
-    ", ",
     "1 Bamboo",
     "1 Character",
     "1 Dot",
@@ -279,13 +278,11 @@ const char *const i18n_vals[] = {
     NULL,
     NULL,
     NULL,
-    NULL,
     /* zh-CN */
     "撤销来补救。",
     "和",
     "剩下%d张牌无法组合，每张-%d。撤销，或重新发牌。",
     "场上%d张。回到%d张后才能再加6张。",
-    "、",
     "一条",
     "一万",
     "一筒",
@@ -418,7 +415,6 @@ const char *const i18n_vals[] = {
     "と",
     "組にできない牌が%d枚残りました（1枚-%d）。元に戻すか、新しく配ろう。",
     "場に%d枚。%d枚に戻れば、また6枚追加できます。",
-    "、",
     "1索",
     "1萬",
     "1筒",

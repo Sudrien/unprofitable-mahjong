@@ -15,8 +15,6 @@ ja:
     # ui.c
     "%d tiles out. You can add 6 again once you're back to %d.": "場に%d枚。%d枚に戻れば、また6枚追加できます。"
     # ui.c
-    ", ": "、"
-    # ui.c
     "1 Bamboo": "1索"
     # ui.c
     "1 Character": "1萬"
