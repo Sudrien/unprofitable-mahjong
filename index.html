@@ -138,6 +138,17 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.35rem, 
 .toggle input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .btn.armed { border-color: var(--warn); color: var(--warn); }
 
+.replaybar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; border-left: 3px solid var(--t-green); background: var(--raised); padding: 10px 14px; border-radius: 0 8px 8px 0; }
+.replaybar .info { flex: 1 1 16em; }
+.replaybar .ok { color: var(--t-green); }
+.replaybar .bad { color: var(--warn); }
+body.replaying .lower .buttons, body.replaying #newBtn, body.replaying #shareBtn { display: none; }
+body.replaying #hand, body.replaying #melds { pointer-events: none; }
+dialog.share { border: 1px solid var(--line); border-radius: 10px; background: var(--raised); color: var(--ink); max-width: min(92vw, 36rem); padding: 18px 20px; }
+dialog.share::backdrop { background: rgba(0, 0, 0, .35); }
+dialog.share h2 { margin: 0 0 8px; font-family: var(--f-display); font-size: 1.2rem; }
+dialog.share textarea { width: 100%; font: 13px/1.4 ui-monospace, monospace; word-break: break-all; resize: none; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+dialog.share .buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
 .notice { border-left: 3px solid var(--accent); background: var(--raised); padding: 12px 14px; border-radius: 0 8px 8px 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .notice.warn { border-left-color: var(--warn); }
 .notice p { margin: 0; min-width: 0; }
@@ -233,8 +244,18 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.35rem, 
         <button type="button" data-setlang="zh" lang="zh-Hans">简体中文</button>
       </div>
       <button class="btn quiet" id="newBtn" type="button"><span class="t" lang="en">New deal</span><span class="t" lang="ja">新しく配る</span><span class="t" lang="zh-Hans">重新发牌</span></button>
+      <button class="btn quiet" id="shareBtn" type="button"><span class="t" lang="en">Share</span><span class="t" lang="ja">共有</span><span class="t" lang="zh-Hans">分享</span></button>
     </div>
   </header>
+
+  <div class="replaybar" id="replayBar" hidden>
+    <span class="info" id="replayInfo"></span>
+    <button class="btn" type="button" id="rpFirst" aria-label="First move">«</button>
+    <button class="btn" type="button" id="rpBack" aria-label="Back one move">‹</button>
+    <button class="btn" type="button" id="rpNext" aria-label="Next move">›</button>
+    <button class="btn" type="button" id="rpLast" aria-label="Last move">»</button>
+    <button class="btn primary" type="button" id="rpExit"><span class="t" lang="en">Back to my game</span><span class="t" lang="ja">自分の対局に戻る</span><span class="t" lang="zh-Hans">回到我的牌局</span></button>
+  </div>
 
   <div class="rail" id="rail" aria-label="Cleared sets and penalties"></div>
 
@@ -260,6 +281,16 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.35rem, 
   </section>
 
   <div class="celebrate" id="celebrate" hidden role="dialog" aria-modal="true"></div>
+
+  <dialog class="share" id="shareDlg">
+    <h2><span class="t" lang="en">Replay code</span><span class="t" lang="ja">リプレイコード</span><span class="t" lang="zh-Hans">回放码</span></h2>
+    <p id="shareMsg"></p>
+    <textarea id="shareCode" rows="4" readonly hidden></textarea>
+    <div class="buttons">
+      <button class="btn primary" type="button" id="shareCopy" hidden><span class="t" lang="en">Copy link</span><span class="t" lang="ja">リンクをコピー</span><span class="t" lang="zh-Hans">复制链接</span></button>
+      <button class="btn" type="button" id="shareClose"><span class="t" lang="en">Close</span><span class="t" lang="ja">閉じる</span><span class="t" lang="zh-Hans">关闭</span></button>
+    </div>
+  </dialog>
 
   <details class="guide" id="guide" open>
     <summary><span class="t" lang="en">Sets and scores</span><span class="t" lang="ja">役と得点</span><span class="t" lang="zh-Hans">牌型与得分</span></summary>
@@ -426,6 +457,7 @@ function deal(seed) {
 
 /* ---------- state ---------- */
 let S, undo = [], sel = new Set(), hintKeys = new Set(), fresh = new Set(), armed = false, hintTimer, best = null, bestPts = null;
+let replaying = false;  // a replay is on the table: nothing is saved and no best is recorded
 const KEY = 'unprofitable-mahjong-v2', BEST_KEY = 'unprofitable-mahjong-best-penalty-v2', BEST_PTS_KEY = 'unprofitable-mahjong-best-points';
 const MAX_SEL = 18; // four kongs and a pair
 const BASE = {
@@ -506,7 +538,7 @@ const hasBonus = (t, kinds) => POKER.has(t) && tradValue(kinds) !== null;
 function newGame(seed) {
   seed = seed === undefined ? randomSeed() : seed >>> 0;
   const wall = deal(seed);
-  S = { seed, wall, discards: [], hand: wall.splice(0, HAND), melds: [], log: [], score: 0, points: 0, done: false };
+  S = { seed, wall, discards: [], hand: wall.splice(0, HAND), melds: [], log: [], score: 0, points: 0, done: false, moves: [] };
   undo = []; sel.clear(); hintKeys.clear(); fresh = new Set(S.hand.map((_, i) => 'h' + i));
   commit();
 }
@@ -523,7 +555,7 @@ function load() {
   }
   return !!S;
 }
-function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+function save() { if (replaying) return; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
 function snap() { undo.push(JSON.stringify(S)); if (undo.length > 400) undo.shift(); }
 
 const pool = () => S.wall.length + S.discards.length;
@@ -721,14 +753,15 @@ function clearSet() {
   const keys = [...sel], kinds = keys.map(get), t = classify(kinds);
   if (!t) return;
   snap();
-  const gone = new Set();
+  const gone = new Set(), tableKinds = keys.filter(k => k[0] === 'h').map(get).sort((a, b) => a - b);
   keys.forEach(key => { if (key[0] === 'm') gone.add(+key.slice(1).split('.')[0]); else S.hand[+key.slice(1)] = null; });
   S.melds = S.melds.filter((_, i) => !gone.has(i));
   settle();
   const v = setValue(t, kinds);
   S.points += v;
   S.log.push({ t, k: kinds.sort((a, b) => a - b), v });
-  if (LIMIT.has(t) && typeof celebrate === 'function') celebrate(t, kinds, v);
+  if (S.moves) S.moves.push({ o: 'C', k: tableKinds, m: [...gone].sort((a, b) => a - b) });
+  if (LIMIT.has(t) && typeof celebrate === 'function' && !replaying) celebrate(t, kinds, v);
   sel.clear(); hintKeys.clear(); finishCheck(); commit();
 }
 // Set a basic set aside as a meld: no points yet, and it no longer counts toward the 24-tile limit.
@@ -753,6 +786,7 @@ function meldSet() {
   if (up) {
     S.melds[up.i].push(S.hand[up.h]);
     S.hand[up.h] = null;
+    if (S.moves) S.moves.push({ o: 'K', i: up.i });
     settle();
     sel.clear(); hintKeys.clear(); commit();
     return;
@@ -760,6 +794,7 @@ function meldSet() {
   const keys = [...sel], kinds = keys.map(get).sort((a, b) => a - b);
   keys.forEach(key => { S.hand[+key.slice(1)] = null; });
   S.melds.push(kinds);
+  if (S.moves) S.moves.push({ o: 'M', k: kinds.slice() });
   settle();
   sel.clear(); hintKeys.clear(); commit();
 }
@@ -770,6 +805,7 @@ function addSix() {
   for (; n < ADD_N; n++) { const t = draw(); if (t === null) break; S.hand.push(t); fresh.add('h' + (S.hand.length - 1)); }
   S.score -= ADD_COST;
   S.log.push({ t: 'add', n, cost: ADD_COST });
+  if (S.moves) S.moves.push({ o: 'A' });
   undo = []; sel.clear(); hintKeys.clear(); commit();
 }
 function discardSix() {
@@ -779,6 +815,7 @@ function discardSix() {
   S.discards.push(...kinds);
   settle();
   S.score -= DISCARD_COST;
+  if (S.moves) S.moves.push({ o: 'D', k: kinds.slice() });    // in the order thrown, the order they come back
   S.log.push({ t: 'discard', k: kinds.sort((a, b) => a - b), cost: DISCARD_COST });
   undo = []; sel.clear(); hintKeys.clear(); commit();
 }
@@ -795,6 +832,7 @@ function discardSet() {
   S.discards.push(...kinds);
   settle();
   S.score -= v;
+  if (S.moves) S.moves.push({ o: 'X', k: kinds.slice() });
   S.log.push({ t: 'discard', k: kinds.sort((a, b) => a - b), cost: v });
   undo = []; sel.clear(); hintKeys.clear(); commit();
 }
@@ -820,6 +858,7 @@ const isOver = () => !pool() && !S.melds.length && (!inHand() || !findSet(false)
 function finishCheck() {
   if (isOver() && !S.done) {
     S.done = true;
+    if (replaying) return;
     const p = penalty();
     if (best === null || p > best) { best = p; try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) {} }
     if (bestPts === null || S.points > bestPts) { bestPts = S.points; try { localStorage.setItem(BEST_PTS_KEY, String(bestPts)); } catch (e) {} }
@@ -847,6 +886,217 @@ function applyAutoSort() {
   }
 }
 function commit() { applyAutoSort(); finishCheck(); save(); render(); fresh.clear(); }
+
+/* ---------- replay codes ---------- */
+// A game as a short code: the deal's seed and the moves, from which the
+// rules replay every draw, score and penalty, so the code never states a
+// score -- the only way to show one is a legal game that earns it.
+//
+// base64url throughout (A-Z a-z 0-9 - _), no padding. Before error
+// correction the payload is, in order:
+//
+//   version   1 char
+//   nonce     6 chars   proof of work: MurmurHash2 of the payload has its
+//                       top REPLAY_WORK bits zero; first, so no part of
+//                       the hash can be kept from one try to the next
+//   length    2 chars   of the moves section
+//   moves     the move count, then each move: what it did and, for a
+//             clear or a meld, which tiles by kind (never by place, so
+//             sorting does not matter), all packed as one mixed-radix
+//             number whose radices come from the table at that move
+//   seed      6 chars   the deal
+//   discards  the tiles each Discard 6 and Discard set threw, in the
+//             order thrown, which is the order they come back
+//
+// Then every 63 characters gain 2 check characters: a Hamming code over
+// GF(64), which puts any one mistyped character right.
+const B64 = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
+const REPLAY_VER = 1, REPLAY_WORK = 20, OPS = ['A', 'C', 'M', 'K', 'D', 'X'];
+
+// MurmurHash2, 32-bit: defeatist-music-player-for-m5tab5's
+// albumart_cover_hash, seed and all, over the payload's ASCII bytes.
+function murmur2(str) {
+  const m = 0x5bd1e995;
+  let len = str.length, h = (0x9747b28c ^ len) >>> 0, i = 0;
+  while (len >= 4) {
+    let k = str.charCodeAt(i) | str.charCodeAt(i + 1) << 8 | str.charCodeAt(i + 2) << 16 | str.charCodeAt(i + 3) << 24;
+    k = Math.imul(k, m); k ^= k >>> 24; k = Math.imul(k, m);
+    h = Math.imul(h, m) ^ k;
+    i += 4; len -= 4;
+  }
+  switch (len) {
+    case 3: h ^= str.charCodeAt(i + 2) << 16; // fall through
+    case 2: h ^= str.charCodeAt(i + 1) << 8;  // fall through
+    case 1: h ^= str.charCodeAt(i); h = Math.imul(h, m);
+  }
+  h ^= h >>> 13; h = Math.imul(h, m); h ^= h >>> 15;
+  return h >>> 0;
+}
+
+// GF(64), x^6 + x + 1, for the Hamming code: a block of up to 63 data
+// characters d_i gets p1 = sum d_i and p2 = sum d_i a^i. One wrong
+// character e at i leaves syndromes (e, e a^i), so a^i = s2 / s1.
+const GF_EXP = [], GF_LOG = [];
+for (let i = 0, x = 1; i < 63; i++) { GF_EXP[i] = x; GF_LOG[x] = i; x <<= 1; if (x & 64) x ^= 0x43; }
+const gfMul = (a, b) => a && b ? GF_EXP[(GF_LOG[a] + GF_LOG[b]) % 63] : 0;
+function hammingAdd(payload) {
+  let out = '';
+  for (let b = 0; b < payload.length; b += 63) {
+    const blk = payload.slice(b, b + 63);
+    let p1 = 0, p2 = 0;
+    for (let i = 0; i < blk.length; i++) { const d = B64.indexOf(blk[i]); p1 ^= d; p2 ^= gfMul(d, GF_EXP[i]); }
+    out += blk + B64[p1] + B64[p2];
+  }
+  return out;
+}
+// The payload, with what was put right; null when a block cannot be.
+function hammingFix(code) {
+  let payload = '', fixed = 0;
+  for (let b = 0; b < code.length; b += 65) {
+    const blk = code.slice(b, b + 65);
+    if (blk.length < 3) return null;
+    const v = [...blk].map(c => B64.indexOf(c));
+    if (v.some(x => x < 0)) return null;
+    const n = v.length - 2;
+    let s1 = v[n], s2 = v[n + 1];
+    for (let i = 0; i < n; i++) { s1 ^= v[i]; s2 ^= gfMul(v[i], GF_EXP[i]); }
+    if (s1 && s2) {
+      const i = (GF_LOG[s2] - GF_LOG[s1] + 63) % 63;
+      if (i >= n) return null;
+      v[i] ^= s1; fixed++;
+    } else if (s1 || s2) fixed++;      // a check character itself was wrong
+    payload += v.slice(0, n).map(x => B64[x]).join('');
+  }
+  return { payload, fixed };
+}
+
+// Mixed-radix packing: digits go in least significant first and come out
+// in the same order.
+class Packer {
+  constructor() { this.n = 0n; this.mul = 1n; }
+  put(v, r) { this.n += BigInt(v) * this.mul; this.mul *= BigInt(r); }
+  chars() { let s = '', n = this.n; while (n > 0n) { s += B64[Number(n & 63n)]; n >>= 6n; } return s; }
+}
+class Unpacker {
+  constructor(s) { this.n = 0n; for (let i = s.length - 1; i >= 0; i--) this.n = (this.n << 6n) | BigInt(B64.indexOf(s[i])); }
+  get(r) { const R = BigInt(r), v = this.n % R; this.n /= R; return Number(v); }
+}
+const fixedChars = (v, n) => { let s = ''; for (let i = 0; i < n; i++) { s += B64[v % 64]; v = Math.floor(v / 64); } return s; };
+const fixedValue = s => { let v = 0; for (let i = s.length - 1; i >= 0; i--) v = v * 64 + B64.indexOf(s[i]); return v; };
+
+// The table as the code sees it: each kind present, ascending, with its count.
+function tableKinds() {
+  const c = new Array(34).fill(0);
+  S.hand.forEach(k => { if (k !== null) c[k]++; });
+  return c.map((n, k) => [k, n]).filter(([, n]) => n);
+}
+// Play one recorded move on S, choosing table tiles by kind. True if the
+// rules took it.
+function applyMove(mv) {
+  sel.clear();
+  const used = new Set(), take = k => {
+    const i = S.hand.findIndex((x, j) => x === k && !used.has(j));
+    if (i < 0) return false;
+    used.add(i); sel.add('h' + i); return true;
+  };
+  const before = S.moves.length;
+  if ((mv.k || []).some(k => !take(k))) { sel.clear(); return false; }
+  if (mv.o === 'C') { mv.m.forEach(i => S.melds[i] && meldKeys(i).forEach(k => sel.add(k))); clearSet(); }
+  else if (mv.o === 'M') meldSet();
+  else if (mv.o === 'K') {
+    const m = S.melds[mv.i];
+    if (!m || !take(m[0])) { sel.clear(); return false; }
+    meldKeys(mv.i).forEach(k => sel.add(k)); meldSet();
+  }
+  else if (mv.o === 'A') addSix();
+  else if (mv.o === 'D') discardSix();
+  else if (mv.o === 'X') discardSet();
+  sel.clear();
+  return S.moves.length === before + 1;
+}
+// Pack S.moves (the game on the table) into its payload, without the
+// nonce's proof of work.
+function packGame(seed, moves) {
+  const mp = new Packer(), dp = new Packer();
+  const keep = { S, undo }, wasReplaying = replaying;
+  replaying = true;
+  try {
+    newGame(seed);
+    mp.put(moves.length, 4096);
+    for (const mv of moves) {
+      const table = tableKinds();
+      mp.put(OPS.indexOf(mv.o), OPS.length);
+      if (mv.o === 'C' || mv.o === 'M') {
+        for (const [k, n] of table) mp.put(mv.k.filter(x => x === k).length, n + 1);
+        if (mv.o === 'C') mp.put(mv.m.reduce((a, i) => a | 1 << i, 0), 1 << S.melds.length);
+      } else if (mv.o === 'K') mp.put(mv.i, S.melds.length);
+      else if (mv.o === 'D' || mv.o === 'X') {
+        if (mv.o === 'X') dp.put(mv.k.length - 2, 17);
+        const left = new Map(table);
+        for (const k of mv.k) {
+          const avail = [...left].filter(([, n]) => n).map(([x]) => x);
+          dp.put(avail.indexOf(k), avail.length);
+          left.set(k, left.get(k) - 1);
+        }
+      }
+      if (!applyMove(mv)) throw new Error('a recorded move did not replay');
+    }
+  } finally { S = keep.S; undo = keep.undo; replaying = wasReplaying; }
+  const moves64 = mp.chars();
+  return { head: B64[REPLAY_VER], rest: fixedChars(moves64.length, 2) + moves64 + fixedChars(seed, 6) + dp.chars() };
+}
+// Find a nonce for the proof of work: about 2^REPLAY_WORK tries. `step`
+// tries at a time, so a page can stay responsive between them.
+function proveWork(head, rest, from, step, work = REPLAY_WORK) {
+  for (let n = from; n < from + step; n++) {
+    const p = head + fixedChars(n, 6) + rest;
+    if (murmur2(p) >>> (32 - work) === 0) return p;
+  }
+  return null;
+}
+// A code back into a game: the seed and the moves, each checked by
+// playing it. { seed, moves, snaps, fixed } or { error }.
+function readCode(code, work = REPLAY_WORK) {
+  code = String(code).replace(/\s+/g, '');
+  const h = hammingFix(code);
+  if (!h) return { error: 'unreadable' };
+  const p = h.payload;
+  if (p.length < 1 + 6 + 2 + 6) return { error: 'unreadable' };
+  if (B64.indexOf(p[0]) !== REPLAY_VER) return { error: 'version' };
+  if (murmur2(p) >>> (32 - work) !== 0) return { error: 'work' };
+  const ml = fixedValue(p.slice(7, 9));
+  if (9 + ml + 6 > p.length) return { error: 'unreadable' };
+  const mp = new Unpacker(p.slice(9, 9 + ml)), seed = fixedValue(p.slice(9 + ml, 15 + ml)), dp = new Unpacker(p.slice(15 + ml));
+  const keep = { S, undo }, wasReplaying = replaying, moves = [], snaps = [];
+  replaying = true;
+  try {
+    newGame(seed);
+    snaps.push(JSON.stringify(S));
+    const count = mp.get(4096);
+    for (let i = 0; i < count; i++) {
+      const table = tableKinds(), o = OPS[mp.get(OPS.length)], mv = { o };
+      if (o === 'C' || o === 'M') {
+        mv.k = [];
+        for (const [k, n] of table) for (let c = mp.get(n + 1); c > 0; c--) mv.k.push(k);
+        if (o === 'C') { const mask = mp.get(1 << S.melds.length); mv.m = S.melds.map((_, j) => j).filter(j => mask & 1 << j); }
+      } else if (o === 'K') mv.i = mp.get(Math.max(1, S.melds.length));
+      else if (o === 'D' || o === 'X') {
+        const n = o === 'D' ? DISCARD_N : dp.get(17) + 2, left = new Map(table);
+        mv.k = [];
+        for (let j = 0; j < n; j++) {
+          const avail = [...left].filter(([, c]) => c).map(([x]) => x);
+          if (!avail.length) return { error: 'move', at: i + 1 };
+          const k = avail[dp.get(avail.length)];
+          mv.k.push(k); left.set(k, left.get(k) - 1);
+        }
+      }
+      if (!applyMove(mv)) return { error: 'move', at: i + 1 };
+      moves.push(mv); snaps.push(JSON.stringify(S));
+    }
+    if (mp.n !== 0n || dp.n !== 0n) return { error: 'unreadable' };
+    return { seed, moves, snaps, fixed: h.fixed };
+  } finally { S = keep.S; undo = keep.undo; replaying = wasReplaying; }
+}
 
 /* ---------- render ---------- */
 /* language */
@@ -1099,6 +1349,7 @@ document.querySelectorAll('[data-setlang]').forEach(b => b.addEventListener('cli
 }));
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeCelebration(); });
 document.addEventListener('click', e => {
+  if (replaying) return;      // a replay is watched, not played
   const t = e.target.closest('[data-key]');
   if (t && !t.classList.contains('mini')) {
     const key = t.dataset.key;
@@ -1136,7 +1387,7 @@ $('newBtn').onclick = () => {
   setTimeout(() => { armed = false; render(); }, 2500);
 };
 document.addEventListener('keydown', e => {
-  if (e.target.closest('input,textarea')) return;
+  if (e.target.closest('input,textarea') || replaying) return;
   if (e.key === 'Enter' && !$('clearBtn').disabled && !e.target.closest('button,a,summary')) clearSet();
   if ((e.key === 'z' || e.key === 'Z') && (e.metaKey || e.ctrlKey)) { e.preventDefault(); doUndo(); }
 });
@@ -1237,7 +1488,111 @@ buildGuide();
 try { if (localStorage.getItem('unprofitable-mahjong-guide') === '0') $('guide').open = false; } catch (e) {}
 $('guide').addEventListener('toggle', () => { try { localStorage.setItem('unprofitable-mahjong-guide', $('guide').open ? '1' : '0'); } catch (e) {} });
 
+/* ---------- share and replay ---------- */
+const replayLink = code => location.href.replace(/#.*$/, '') + '#replay=' + code;
+let shareJob = 0;
+$('shareBtn').onclick = () => {
+  const dlg = $('shareDlg'), job = ++shareJob;
+  $('shareCode').hidden = $('shareCopy').hidden = true;
+  if (!S.moves || S.seed === undefined) {
+    $('shareMsg').innerHTML = L('This game was dealt before replay codes. Start a new deal to get one.',
+      'この対局はリプレイコードの導入前に配られました。新しく配ると使えます。', '这一局在回放码功能之前发的牌。重新发牌后即可使用。');
+  } else {
+    $('shareMsg').innerHTML = L('Working…', '計算中…', '计算中…');
+    let packed;
+    try { packed = packGame(S.seed, S.moves); } catch (e) { $('shareMsg').innerHTML = L('This game cannot be turned into a code.', 'この対局はコードにできません。', '这一局无法生成回放码。'); }
+    // the proof of work, a slice at a time so the page keeps answering
+    if (packed) {
+      let from = Math.floor(Math.random() * 2 ** 30);
+      const step = () => {
+        if (job !== shareJob) return;
+        const p = proveWork(packed.head, packed.rest, from, 1 << 15);
+        from += 1 << 15;
+        if (!p) { setTimeout(step, 0); return; }
+        const code = hammingAdd(p);
+        $('shareCode').value = replayLink(code);
+        $('shareCode').hidden = $('shareCopy').hidden = false;
+        $('shareMsg').innerHTML = L(`Anyone with this link can watch this game move by move: ${S.moves.length} moves so far, ${code.length} characters.`,
+          `このリンクで、この対局を1手ずつ見られます。ここまで${S.moves.length}手、${code.length}文字。`,
+          `有这个链接就能逐步观看这一局。目前${S.moves.length}步，${code.length}个字符。`);
+      };
+      setTimeout(step, 0);
+    }
+  }
+  if (!dlg.open) dlg.showModal();
+};
+$('shareClose').onclick = () => { shareJob++; $('shareDlg').close(); };
+$('shareDlg').addEventListener('close', () => { shareJob++; });
+$('shareCopy').onclick = async () => {
+  const t = $('shareCode');
+  try { await navigator.clipboard.writeText(t.value); } catch (e) { t.select(); document.execCommand && document.execCommand('copy'); }
+  $('shareCopy').innerHTML = L('Copied', 'コピーしました', '已复制');
+  setTimeout(() => { $('shareCopy').innerHTML = L('Copy link', 'リンクをコピー', '复制链接'); }, 1600);
+};
+
+// Watching a code: the player's own game is put aside, untouched, and each
+// step shows the table as the code's game had it after that move.
+let RP = null;
+function showReplayStep(i, celebrateIt) {
+  RP.i = Math.max(0, Math.min(RP.snaps.length - 1, i));
+  S = JSON.parse(RP.snaps[RP.i]);
+  sel.clear(); hintKeys.clear(); fresh = new Set();
+  render();
+  const n = RP.snaps.length - 1;
+  $('replayInfo').innerHTML = `<b>${L('Replay', 'リプレイ', '回放')}</b> · ${L(`move ${RP.i} of ${n}`, `${n}手中${RP.i}手目`, `第${RP.i}步，共${n}步`)} · <span class="ok">${
+    L('Checked: every move is legal.', '確認済み：すべての手が正当です。', '已验证：每一步都合法。')}</span>${RP.fixed ? ' ' + L(
+    `${RP.fixed} mistyped character${RP.fixed > 1 ? 's were' : ' was'} put right.`, `打ち間違い${RP.fixed}文字を直しました。`, `已更正${RP.fixed}个输错的字符。`) : ''}`;
+  $('rpFirst').disabled = $('rpBack').disabled = RP.i === 0;
+  $('rpNext').disabled = $('rpLast').disabled = RP.i === n;
+  // stepping onto a limit hand plays its celebration, as playing it did
+  const last = S.log[S.log.length - 1];
+  if (celebrateIt && last && LIMIT.has(last.t)) celebrate(last.t, last.k, last.v);
+}
+function startReplay(code) {
+  const r = readCode(code);
+  if (r.error) {
+    const why = {
+      unreadable: L('This replay code cannot be read.', 'このリプレイコードは読み取れません。', '无法读取这个回放码。'),
+      version: L('This replay code is from a newer version of the game.', 'このリプレイコードは新しい版のものです。', '这个回放码来自更新的版本。'),
+      work: L('This replay code is not genuine: its proof of work does not match.', 'このリプレイコードは本物ではありません：作業証明が合いません。', '这个回放码不是真的：工作量证明不对。'),
+      move: L(`This replay code is not genuine: move ${r.at} breaks the rules.`, `このリプレイコードは本物ではありません：${r.at}手目がルールに反しています。`, `这个回放码不是真的：第${r.at}步违反规则。`),
+    }[r.error];
+    $('notice').innerHTML = `<div class="notice warn"><p>${why}</p></div>`;
+    history.replaceState(null, '', location.href.replace(/#.*$/, ''));
+    return;
+  }
+  if (!RP) RP = { keep: JSON.stringify(S), undo };
+  Object.assign(RP, r);
+  replaying = true;
+  document.body.classList.add('replaying');
+  $('replayBar').hidden = false;
+  showReplayStep(0);
+}
+function endReplay() {
+  if (!RP) return;
+  S = JSON.parse(RP.keep); undo = RP.undo; RP = null;
+  replaying = false;
+  document.body.classList.remove('replaying');
+  $('replayBar').hidden = true;
+  history.replaceState(null, '', location.href.replace(/#.*$/, ''));
+  sel.clear(); hintKeys.clear(); render();
+}
+$('rpFirst').onclick = () => showReplayStep(0);
+$('rpBack').onclick = () => showReplayStep(RP.i - 1);
+$('rpNext').onclick = () => showReplayStep(RP.i + 1, true);
+$('rpLast').onclick = () => showReplayStep(RP.snaps.length - 1);
+$('rpExit').onclick = endReplay;
+document.addEventListener('keydown', e => {
+  if (!replaying || $('celebrate').hidden === false) return;
+  if (e.key === 'ArrowRight') showReplayStep(RP.i + 1, true);
+  else if (e.key === 'ArrowLeft') showReplayStep(RP.i - 1);
+  else if (e.key === 'Escape') endReplay();
+});
+const hashCode = () => { const m = location.hash.match(/^#replay=([A-Za-z0-9_-]+)/); return m && m[1]; };
+addEventListener('hashchange', () => { const c = hashCode(); if (c) startReplay(c); });
+
 if (load()) { fresh = new Set(); commit(); } else newGame();
+if (hashCode()) startReplay(hashCode());
 })();
 </script>
 <script>

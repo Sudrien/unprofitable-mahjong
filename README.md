@@ -31,6 +31,12 @@ After one visit online it plays offline, fonts included. It can also be installe
 
 The in-game **Sets and scores** guide shows every set with example tiles and its points. Tap a limit-hand card to preview its animation.
 
+## Replay codes
+
+**Share**, by New deal, turns the game on the table into a link anyone can open to watch it move by move. The code is the deal's seed and the moves, about 3 characters a move (around 150 for a whole game), in URL-safe base64. Nothing in it states a score: the page replays every move under the rules and stops at the first one that breaks them, so the only way to show a score is a legal game that earns it. Making a code also takes a small proof of work (MurmurHash2 with 20 leading zero bits, under a second), and every 63 characters carry 2 check characters that put one mistyped character right. Watching a code never touches your own game or best scores. Games dealt before codes existed have none.
+
+`node test/replaycheck.js` plays random games with every kind of move, and checks that each code replays to the same end, that a typo is put right, and that changed codes are refused.
+
 ## Simulations
 
 The bots in `sim/` play the game with its own code; see [sim/README.md](sim/README.md).
