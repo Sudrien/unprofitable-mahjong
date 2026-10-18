@@ -174,6 +174,9 @@ dialog.share .buttons { display: flex; gap: 8px; justify-content: flex-end; marg
 .g-play:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .g-done .g-head b::before { content: "✓ "; color: var(--t-green); }
 .g-full .g-head b::before { content: "★ "; color: var(--t-red); }
+.g-river { height: 10px; border-radius: 5px; overflow: hidden; background: color-mix(in srgb, var(--t-blue, #2a5ca8) 14%, transparent); }
+.g-river i { display: block; height: 100%; background: linear-gradient(90deg, color-mix(in srgb, #b8860b 70%, var(--t-blue, #2a5ca8)), #b8860b); transition: width .6s ease-out; }
+.g-flood.g-done .g-river i { background: #b8860b; }
 .g-when { font-size: .75rem; color: var(--t-green); font-weight: 600; }
 .g-firsts { margin: 0; font-size: .85rem; color: var(--muted); }
 .g-firsts b { color: var(--ink); }
@@ -1363,25 +1366,35 @@ function render() {
 //   First: a set cleared for the first time.
 //   Full:  a set cleared in 3 of any 5 games in a row.
 //   Wins:  all 136 cleared with no poker hand, or with no pair in any set.
-// Each maps to the game it was earned in, by the running count.
+//   The Yellow River Floods Again: every set's First.
+// Each is recorded as { g, s }: the game it was earned in, by the running
+// count, and that game's seed, kept (not shown) so the deal can be found again. A record
+// saved as a bare game number has no seed (s: null).
 const FIRSTS_KEY = 'unprofitable-mahjong-firsts', FULL_KEY = 'unprofitable-mahjong-full',
-  PLAYED_KEY = 'unprofitable-mahjong-played', WINS_KEY = 'unprofitable-mahjong-wins';
+  PLAYED_KEY = 'unprofitable-mahjong-played', WINS_KEY = 'unprofitable-mahjong-wins', FLOOD_KEY = 'unprofitable-mahjong-flood';
 const FULL_OF = 3, FULL_IN = 5;
-const readMap = (key, ok) => {
+const readMap = (key, read) => {
   const m = new Map();
   try {
     const f = JSON.parse(localStorage.getItem(key) || '{}');
-    if (f && typeof f === 'object' && !Array.isArray(f)) for (const [t, g] of Object.entries(f)) if (ok(g)) m.set(t, g);
+    if (f && typeof f === 'object' && !Array.isArray(f)) for (const [t, v] of Object.entries(f)) { const r = read(v); if (r !== null) m.set(t, r); }
   } catch (e) {}
   return m;
 };
 const isGame = g => Number.isInteger(g) && g >= 0;
+const isSeed = x => Number.isInteger(x) && x >= 0 && x <= 0xffffffff;
+const readRec = v => isGame(v) ? { g: v, s: null } : v && isGame(v.g) && (v.s === null || isSeed(v.s)) ? { g: v.g, s: v.s } : null;
 const writeMap = (key, m) => { try { localStorage.setItem(key, JSON.stringify(Object.fromEntries(m))); } catch (e) {} };
-let firsts = readMap(FIRSTS_KEY, isGame), fulls = readMap(FULL_KEY, isGame), wins = readMap(WINS_KEY, isGame);
+let firsts = readMap(FIRSTS_KEY, readRec), fulls = readMap(FULL_KEY, readRec), wins = readMap(WINS_KEY, readRec);
+let flood = null;
+try { flood = readRec(JSON.parse(localStorage.getItem(FLOOD_KEY))); } catch (e) {}
 // the games each set was cleared in, the last FULL_IN of them
-let played = readMap(PLAYED_KEY, g => Array.isArray(g) && g.every(isGame));
+let played = readMap(PLAYED_KEY, g => Array.isArray(g) && g.every(isGame) ? g : null);
 const thisGame = () => { if (!isGame(S.game)) S.game = nextGame(); return S.game; };   // a game from before games were counted takes a number
+const record = () => ({ g: thisGame(), s: isSeed(S.seed) ? S.seed : null });
 const gameNo = n => L(`game ${n}`, `第${n}局`, `第${n}局`);
+// where a record was earned, as shown: the game only; the seed is kept, not shown
+const recWhere = r => gameNo(r.g);
 // What clearing set t just earned, for the celebration: { kicker, game } or null.
 function setAward(t) {
   if (t === 'triple chow') t = 'mixed triple chow';     // older saves' name for it
@@ -1390,15 +1403,23 @@ function setAward(t) {
   played.set(t, gs); writeMap(PLAYED_KEY, played);
   let award = null;
   if (!firsts.has(t)) {
-    firsts.set(t, g); writeMap(FIRSTS_KEY, firsts);
+    firsts.set(t, record()); writeMap(FIRSTS_KEY, firsts);
     award = { kicker: (LIMIT.has(t) ? L('First limit hand', '初めての役満', '首次大满贯') : L('First time', '初めての役', '首次达成')) + ' · ' + gameNo(g) };
+    if (!flood && FIRSTS.every(x => firsts.has(x))) {
+      flood = record();
+      try { localStorage.setItem(FLOOD_KEY, JSON.stringify(flood)); } catch (e) {}
+      // after this set's own celebration, which clearSet starts once this returns
+      queueMicrotask(() => celebrate(t, S.log[S.log.length - 1].k, FIRSTS.length,
+        { kicker: L(`Every set · ${gameNo(g)}`, `すべての役 · ${gameNo(g)}`, `所有组合 · ${gameNo(g)}`), name: FLOOD_NAME }));
+    }
   } else if (!fulls.has(t) && gs.length >= FULL_OF) {
-    fulls.set(t, g); writeMap(FULL_KEY, fulls);
+    fulls.set(t, record()); writeMap(FULL_KEY, fulls);
     award = { kicker: L(`Full · ${FULL_OF} of ${FULL_IN} games`, `フル · ${FULL_IN}局中${FULL_OF}局`, `全满 · ${FULL_IN}局中${FULL_OF}局`) + ' · ' + gameNo(g) };
   }
   if (award) buildGuide();
   return award;
 }
+const FLOOD_NAME = ['The Yellow River Floods Again', '黄河、再び溢れる', '黄河又泛滥了'];
 // A set holds a pair if it is one, or splits into sets with one: two pair,
 // full house, Seven Pairs, any four sets and a pair. Thirteen Orphans and
 // Nine Gates hold theirs in one run.
@@ -1420,7 +1441,7 @@ function winAwards() {
   for (const [id, name, , test] of WINS) {
     if (wins.has(id) || !test(sets)) continue;
     const g = thisGame();
-    wins.set(id, g); writeMap(WINS_KEY, wins);
+    wins.set(id, record()); writeMap(WINS_KEY, wins);
     celebrate(last.t, last.k, S.points, { kicker: L('Win', '完全消去', '清完') + ' · ' + gameNo(g), name });
   }
   buildGuide();
@@ -1440,7 +1461,7 @@ function celebrate(t, kinds, v, award = null) {
   if (!el.hidden && award) { celQueue.push([t, kinds, v, award]); return; }
   const split = LIMIT.has(t) || CLASSIC.has(t) || /double|triple|two pair|full house/.test(t);
   const groups = split ? limitGroups(t, kinds) : [kinds.slice().sort((a, b) => a - b)];
-  const nm = award && award.name ? award.name : setNameArr(t).map((x, i) => i ? x : title(x));   // a heading, so Full House, not full house
+  const nm = award && award.name ? award.name : setNameArr(t).map((x, i) => i ? x : t.startsWith('run of ') ? 'Run of ' + t.slice(7) : title(x));   // a heading: Full House, Run of 4
   const longest = Math.max(...groups.map(g => g.length));
   const land = (groups.length - 1) * 300 + longest * 45 + 500;   // ms until the last set is down
   let i = 0;
@@ -1602,10 +1623,11 @@ function buildGuide() {
     const full = run ? RUNS.some(n => fulls.has('run of ' + n)) : fulls.has(t);
     const runs = run ? `<div class="g-runs" aria-label="${pick('Run lengths cleared', '消した連順の長さ', '已消除的连顺长度')}">${RUNS.map(n => {
       const g = firsts.get('run of ' + n), f = fulls.get('run of ' + n);
-      const tip = [g !== undefined && L(`first in ${gameNo(g)}`, `${gameNo(g)}で初めて`, `首次于${gameNo(g)}`), f !== undefined && L(`full in ${gameNo(f)}`, `${gameNo(f)}でフル`, `${gameNo(f)}全满`)].filter(Boolean).join(' · ');
-      return `<span class="${f !== undefined ? 'on full' : g !== undefined ? 'on' : ''}"${tip ? ` title="${tip}"` : ''}>${n}</span>`; }).join('')}</div>` : '';
-    const when = !run && done ? `<small class="g-when">${L(`first in ${gameNo(firsts.get(t))}`, `${gameNo(firsts.get(t))}で初めて`, `首次于${gameNo(firsts.get(t))}`)}${
-      full ? ' · ' + L(`full in ${gameNo(fulls.get(t))}`, `${gameNo(fulls.get(t))}でフル`, `${gameNo(fulls.get(t))}全满`) : ''}</small>` : '';
+      const tip = [g && L(`first in ${recWhere(g)}`, `${recWhere(g)}で初めて`, `首次于${recWhere(g)}`), f && L(`full in ${recWhere(f)}`, `${recWhere(f)}でフル`, `${recWhere(f)}全满`)].filter(Boolean).join('; ');
+      return `<span class="${f ? 'on full' : g ? 'on' : ''}"${tip ? ` title="${tip.replace(/<[^>]*>/g, '')}"` : ''}>${n}</span>`; }).join('')}</div>` : '';
+    const fr = firsts.get(t), fu = fulls.get(t);
+    const when = !run && done ? `<small class="g-when">${L(`first in ${recWhere(fr)}`, `${recWhere(fr)}で初めて`, `首次于${recWhere(fr)}`)}${
+      full ? '<br>' + L(`full in ${recWhere(fu)}`, `${recWhere(fu)}でフル`, `${recWhere(fu)}全满`) : ''}</small>` : '';
     const p = ptsText || '+' + setValue(t, kinds);
     const tiles = groups.map(g => g.map(k => `<span class="tile mini" aria-hidden="true">${face(k)}</span>`).join('')).join('<span class="gap"></span>');
     const play = LIMIT.has(t) ? ` data-preview="${kinds.join(',')}" tabindex="0" role="button" title="${pick('Play the animation', '演出を見る', '播放动画')}"` : '';
@@ -1638,13 +1660,18 @@ function buildGuide() {
       `把对子、顺子、刻子、杠子、连顺或杂色顺放到一边，最多${MAX_MELDS}组。副露在消除前不计分，也不占24张上限。副露的刻子可以用场上的第四张加杠成杠子；其余固定不变，连顺和杂色顺不能延长。点一下副露即可与场上的牌一起使用：副露两组箭牌刻子，场上再有第三组，就能作为大三元消除。副露也可以单独消除。`));
   const got = FIRSTS.filter(t => firsts.has(t)).length, full = FIRSTS.filter(t => fulls.has(t)).length;
   const games = gamesPlayed();
-  const winCards = WINS.map(([id, name, note]) => { const g = wins.get(id);
-    return `<div class="g-item${g !== undefined ? ' g-done' : ''}"><div class="g-head"><b>${LA(name)}</b></div><p class="g-note">${LA(note)}</p>${
-      g !== undefined ? `<small class="g-when">${L(`won in ${gameNo(g)}`, `${gameNo(g)}で達成`, `于${gameNo(g)}达成`)}</small>` : ''}</div>`; }).join('');
+  const winCards = WINS.map(([id, name, note]) => { const r = wins.get(id);
+    return `<div class="g-item${r ? ' g-done' : ''}"><div class="g-head"><b>${LA(name)}</b></div><p class="g-note">${LA(note)}</p>${
+      r ? `<small class="g-when">${L(`won in ${recWhere(r)}`, `${recWhere(r)}で達成`, `于${recWhere(r)}达成`)}</small>` : ''}</div>`; }).join('');
+  // the river rises with each set's First, and floods at the last
+  const floodCard = `<div class="g-item g-flood${flood ? ' g-done' : ''}"><div class="g-head"><b>${LA(FLOOD_NAME)}</b><span class="g-pts">${got}/${FIRSTS.length}</span></div>
+      <div class="g-river" role="progressbar" aria-valuemin="0" aria-valuemax="${FIRSTS.length}" aria-valuenow="${got}" aria-label="${pick('Sets cleared at least once', '一度は消した役', '已消除过的组合')}"><i style="width:${got / FIRSTS.length * 100}%"></i></div>
+      <p class="g-note">${L('Clear every set at least once. The river rises with each one.', 'すべての役を一度は消そう。一つ消すごとに川の水位が上がる。', '把每种组合都至少消除一次。每消一种，河水就涨一分。')}</p>${
+      flood ? `<small class="g-when">${L(`flooded in ${recWhere(flood)}`, `${recWhere(flood)}で氾濫`, `于${recWhere(flood)}泛滥`)}</small>` : ''}</div>`;
   $('guideBody').innerHTML = `<p class="g-firsts">${L(`<b>${got} of ${FIRSTS.length}</b> sets cleared at least once (✓), <b>${full}</b> full (★: cleared in ${FULL_OF} of ${FULL_IN} games in a row), over ${games} game${games === 1 ? '' : 's'}.`,
       `<b>${FIRSTS.length}種類のうち${got}種類</b>を一度は消し（✓）、<b>${full}種類</b>がフル（★：連続${FULL_IN}局のうち${FULL_OF}局で消した）。${games}局中。`,
       `<b>${FIRSTS.length}种组合中已消除过${got}种</b>（✓），<b>${full}种</b>全满（★：连续${FULL_IN}局中有${FULL_OF}局消除过）。共${games}局。`)}</p>` +
-    `<section class="g-sec"><h3>${L('Wins', '完全消去', '清完')}</h3><div class="g-grid">${winCards}</div></section>` + GUIDE.map(([h, items]) => `<section class="g-sec"><h3>${LA(h)}</h3><div class="g-grid">${items.map(item).join('')}</div></section>`).join('') +
+    `<section class="g-sec"><h3>${L('Achievements', '実績', '成就')}</h3><div class="g-grid">${floodCard}${winCards}</div></section>` + GUIDE.map(([h, items]) => `<section class="g-sec"><h3>${LA(h)}</h3><div class="g-grid">${items.map(item).join('')}</div></section>`).join('') +
     `<section class="g-sec"><h3>${L('Melds', '副露', '副露')}</h3><div class="g-grid">${meldCard}</div></section>` +
     `<section class="g-sec"><h3>${L('Penalties', 'ペナルティ', '罚分')}</h3><div class="g-grid">${pen}</div></section>`;
 }
