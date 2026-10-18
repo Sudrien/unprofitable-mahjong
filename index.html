@@ -161,6 +161,8 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.35rem, 
 .g-chip { height: 29px; padding: 0 8px; display: grid; place-items: center; border: 1.5px dashed var(--warn); color: var(--warn); border-radius: 4px; font-weight: 700; font-size: .8rem; }
 .rules { color: var(--muted); font-size: .85rem; line-height: 1.55; max-width: 68ch; }
 .rules summary { cursor: pointer; color: var(--ink); font-weight: 600; }
+.foot { color: var(--muted); font-size: .8rem; }
+.foot a { color: inherit; }
 
 @media (max-width: 640px) {
   .hand, .hand.wide { grid-template-columns: repeat(6, minmax(0, 1fr)); }
@@ -278,6 +280,8 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.35rem, 
     <p class="t" lang="ja">どの配牌もペナルティなしで最後までクリアできます。</p>
     <p class="t" lang="zh-Hans">每一局都能零罚分清完。</p>
   </details>
+
+  <footer class="foot"><a href="https://github.com/Sudrien/unprofitable-mahjong">github.com/Sudrien/unprofitable-mahjong</a></footer>
 </div>
 
 <script>
@@ -1052,7 +1056,7 @@ $('newBtn').onclick = () => {
 };
 document.addEventListener('keydown', e => {
   if (e.target.closest('input,textarea')) return;
-  if (e.key === 'Enter' && !$('clearBtn').disabled && !e.target.closest('button')) clearSet();
+  if (e.key === 'Enter' && !$('clearBtn').disabled && !e.target.closest('button,a,summary')) clearSet();
   if ((e.key === 'z' || e.key === 'Z') && (e.metaKey || e.ctrlKey)) { e.preventDefault(); doUndo(); }
 });
 
