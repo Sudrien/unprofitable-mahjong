@@ -8,7 +8,7 @@ Available in English, 日本語 and 简体中文. The default follows the browse
 
 ## Play
 
-Open `index.html` in a browser. There's nothing to install or build, and it works offline once loaded, apart from the web fonts. Your game, best scores, language and settings are saved in the browser.
+Open [index.html](https://sudrien.github.io/unprofitable-mahjong/) in a browser. There's nothing to install or build, and it works offline once loaded, apart from the web fonts. Your game, best scores, language and settings are saved in the browser.
 
 ## Rules
 
