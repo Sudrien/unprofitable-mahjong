@@ -63,3 +63,12 @@ stacks or the build.
 melds, the discard pile, penalty. It must give the same answers as the
 web version. `m5tab5/test/` checks that against `index.html` with Node,
 and a patch that changes either side runs it.
+
+## Not yet built
+
+- **The Capital is Gone:** the Full version of The Yellow River Floods
+  Again, earned once every set is Full (cleared in 3 of 5 games in a
+  row). If it is ever built, it takes this name. Rare limit hands may
+  make it out of reach without loading seeds. If seeds become loadable,
+  Full should need 3 different seeds in the window, or replaying one
+  seed three times would earn any Full.
