@@ -27,10 +27,11 @@ let seed = 99;
 const rnd = n => { seed = (seed * 1103515245 + 12345) >>> 0; return (seed >>> 8) % n; };
 let failures = 0;
 const fail = m => { failures++; if (failures <= 15) console.error('FAIL ' + m); };
-// Where a game is, as the rules see it: everything but the moves list and
+// Where a game is, as the rules see it: everything but the moves list, the
+// game's number in this device's count (a replay is never numbered), and
 // which table slot holds which tile (a replay picks tiles by kind, so the
 // same tiles may sit in other places; nothing in the rules depends on it).
-const strip = s => { const o = JSON.parse(s); delete o.moves; o.hand = o.hand.filter(k => k !== null).sort((a, b) => a - b); return JSON.stringify(o); };
+const strip = s => { const o = JSON.parse(s); delete o.moves; delete o.game; o.hand = o.hand.filter(k => k !== null).sort((a, b) => a - b); return JSON.stringify(o); };
 
 // a careless player: hints, random groups (mostly refused), melds of the
 // hint's set, kong upgrades, Add 6, Discard 6, Discard set, clears with melds

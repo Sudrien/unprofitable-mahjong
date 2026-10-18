@@ -172,6 +172,13 @@ dialog.share .buttons { display: flex; gap: 8px; justify-content: flex-end; marg
 .g-play { cursor: pointer; }
 .g-play:hover { border-color: var(--t-red); }
 .g-play:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+.g-done .g-head b::before { content: "✓ "; color: var(--t-green); }
+.g-when { font-size: .75rem; color: var(--t-green); font-weight: 600; }
+.g-firsts { margin: 0; font-size: .85rem; color: var(--muted); }
+.g-firsts b { color: var(--ink); }
+.g-runs { display: flex; gap: 4px; font-size: .75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.g-runs span { min-width: 22px; padding: 2px 5px; text-align: center; border: 1px solid var(--line); border-radius: 4px; color: var(--muted); }
+.g-runs span.on { border-color: var(--t-green); color: var(--t-green); }
 .g-chip { height: 29px; padding: 0 8px; display: grid; place-items: center; border: 1.5px dashed var(--warn); color: var(--warn); border-radius: 4px; font-weight: 700; font-size: .8rem; }
 .rules { color: var(--muted); font-size: .85rem; line-height: 1.55; max-width: 68ch; }
 .rules summary { cursor: pointer; color: var(--ink); font-weight: 600; }
@@ -549,10 +556,15 @@ function setValue(t, kinds) {
   return (t === 'pung' || t === 'kong') && isEdge(kinds[0]) ? v * 2 : v;
 }
 const hasBonus = (t, kinds) => POKER.has(t) && tradValue(kinds) !== null;
+// Games dealt on this device, counted up at each deal; a replay isn't one.
+const GAMES_KEY = 'unprofitable-mahjong-games';
+function gamesPlayed() { try { return +localStorage.getItem(GAMES_KEY) || 0; } catch (e) { return 0; } }
+function nextGame() { const n = gamesPlayed() + 1; try { localStorage.setItem(GAMES_KEY, String(n)); } catch (e) {} return n; }
 function newGame(seed) {
   seed = seed === undefined ? randomSeed() : seed >>> 0;
   const wall = deal(seed);
   S = { seed, wall, discards: [], hand: wall.splice(0, HAND), melds: [], log: [], score: 0, points: 0, done: false, moves: [] };
+  if (!replaying) S.game = nextGame();
   undo = []; sel.clear(); hintKeys.clear(); fresh = new Set(S.hand.map((_, i) => 'h' + i));
   commit();
 }
@@ -775,7 +787,8 @@ function clearSet() {
   S.points += v;
   S.log.push({ t, k: kinds.sort((a, b) => a - b), v });
   if (S.moves) S.moves.push({ o: 'C', k: tableKinds, m: [...gone].sort((a, b) => a - b) });
-  if (LIMIT.has(t) && typeof celebrate === 'function' && !replaying) celebrate(t, kinds, v);
+  const first = typeof firstClear === 'function' && !replaying && firstClear(t);
+  if ((first || LIMIT.has(t)) && typeof celebrate === 'function' && !replaying) celebrate(t, kinds, v, first);
   sel.clear(); hintKeys.clear(); finishCheck(); commit();
 }
 // Set a basic set aside as a meld: no points yet, and it no longer counts toward the 24-tile limit.
@@ -1338,6 +1351,29 @@ function render() {
   $('newBtn').classList.toggle('armed', armed);
 }
 
+/* ---------- firsts: each kind of set, cleared for the first time ---------- */
+// Kept across games in this browser. The first clear of each plays the
+// limit-hand celebration, once per device; replays never count. Every set the
+// Sets and scores guide shows, each run length on its own; the guide's
+// two pung and two kong cards are one set each, as are its two flushes.
+const FIRSTS_KEY = 'unprofitable-mahjong-firsts';
+// Each set maps to the game it was first cleared in, by the running count.
+let firsts = new Map();
+try {
+  const f = JSON.parse(localStorage.getItem(FIRSTS_KEY) || '{}');
+  if (f && typeof f === 'object' && !Array.isArray(f)) for (const [t, g] of Object.entries(f)) if (Number.isInteger(g) && g >= 0) firsts.set(t, g);
+} catch (e) {}
+function firstClear(t) {
+  if (t === 'triple chow') t = 'mixed triple chow';     // older saves' name for it
+  if (firsts.has(t)) return 0;
+  if (!Number.isInteger(S.game)) S.game = nextGame();    // a game from before games were counted
+  firsts.set(t, S.game);
+  try { localStorage.setItem(FIRSTS_KEY, JSON.stringify(Object.fromEntries(firsts))); } catch (e) {}
+  buildGuide();
+  return S.game;
+}
+const gameNo = n => L(`game ${n}`, `第${n}局`, `第${n}局`);
+
 /* ---------- limit hand celebration ---------- */
 let celTimer = null, countTimer = null;
 function closeCelebration() {
@@ -1345,9 +1381,11 @@ function closeCelebration() {
   if (!el.hidden) { el.classList.add('out'); setTimeout(() => { el.hidden = true; el.classList.remove('out'); }, 220); }
   clearTimeout(celTimer); clearInterval(countTimer);
 }
-function celebrate(t, kinds, v) {
+function celebrate(t, kinds, v, first = 0) {   // first: the game number, when this is the set's first clear
   const el = $('celebrate');
-  const groups = limitGroups(t, kinds), nm = setNameArr(t);
+  const split = LIMIT.has(t) || CLASSIC.has(t) || /double|triple|two pair|full house/.test(t);
+  const groups = split ? limitGroups(t, kinds) : [kinds.slice().sort((a, b) => a - b)];
+  const nm = setNameArr(t).map((x, i) => i ? x : title(x));   // a heading, so Full House, not full house
   const longest = Math.max(...groups.map(g => g.length));
   const land = (groups.length - 1) * 300 + longest * 45 + 500;   // ms until the last set is down
   let i = 0;
@@ -1361,7 +1399,7 @@ function celebrate(t, kinds, v) {
   // in kanji, for English; the English for Japanese and Chinese
   const alt = lang === 'en' ? nm[1] : nm[0];
   el.innerHTML = `<div class="cel-panel" style="--n:${kinds.length};--land:${land}ms">
-      <span class="cel-kicker">${L('Limit hand', '役満', '大满贯')}</span>
+      <span class="cel-kicker">${first ? (LIMIT.has(t) ? L('First limit hand', '初めての役満', '首次大满贯') : L('First time', '初めての役', '首次达成')) + ' · ' + gameNo(first) : L('Limit hand', '役満', '大满贯')}</span>
       <div class="cel-tiles">${html}</div>
       <h2 class="cel-name">${LA(nm)}</h2>
       <span class="cel-alt" lang="${lang === 'en' ? 'ja' : 'en'}">${alt}</span>
@@ -1449,6 +1487,7 @@ document.addEventListener('keydown', e => {
 
 /* ---------- sets and scores guide ---------- */
 const R = (k, n) => Array(n).fill(k);
+const RUNS = [4, 5, 6, 7, 8];
 // [heading, [ [name en/ja/zh], tile groups, points override, [note en/ja/zh] ] ]
 const GUIDE = [
   [['Basic sets', '基本の組', '基本组合'], [
@@ -1503,12 +1542,16 @@ const GUIDE = [
 ];
 function buildGuide() {
   const item = ([name, groups, ptsText, note]) => {
-    const kinds = groups.flat(), t = classify(kinds);
+    const kinds = groups.flat(), t = classify(kinds), run = t.startsWith('run of ');
+    const done = run ? RUNS.some(n => firsts.has('run of ' + n)) : firsts.has(t);
+    const runs = run ? `<div class="g-runs" aria-label="${pick('Run lengths cleared', '消した連順の長さ', '已消除的连顺长度')}">${RUNS.map(n => { const g = firsts.get('run of ' + n);
+      return `<span class="${g !== undefined ? 'on' : ''}"${g !== undefined ? ` title="${gameNo(g)}"` : ''}>${n}</span>`; }).join('')}</div>` : '';
+    const when = !run && done ? `<small class="g-when">${L(`first in ${gameNo(firsts.get(t))}`, `${gameNo(firsts.get(t))}で初めて`, `首次于${gameNo(firsts.get(t))}`)}</small>` : '';
     const p = ptsText || '+' + setValue(t, kinds);
     const tiles = groups.map(g => g.map(k => `<span class="tile mini" aria-hidden="true">${face(k)}</span>`).join('')).join('<span class="gap"></span>');
     const play = LIMIT.has(t) ? ` data-preview="${kinds.join(',')}" tabindex="0" role="button" title="${pick('Play the animation', '演出を見る', '播放动画')}"` : '';
     const label = kinds.map(k => kindNameIn(k, lang)).join(lang === 'en' ? ', ' : '、');
-    return `<div class="g-item${play ? ' g-play' : ''}"${play}><div class="g-head"><b>${LA(name)}</b><span class="g-pts">${p}</span></div><div class="g-tiles" role="img" aria-label="${label}">${tiles}</div><p class="g-note">${LA(note)}</p></div>`;
+    return `<div class="g-item${play ? ' g-play' : ''}${done ? ' g-done' : ''}"${play}><div class="g-head"><b>${LA(name)}</b><span class="g-pts">${p}</span></div><div class="g-tiles" role="img" aria-label="${label}">${tiles}</div>${runs}<p class="g-note">${LA(note)}</p>${when}</div>`;
   };
   const card = (name, ptsTxt, neg, chip, note) => `<div class="g-item"><div class="g-head"><b>${name}</b><span class="g-pts${neg ? ' neg' : ''}">${ptsTxt}</span></div><div class="g-tiles">${chip}</div><p class="g-note">${note}</p></div>`;
   const start = pts(-LEFT_COST * TOTAL);
@@ -1534,11 +1577,18 @@ function buildGuide() {
     L(`Set aside a pair, chow, pung, kong, run or straight, up to ${MAX_MELDS}. Melds score nothing yet and don’t count toward the 24-tile limit. A melded pung can take its fourth tile from the table to become a kong; otherwise melds are fixed, and runs and straights can’t grow. Tap a meld to use it with table tiles: two dragon pungs melded plus a third on the table clear as Big Three Dragons. A meld can also be cleared on its own.`,
       `対子・順子・刻子・槓子・連順・ストレートを最大${MAX_MELDS}つまで脇に置けます。副露は消すまで得点にならず、24枚の上限にも数えません。副露した刻子は場の4枚目で槓子にできます（加槓）。それ以外は固定で、連順やストレートは伸ばせません。副露をタップすると場の牌と合わせて使えます。三元牌の刻子を2組副露し、場に3組目がそろえば大三元として消せます。副露だけで消すこともできます。`,
       `把对子、顺子、刻子、杠子、连顺或杂色顺放到一边，最多${MAX_MELDS}组。副露在消除前不计分，也不占24张上限。副露的刻子可以用场上的第四张加杠成杠子；其余固定不变，连顺和杂色顺不能延长。点一下副露即可与场上的牌一起使用：副露两组箭牌刻子，场上再有第三组，就能作为大三元消除。副露也可以单独消除。`));
-  $('guideBody').innerHTML = GUIDE.map(([h, items]) => `<section class="g-sec"><h3>${LA(h)}</h3><div class="g-grid">${items.map(item).join('')}</div></section>`).join('') +
+  const got = FIRSTS.filter(t => firsts.has(t)).length;
+  const games = gamesPlayed();
+  $('guideBody').innerHTML = `<p class="g-firsts">${L(`<b>${got} of ${FIRSTS.length}</b> sets cleared at least once, over ${games} game${games === 1 ? '' : 's'}. Each is ticked below with the game it was first cleared in.`,
+      `<b>${FIRSTS.length}種類のうち${got}種類</b>を一度は消しました（${games}局中）。消した組には印と、初めて消した局が付きます。`,
+      `<b>${FIRSTS.length}种组合中已消除过${got}种</b>（共${games}局）。消除过的会打勾，并注明首次消除的局。`)}</p>` + GUIDE.map(([h, items]) => `<section class="g-sec"><h3>${LA(h)}</h3><div class="g-grid">${items.map(item).join('')}</div></section>`).join('') +
     `<section class="g-sec"><h3>${L('Melds', '副露', '副露')}</h3><div class="g-grid">${meldCard}</div></section>` +
     `<section class="g-sec"><h3>${L('Penalties', 'ペナルティ', '罚分')}</h3><div class="g-grid">${pen}</div></section>`;
 }
 
+// every kind of set there is a first time for: the guide's, and each run length
+const FIRSTS = [...new Set(GUIDE.flatMap(([, items]) => items.map(([, groups]) => classify(groups.flat())))
+  .flatMap(t => t.startsWith('run of ') ? RUNS.map(n => 'run of ' + n) : [t]))];
 buildGuide();
 try { if (localStorage.getItem('unprofitable-mahjong-guide') === '0') $('guide').open = false; } catch (e) {}
 $('guide').addEventListener('toggle', () => { try { localStorage.setItem('unprofitable-mahjong-guide', $('guide').open ? '1' : '0'); } catch (e) {} });
