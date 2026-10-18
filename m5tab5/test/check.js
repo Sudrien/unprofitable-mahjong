@@ -27,7 +27,7 @@ const js = html.split('<script>')[1].split('</script>')[0];
 const core = js.slice(js.indexOf('const HAND'), js.indexOf('/* ---------- render'));
 const make = new Function(`function render(){}; ${core};
   return { deal, setS: v => { S = v; }, get S() { return S; }, sel, clearSet, meldSet, addSix, discardSix, discardSet, sortHand,
-           findSet, penalty, classify, setValue, hasBonus, remaining, meldKeys };`);
+           findSet, penalty, classify, setValue, hasBonus, remaining, meldKeys, limitGroups, LIMIT };`);
 
 let failures = 0;
 const fail = msg => { failures++; if (failures <= 20) console.error('MISMATCH ' + msg); };
@@ -55,14 +55,33 @@ function classifyCheck() {
     for (const k of ks) { cnt[k] = (cnt[k] || 0) + 1; if (cnt[k] > 4) ok = false; }
     if (ok) cases.push(ks);
   }
+  // limit hands, which random tiles seldom make: a few thousand of each kind
+  const pick = (arr, n) => { const a = arr.slice(), o = []; while (o.length < n) o.push(a.splice(rnd(a.length), 1)[0]); return o; };
+  const ORPH = [0, 8, 9, 17, 18, 26, 27, 28, 29, 30, 31, 32, 33], TERM = [0, 8, 9, 17, 18, 26], GREENS = [19, 20, 21, 23, 25, 32];
+  const sz = () => 3 + rnd(2);
+  for (let i = 0; i < 600; i++) {
+    cases.push(ORPH.concat(ORPH[rnd(13)]));
+    const s9 = rnd(3) * 9; cases.push([0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 8, 8, rnd(9)].map(r => s9 + r));
+    cases.push([27, 28, 29, 30].flatMap(w => Array(sz()).fill(w)));
+    const lw = pick([27, 28, 29, 30], 4); cases.push(lw.slice(0, 3).flatMap(w => Array(sz()).fill(w)).concat([lw[3], lw[3]]));
+    cases.push([31, 32, 33].flatMap(d => Array(sz()).fill(d)));
+    cases.push(pick([...Array(34).keys()], 7).flatMap(k => [k, k]));
+    const hp = pick(ORPH.slice(6), 5); cases.push(hp.slice(0, 4).flatMap(k => Array(sz()).fill(k)).concat([hp[4], hp[4]]));
+    const tp = pick(TERM, 5); cases.push(tp.slice(0, 4).flatMap(k => Array(sz()).fill(k)).concat([tp[4], tp[4]]));
+    const gp = pick(GREENS, 5); cases.push(gp.slice(0, 4).flatMap(k => Array(3).fill(k)).concat([gp[4], gp[4]]));
+    cases.push([19, 20, 21, 19, 20, 21].concat(Array(3).fill(GREENS[3 + rnd(3)]), [32, 32]));
+    const kp = pick([...Array(34).keys()], 5); cases.push(kp.slice(0, 4).flatMap(k => Array(4).fill(k)).concat([kp[4], kp[4]]));
+  }
+  const limits = cases.filter(ks => G.LIMIT.has(G.classify(ks) || '')).length;
   const out = execFileSync(UMTEST, ['classify'], { input: cases.map(c => c.join(' ')).join('\n') + '\n', maxBuffer: 1 << 28 })
     .toString().trim().split('\n');
   cases.forEach((ks, i) => {
     const t = G.classify(ks);
-    const want = `${t || ''}|${t ? G.setValue(t, ks) : 0}|${t ? (G.hasBonus(t, ks) ? 1 : 0) : 0}`;
+    const want = `${t || ''}|${t ? G.setValue(t, ks) : 0}|${t ? (G.hasBonus(t, ks) ? 1 : 0) : 0}` +
+      (t && G.LIMIT.has(t) ? '|' + G.limitGroups(t, ks).map(g => g.join(',')).join('/') : '');
     if (out[i] !== want) fail(`classify [${ks}] C=${out[i]} JS=${want}`);
   });
-  console.log(`classify: ${cases.length} groups compared`);
+  console.log(`classify: ${cases.length} groups compared, ${limits} of them limit hands, with their grouping`);
 }
 
 /* ---------- deal ---------- */

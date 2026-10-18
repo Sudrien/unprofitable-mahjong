@@ -66,6 +66,15 @@ bool um_set_is_classic(um_set_t t);  /* named in Title Case */
 bool um_set_is_poker(um_set_t t);
 bool um_set_meldable(um_set_t t);
 
+/* A limit hand as the Sets list shows it (the web version's limitGroups):
+ * Thirteen Orphans and Nine Gates as one run, the orphans' duplicate last;
+ * Seven Pairs as its pairs; the rest as their sets -- kongs, pungs, then
+ * chows, from the lowest tile up -- with the pair last. Writes the tiles
+ * group after group to out (n of them) and each group's size to glen;
+ * returns how many groups, at most UM_MAX_GROUPS. */
+#define UM_MAX_GROUPS (7)
+int um_limit_groups(um_set_t t, const uint8_t *kinds, int n, uint8_t *out, uint8_t *glen);
+
 /* What a group of tiles makes, and what it scores. `kinds` need not be
  * sorted; n is 2..UM_MAX_SEL. */
 um_set_t um_classify(const uint8_t *kinds, int n);

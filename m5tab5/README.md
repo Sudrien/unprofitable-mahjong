@@ -82,8 +82,11 @@ the web version it cannot reach past Add 6 or Discard 6.
 
 ![Portrait, the nine dragons selected](screenshots/portrait.png)
 
-Clearing a limit hand plays the celebration: the tiles land one at a
-time, the name, and the points counting up.
+Clearing a limit hand plays the celebration: the hand in its sets, as
+the Sets list groups them, each set dropping in a beat after the one
+before and named underneath; then the hand's name, its name in another
+language (the Japanese for English, the English for Japanese and
+Chinese), and the points counting up.
 
 ![Big Three Dragons](screenshots/limit-hand.png)
 

@@ -861,40 +861,142 @@ static void redraw(void)
 /* ------------------------------------------------------------------ */
 /* The limit-hand celebration                                          */
 
+/* A set's name in another language: what the celebration shows under
+ * the hand's own name. The lookup goes through the language for a moment;
+ * the strings are the table's own, so they outlive the switch back. */
+static const char *set_name_in(um_set_t t, i18n_lang_t lg)
+{
+    const i18n_lang_t was = i18n_lang();
+    i18n_set_lang(lg);
+    const char *s = set_name(t);
+    i18n_set_lang(was);
+    return s;
+}
+
+/* The hand in its sets, as the Sets list groups them (um_limit_groups):
+ * each set drops in together, a beat after the one before, and is named
+ * under it; then the hand's name, its name in another language (the
+ * Japanese for English, the English for Japanese and Chinese), and the
+ * points counting up, as the web version's celebration does. */
+#define CEL_GAP   (22)                  /* between sets */
+#define CEL_DROP  (48)                  /* how far a set falls */
+#define CEL_CAP_H (GFX_GLYPH_H(SMALL) + 6)
+#define CEL_ROW   (tilefaces_M.h + TILEDRAW_EDGE_M + 6 + CEL_CAP_H + 14)
+
+typedef struct {
+    int ng, row_y0, rows;
+    uint8_t k[UM_MAX_SEL], glen[UM_MAX_GROUPS];
+    int16_t tx[UM_MAX_SEL], ty[UM_MAX_SEL];     /* each tile's place */
+    int16_t gx0[UM_MAX_GROUPS], gx1[UM_MAX_GROUPS], gy[UM_MAX_GROUPS]; /* each set's span, for its name */
+    const char *cap[UM_MAX_GROUPS];
+} cel_t;
+static cel_t s_cel;
+
+static void cel_draw_group(const cel_t *c, int g, int dy)
+{
+    int at = 0;
+    for (int i = 0; i < g; i++) at += c->glen[i];
+    for (int j = 0; j < c->glen[g]; j++)
+        tiledraw_tile(&tilefaces_M, c->k[at + j], c->tx[at + j], c->ty[at + j] + dy, TILEDRAW_EDGE_M);
+}
+
+static void cel_draw_cap(const cel_t *c, int g)
+{
+    if (!c->cap[g]) return;
+    const int w = gfx_text_w(c->cap[g], SMALL);
+    gfx_draw_text((c->gx0[g] + c->gx1[g] - w) / 2, c->gy[g] + tilefaces_M.h + TILEDRAW_EDGE_M + 6, c->cap[g], SMALL, w + 2, C_MUTED);
+}
+
 static void celebrate(um_set_t t, const uint8_t *kinds, int n, int v)
 {
-    /* in tile order, as the web version shows them */
-    uint8_t k[UM_MAX_SEL];
-    memcpy(k, kinds, (size_t)n);
-    for (int i = 1; i < n; i++) { uint8_t x = k[i]; int j = i - 1; while (j >= 0 && k[j] > x) { k[j + 1] = k[j]; j--; } k[j + 1] = x; }
+    cel_t *c = &s_cel;
+    memset(c, 0, sizeof *c);
+    c->ng = um_limit_groups(t, kinds, n, c->k, c->glen);
+    if (c->ng < 1) return;
 
-    const tilefaces_size_t *sz = &tilefaces_M;
-    const int pitch = sz->w + 4;
-    const int per_row = (gfx_w() - 2 * M_X) / pitch;
-    const int rows = (n + per_row - 1) / per_row;
-    const int row_w = (n < per_row ? n : per_row) * pitch - 4;
-    const int x0 = (gfx_w() - row_w) / 2;
-    const int y0 = L.land ? 170 : 420;     /* about the middle of either screen */
+    /* lay the sets out in rows: a set that fits a row is not split, a run
+     * too long for one (Thirteen Orphans in portrait) wraps; then each
+     * row is centred */
+    const int pitch = tilefaces_M.w + 2, avail = gfx_w() - 2 * M_X;
+    int x = 0, row = 0, at = 0;
+    int16_t row_w[UM_MAX_SEL] = { 0 };
+    for (int g = 0; g < c->ng; g++) {
+        const int gw = c->glen[g] * pitch - 2;
+        if (x > 0 && x + gw > avail && gw <= avail) { x = 0; row++; }
+        for (int j = 0; j < c->glen[g]; j++, at++) {
+            if (x > 0 && x + tilefaces_M.w > avail) { x = 0; row++; }
+            c->tx[at] = (int16_t)x;
+            c->ty[at] = (int16_t)row;
+            if (x + tilefaces_M.w > row_w[row]) row_w[row] = (int16_t)(x + tilefaces_M.w);
+            x += pitch;
+        }
+        x += CEL_GAP - 2;
+        /* one-run hands (Thirteen Orphans, Nine Gates) are named by the title alone */
+        c->cap[g] = c->ng > 1 ? set_name(um_classify(&c->k[at - c->glen[g]], c->glen[g])) : NULL;
+    }
+    c->rows = row + 1;
+
+    const char *kick = _("LIMIT HAND"), *nm = set_name(t);
+    const char *alt = set_name_in(t, i18n_lang() == I18N_EN ? I18N_JA : I18N_EN);
+    const int ns = gfx_text_w(nm, 5) <= avail ? 5 : 4;       /* portrait is 720 wide */
+    const int total = GFX_GLYPH_H(TXT) + 24 + c->rows * CEL_ROW + 16 + GFX_GLYPH_H(ns) + 12 +
+                      GFX_GLYPH_H(TXT) + 24 + GFX_GLYPH_H(4) + 40 + GFX_GLYPH_H(TXT);
+    int y = (gfx_h() - total) / 2;
+    if (y < 16) y = 16;
+    const int ky = y;
+    c->row_y0 = ky + GFX_GLYPH_H(TXT) + 24 + CEL_DROP / 2;
+    for (int i = 0; i < n; i++) {
+        const int r = c->ty[i];
+        c->tx[i] = (int16_t)((gfx_w() - row_w[r]) / 2 + c->tx[i]);
+        c->ty[i] = (int16_t)(c->row_y0 + r * CEL_ROW);
+    }
+    at = 0;
+    for (int g = 0; g < c->ng; g++) {
+        const int last = at + c->glen[g] - 1;
+        c->gx0[g] = c->tx[at];
+        c->gx1[g] = (int16_t)(c->tx[last] + tilefaces_M.w);
+        c->gy[g] = c->ty[last];
+        at += c->glen[g];
+    }
 
     gfx_fill_rect(0, 0, gfx_w(), gfx_h(), C_SURFACE);
-    const char *kick = _("LIMIT HAND");
-    gfx_draw_text((gfx_w() - gfx_text_w(kick, TXT)) / 2, y0 - 50, kick, TXT, gfx_w(), C_KICK);
+    gfx_draw_text((gfx_w() - gfx_text_w(kick, TXT)) / 2, ky, kick, TXT, gfx_w(), C_KICK);
     gfx_blit(0, gfx_h());
-    /* tiles one at a time, each band blitted as it lands */
-    for (int i = 0; i < n; i++) {
-        const int x = x0 + (i % per_row) * pitch, y = y0 + (i / per_row) * (sz->h + 16);
-        tiledraw_tile(sz, k[i], x, y, TILEDRAW_EDGE_M);
-        gfx_blit(y, y + sz->h + TILEDRAW_EDGE_M);
-        vTaskDelay(pdMS_TO_TICKS(60));
+
+    /* each set falls into place, eased out; the band it falls through is
+     * cleared and everything already down is drawn again over it */
+    for (int g = 0; g < c->ng; g++) {
+        /* the band runs from the set's first row (a run can wrap) to its last */
+        int first = 0;
+        for (int d = 0; d < g; d++) first += c->glen[d];
+        int top = c->ty[first] - CEL_DROP, bot = c->gy[g] + tilefaces_M.h + TILEDRAW_EDGE_M;
+        if (top < 0) top = 0;
+        for (int f = 0; f <= 7; f++) {
+            const float p = (float)f / 7.0f, e = (1.0f - p) * (1.0f - p) * (1.0f - p);
+            gfx_fill_rect(0, top, gfx_w(), bot - top, C_SURFACE);
+            gfx_draw_text((gfx_w() - gfx_text_w(kick, TXT)) / 2, ky, kick, TXT, gfx_w(), C_KICK);
+            for (int d = 0; d < g; d++) { cel_draw_group(c, d, 0); cel_draw_cap(c, d); }
+            cel_draw_group(c, g, -(int)(CEL_DROP * e + 0.5f));
+            gfx_blit(top, bot);
+            vTaskDelay(pdMS_TO_TICKS(16));
+        }
+        cel_draw_cap(c, g);
+        gfx_blit(c->gy[g] + tilefaces_M.h, c->gy[g] + tilefaces_M.h + TILEDRAW_EDGE_M + 6 + CEL_CAP_H);
+        vTaskDelay(pdMS_TO_TICKS(140));
     }
-    char ps[16];
-    const char *nm = set_name(t);
-    const int ny = y0 + rows * (sz->h + 16) + 30;
-    const int ns = gfx_text_w(nm, 5) <= gfx_w() - 2 * M_X ? 5 : 4;   /* portrait is 720 wide */
+
+    /* the name, then the other language's beneath it */
+    const int ny = c->row_y0 + c->rows * CEL_ROW + 8;
     gfx_draw_text((gfx_w() - gfx_text_w(nm, ns)) / 2, ny, nm, ns, gfx_w(), C_INK);
     gfx_blit(ny, ny + GFX_GLYPH_H(ns));
+    vTaskDelay(pdMS_TO_TICKS(150));
+    const int ay = ny + GFX_GLYPH_H(ns) + 12;
+    gfx_draw_text((gfx_w() - gfx_text_w(alt, TXT)) / 2, ay, alt, TXT, gfx_w(), C_MUTED);
+    gfx_blit(ay, ay + GFX_GLYPH_H(TXT));
+
     /* the points count up, eased out, as on the web */
-    const int py = ny + GFX_GLYPH_H(ns) + 24;
+    char ps[16];
+    const int py = ay + GFX_GLYPH_H(TXT) + 24;
     for (int f = 0; f <= 30; f++) {
         const float p = (float)f / 30.0f, e = 1.0f - (1.0f - p) * (1.0f - p) * (1.0f - p);
         snprintf(ps, sizeof ps, "+%d", (int)(v * e + 0.5f));
@@ -904,13 +1006,14 @@ static void celebrate(um_set_t t, const uint8_t *kinds, int n, int v)
         vTaskDelay(pdMS_TO_TICKS(30));
     }
     const char *tap = _("Tap to continue");
-    gfx_draw_text((gfx_w() - gfx_text_w(tap, TXT)) / 2, py + 80, tap, TXT, gfx_w(), C_MUTED);
-    gfx_blit(py + 80, py + 80 + GFX_GLYPH_H(TXT));
+    const int ty = py + GFX_GLYPH_H(4) + 40;
+    gfx_draw_text((gfx_w() - gfx_text_w(tap, TXT)) / 2, ty, tap, TXT, gfx_w(), C_MUTED);
+    gfx_blit(ty, ty + GFX_GLYPH_H(TXT));
     /* until a tap, or 4 s */
     touch_swallow();
-    int x, y;
+    int tx, tyy;
     for (int ms = 0; ms < 4200; ms += 20) {
-        if (touch_get(&x, &y)) break;
+        if (touch_get(&tx, &tyy)) break;
         vTaskDelay(pdMS_TO_TICKS(20));
     }
     touch_swallow();

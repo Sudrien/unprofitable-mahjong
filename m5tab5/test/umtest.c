@@ -39,7 +39,18 @@ static int classify_mode(void)
         for (char *p = strtok(line, " \t\r\n"); p && n < 64; p = strtok(NULL, " \t\r\n")) k[n++] = (uint8_t)atoi(p);
         if (n > UM_MAX_SEL) { puts("|0|0"); continue; }
         const um_set_t t = um_classify(k, n);
-        printf("%s|%d|%d\n", um_set_key(t), t ? um_set_value(t, k, n) : 0, t ? (int)um_set_has_bonus(t, k, n) : 0);
+        printf("%s|%d|%d", um_set_key(t), t ? um_set_value(t, k, n) : 0, t ? (int)um_set_has_bonus(t, k, n) : 0);
+        /* and a limit hand's groups, as the celebration shows them */
+        if (um_set_is_limit(t)) {
+            uint8_t out[UM_MAX_SEL], glen[UM_MAX_GROUPS];
+            const int ng = um_limit_groups(t, k, n, out, glen);
+            printf("|");
+            for (int gi = 0, at = 0; gi < ng; at += glen[gi], gi++) {
+                printf("%s", gi ? "/" : "");
+                for (int j = 0; j < glen[gi]; j++) printf("%s%d", j ? "," : "", out[at + j]);
+            }
+        }
+        printf("\n");
     }
     return 0;
 }

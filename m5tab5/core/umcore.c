@@ -333,6 +333,73 @@ bool um_set_has_bonus(um_set_t t, const uint8_t *kinds, int n)
     return um_set_is_poker(t) && trad_value(kinds, n) >= 0;
 }
 
+/* limitGroups */
+typedef struct {
+    uint8_t c[UM_KINDS];
+    uint8_t sets[UM_MAX_GROUPS][4], slen[UM_MAX_GROUPS];
+    int nsets, pair;
+} groups_t;
+
+static bool groups_go(groups_t *g)
+{
+    int x = -1;
+    for (int i = 0; i < UM_KINDS; i++) if (g->c[i]) { x = i; break; }
+    if (x < 0) return true;
+    if (g->nsets >= UM_MAX_GROUPS - 1) return false;
+    uint8_t *set = g->sets[g->nsets];
+    if (g->c[x] == 4) {
+        g->c[x] -= 4; memset(set, x, 4); g->slen[g->nsets++] = 4;
+        if (groups_go(g)) return true;
+        g->nsets--; g->c[x] += 4;
+    }
+    if (g->c[x] >= 3) {
+        g->c[x] -= 3; memset(set, x, 3); g->slen[g->nsets++] = 3;
+        if (groups_go(g)) return true;
+        g->nsets--; g->c[x] += 3;
+    }
+    if (!um_is_honor(x) && x % 9 <= 6 && g->c[x + 1] && g->c[x + 2]) {
+        g->c[x]--; g->c[x + 1]--; g->c[x + 2]--;
+        set[0] = (uint8_t)x; set[1] = (uint8_t)(x + 1); set[2] = (uint8_t)(x + 2); g->slen[g->nsets++] = 3;
+        if (groups_go(g)) return true;
+        g->nsets--; g->c[x]++; g->c[x + 1]++; g->c[x + 2]++;
+    }
+    if (g->pair < 0 && g->c[x] >= 2) {
+        g->c[x] -= 2; g->pair = x;
+        if (groups_go(g)) return true;
+        g->pair = -1; g->c[x] += 2;
+    }
+    return false;
+}
+
+int um_limit_groups(um_set_t t, const uint8_t *kinds, int n, uint8_t *out, uint8_t *glen)
+{
+    if (n < 1 || n > UM_MAX_SEL) return 0;
+    uint8_t k[UM_MAX_SEL];
+    memcpy(k, kinds, (size_t)n);
+    sort_kinds(k, n);
+    if (t == UM_THIRTEEN_ORPHANS) {
+        int m = 0, dup = -1;
+        for (int i = 0; i < n; i++) { if (i && k[i] == k[i - 1]) { if (dup < 0) dup = k[i]; continue; } out[m++] = k[i]; }
+        if (dup >= 0) out[m++] = (uint8_t)dup;
+        glen[0] = (uint8_t)m;
+        return 1;
+    }
+    if (t == UM_SEVEN_PAIRS) {
+        int ng = 0;
+        for (int i = 0; i + 1 < n && ng < UM_MAX_GROUPS; i += 2) { out[i] = k[i]; out[i + 1] = k[i + 1]; glen[ng++] = 2; }
+        return ng;
+    }
+    static groups_t g;      /* off the stack, like the hint's tables */
+    memset(&g, 0, sizeof g);
+    g.pair = -1;
+    for (int i = 0; i < n; i++) if (k[i] < UM_KINDS) g.c[k[i]]++;
+    if (t == UM_NINE_GATES || !groups_go(&g)) { memcpy(out, k, (size_t)n); glen[0] = (uint8_t)n; return 1; }
+    int m = 0, ng = 0;
+    for (int s = 0; s < g.nsets; s++) { memcpy(out + m, g.sets[s], g.slen[s]); m += g.slen[s]; glen[ng++] = g.slen[s]; }
+    if (g.pair >= 0) { out[m++] = (uint8_t)g.pair; out[m++] = (uint8_t)g.pair; glen[ng++] = 2; }
+    return ng;
+}
+
 /* ------------------------------------------------------------------ */
 /* The deal (partSuit, deal)                                           */
 
