@@ -132,6 +132,12 @@ bool um_can_add(const um_game_t *g);
 bool um_add_six(um_game_t *g);
 bool um_can_discard(const um_game_t *g, um_sel_t s);
 bool um_discard_six(um_game_t *g, um_sel_t s);
+/* Discard set (discardSet in the web version; a setting, off by default,
+ * so the UI decides whether to offer it): a set from the table goes to
+ * the discard pile and costs what it would have scored. Six tiles go as
+ * Discard 6 instead, which is never dearer. */
+bool um_can_discard_set(const um_game_t *g, um_sel_t s);
+bool um_discard_set(um_game_t *g, um_sel_t s, int *cost_out);
 void um_sort(um_game_t *g);
 
 /* The hint: the best-scoring set on the table, without looking ahead.

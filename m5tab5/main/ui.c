@@ -302,7 +302,7 @@ static int meld_x(int m)
 /* Auto-sort and New deal live in the gear's panel: they are settings
  * and a rare act, and at 36 px text the other seven fill a row. */
 enum { B_CLEAR, B_MELD, B_ADD, B_DISCARD, B_HINT, B_SORT, B_UNDO, B_COUNT };
-typedef struct { int x, y, w; const char *label; bool enabled, primary, cost; } button_t;
+typedef struct { int x, y, w; const char *label; bool enabled, primary, cost; char cost_txt[12]; } button_t;
 static button_t s_btn[B_COUNT];
 
 /* One row in landscape. Three in portrait: what a move is made with,
@@ -311,6 +311,15 @@ static const uint8_t ORDER_LAND[B_COUNT] = { B_CLEAR, B_MELD, B_ADD, B_DISCARD, 
 static const uint8_t ROWS_LAND[] = { 7, 0 };
 static const uint8_t ORDER_PORT[B_COUNT] = { B_CLEAR, B_MELD, B_UNDO, B_ADD, B_DISCARD, B_HINT, B_SORT };
 static const uint8_t ROWS_PORT[] = { 3, 2, 2, 0 };
+
+/* What Discard would do with the selection: 1 Discard 6, 2 Discard set
+ * (only with the setting on), 0 nothing. Six tiles always go as Discard
+ * 6, which is never dearer: every six-tile set is worth more than 6. */
+static int discard_kind(void)
+{
+    if (um_sel_count(&s_g, s_sel) == UM_DISCARD_N) return um_can_discard(&s_g, s_sel) ? 1 : 0;
+    return s_prefs.discard_set && um_can_discard_set(&s_g, s_sel) ? 2 : 0;
+}
 
 static void layout_buttons(void)
 {
@@ -324,7 +333,17 @@ static void layout_buttons(void)
     s_btn[B_CLEAR].enabled = n >= 2 && um_classify(k, n) != UM_NONE;
     s_btn[B_MELD].enabled = um_can_meld(&s_g, s_sel);
     s_btn[B_ADD].enabled = um_can_add(&s_g);
-    s_btn[B_DISCARD].enabled = um_can_discard(&s_g, s_sel);
+    /* Discard: six tiles go as Discard 6; with Discard set on, a set
+     * goes for what it would score (the web version's discardKind) */
+    const int dk = discard_kind();
+    s_btn[B_DISCARD].enabled = dk != 0;
+    if (dk == 2) {
+        s_btn[B_DISCARD].label = _("Discard set");
+        snprintf(s_btn[B_DISCARD].cost_txt, sizeof s_btn[B_DISCARD].cost_txt, " -%d", um_set_value(um_classify(k, n), k, n));
+    } else {
+        snprintf(s_btn[B_DISCARD].cost_txt, sizeof s_btn[B_DISCARD].cost_txt, " -%d", UM_DISCARD_COST);
+    }
+    snprintf(s_btn[B_ADD].cost_txt, sizeof s_btn[B_ADD].cost_txt, " -%d", UM_ADD_COST);
     s_btn[B_HINT].enabled = um_in_hand(&s_g) > 0;
     s_btn[B_SORT].enabled = um_in_hand(&s_g) > 0;
     s_btn[B_UNDO].enabled = s_undo_n > 0;
@@ -337,7 +356,15 @@ static void layout_buttons(void)
      * English ones, so the padding gives way before a row overflows. */
     for (int pad = 40, min_w = 120; ; pad -= 4, min_w -= 8) {
         for (int b = 0; b < B_COUNT; b++) {
-            int w = gfx_text_w(s_btn[b].label, TXT) + pad + (s_btn[b].cost ? gfx_text_w(" -6", TXT) : 0);
+            int w = gfx_text_w(s_btn[b].label, TXT) + pad + (s_btn[b].cost ? gfx_text_w(s_btn[b].cost_txt, TXT) : 0);
+            /* with Discard set on, Discard keeps the width of its longer
+             * label, so the row does not shift as the selection changes */
+            if (b == B_DISCARD && s_prefs.discard_set) {
+                const int ws = gfx_text_w(_("Discard set"), TXT) + pad + gfx_text_w(" -16", TXT);
+                const int w6 = gfx_text_w(_("Discard 6"), TXT) + pad + gfx_text_w(" -6", TXT);
+                if (ws > w) w = ws;
+                if (w6 > w) w = w6;
+            }
             s_btn[b].w = w < min_w ? min_w : w;
         }
         int widest = 0;
@@ -578,7 +605,8 @@ static void draw_status(void)
         } else if (um_in_hand(&s_g) > UM_HAND && !um_can_add(&s_g) && pool) {
             snprintf(l2, sizeof l2, _("%d tiles out. You can add 6 again once you're back to %d."), um_in_hand(&s_g), UM_MAX_HAND - UM_ADD_N);
         } else {
-            snprintf(l2, sizeof l2, "%s", _("Tap tiles to make a set. Bigger sets score more. Select 6 to discard."));
+            snprintf(l2, sizeof l2, "%s", s_prefs.discard_set ? _("Tap tiles to make a set. Bigger sets score more. Select 6, or a set, to discard.")
+                                                              : _("Tap tiles to make a set. Bigger sets score more. Select 6 to discard."));
         }
     } else {
         uint8_t sk[UM_MAX_SEL];
@@ -633,10 +661,10 @@ static void draw_buttons(void)
         const uint16_t fg = !on ? C_LINE : bt->primary ? C_ON_ACC : C_INK;
         gfx_fill_rect(bt->x, bt->y, bt->w, BTN_H, border);
         gfx_fill_rect(bt->x + 2, bt->y + 2, bt->w - 4, BTN_H - 4, fill);
-        const int tw = gfx_text_w(bt->label, TXT) + (bt->cost ? gfx_text_w(" -6", TXT) : 0);
+        const int tw = gfx_text_w(bt->label, TXT) + (bt->cost ? gfx_text_w(bt->cost_txt, TXT) : 0);
         const int tx = bt->x + (bt->w - tw) / 2, ty = bt->y + (BTN_H - GFX_GLYPH_H(TXT)) / 2;
         gfx_draw_text(tx, ty, bt->label, TXT, bt->w, fg);
-        if (bt->cost) gfx_draw_text(tx + gfx_text_w(bt->label, TXT), ty, " -6", TXT, bt->w, on ? C_WARN : C_LINE);
+        if (bt->cost) gfx_draw_text(tx + gfx_text_w(bt->label, TXT), ty, bt->cost_txt, TXT, bt->w, on ? C_WARN : C_LINE);
     }
 }
 
@@ -649,8 +677,8 @@ static void draw_buttons(void)
  * nothing to confirm and Done only closes it. New deal asks for a
  * second tap, as it did as a button. In landscape the four sit in two
  * columns, since 720 px does not hold them stacked at 36 px text. */
-enum { G_ROT, G_THEME, G_LANG, G_AUTO, G_NEW, G_DONE };
-#define G_SECTIONS (4)
+enum { G_ROT, G_THEME, G_LANG, G_AUTO, G_DSET, G_NEW, G_DONE };
+#define G_SECTIONS (5)
 #define CHIP_H     (72)
 #define CHIP_MAX   (16)
 typedef struct { int x, y, w, group, value; const char *label; } chip_t;
@@ -664,7 +692,7 @@ static const char *const ROT_NAMES[4] = { N_("Landscape"), N_("Portrait"), N_("L
 static const char *const THEME_NAMES[2] = { N_("Light"), N_("Dark") };
 static const char *const AUTO_NAMES[2] = { N_("Off"), N_("On") };
 static const uint8_t LANG_ORDER[I18N_LANG_COUNT] = { I18N_EN, I18N_JA, I18N_ZH_CN };
-static const char *const HEADS[G_SECTIONS] = { N_("Orientation"), N_("Theme"), N_("Language"), N_("Auto-sort") };
+static const char *const HEADS[G_SECTIONS] = { N_("Orientation"), N_("Theme"), N_("Language"), N_("Auto-sort"), N_("Discard sets") };
 
 static bool chip_on(const chip_t *c)
 {
@@ -673,6 +701,7 @@ static bool chip_on(const chip_t *c)
     case G_THEME: return c->value == s_prefs.theme;
     case G_LANG:  return c->value == (int)i18n_lang();
     case G_AUTO:  return c->value == (s_prefs.auto_sort ? 1 : 0);
+    case G_DSET:  return c->value == (s_prefs.discard_set ? 1 : 0);
     default:      return false;
     }
 }
@@ -695,7 +724,8 @@ static void layout_menu(void)
     int col_y[2] = { top, top };
     s_chip_n = 0;
     for (int g = 0; g < G_SECTIONS; g++) {
-        const int col = cols == 2 ? g / 2 : 0, x0 = pad + col * (cw + 32);
+        /* landscape: orientation and theme on the left, the rest on the right */
+        const int col = cols == 2 ? (g < G_LANG ? 0 : 1) : 0, x0 = pad + col * (cw + 32);
         int y = col_y[col];
         s_head_x[g] = x0;
         s_head_y[g] = y;
@@ -706,7 +736,7 @@ static void layout_menu(void)
             /* the languages by their own names, which no reader needs translated */
             chip_t *c = g == G_ROT ? add_chip(g, ROT_ORDER[i], _(ROT_NAMES[i]), 128)
                       : g == G_THEME ? add_chip(g, i, _(THEME_NAMES[i]), 128)
-                      : g == G_AUTO ? add_chip(g, i, _(AUTO_NAMES[i]), 128)
+                      : g == G_AUTO || g == G_DSET ? add_chip(g, i, _(AUTO_NAMES[i]), 128)
                       : add_chip(g, LANG_ORDER[i], i18n_lang_name((i18n_lang_t)LANG_ORDER[i]), 128);
             if (cx > x0 && cx + c->w > x0 + cw) { cx = x0; y += CHIP_H + gap; }
             c->x = cx; c->y = y;
@@ -1078,7 +1108,7 @@ static void press(int b)
         s_undo_n = 0;       /* adding is final */
         break;
     case B_DISCARD:
-        if (!um_discard_six(&s_g, s_sel)) return;
+        if (!(discard_kind() == 2 ? um_discard_set(&s_g, s_sel, NULL) : um_discard_six(&s_g, s_sel))) return;
         s_undo_n = 0;       /* and so is discarding */
         break;
     case B_HINT: {
@@ -1139,6 +1169,9 @@ static void menu_tap(int x, int y)
         case G_AUTO:
             s_prefs.auto_sort = (uint8_t)c->value;
             if (s_prefs.auto_sort) { undo_push(); um_sort(&s_g); save_game(&s_g); }
+            break;
+        case G_DSET:
+            s_prefs.discard_set = (uint8_t)c->value;
             break;
         case G_NEW:
             if (esp_timer_get_time() < s_armed_until) { s_armed_until = 0; s_menu = false; new_deal(); }

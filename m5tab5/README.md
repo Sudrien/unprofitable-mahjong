@@ -44,7 +44,9 @@ dependency until something is.
 
 The gear, top right, opens the settings: the orientation (landscape,
 portrait, or either one flipped), a light or dark theme, the language
--- English, 日本語 or 简体中文 -- and auto-sort. Each takes effect as it
+-- English, 日本語 or 简体中文 -- auto-sort, and Discard sets, off
+until turned on, which lets Discard take a set from the table for what
+it would have scored (six tiles still go as Discard 6). Each takes effect as it
 is tapped and is saved; Done, or a tap outside the panel, closes it.
 New deal is there too, and asks for a second tap. The picture
 and the touch coordinates always turn together. The dark theme is the
@@ -120,7 +122,8 @@ one:
 `SCREENTEST_DEAL=dragons` starts from three dragon pungs, for the meld
 row and the celebration, `SCREENTEST_ROT=0..3` picks the orientation
 (landscape, 1, by default), `SCREENTEST_LANG` the language (0 English,
-1 Chinese, 2 Japanese) and `SCREENTEST_THEME=1` the dark theme. The screenshots above came from
+1 Chinese, 2 Japanese), `SCREENTEST_THEME=1` the dark theme and
+`SCREENTEST_DSET=1` turns Discard sets on. The screenshots above came from
 it.
 
 ## Testing the rules

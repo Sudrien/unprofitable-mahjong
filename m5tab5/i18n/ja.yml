@@ -125,6 +125,10 @@ ja:
     # ui.c
     "Discard 6": "6枚捨て"
     # ui.c
+    "Discard set": "組を捨てる"
+    # ui.c
+    "Discard sets": "組を捨てる"
+    # ui.c
     "Discard these 6 for -%d.": "この6枚を捨てる：-%d"
     # ui.c
     "Done": "完了"
@@ -308,6 +312,8 @@ ja:
     "Tap again to deal": "もう一度タップで配牌"
     # ui.c
     "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.": "牌をタップして組を作ろう。大きな組ほど高得点。6枚選ぶと捨てられます。"
+    # ui.c
+    "Tap tiles to make a set. Bigger sets score more. Select 6, or a set, to discard.": "牌をタップして組を作ろう。大きな組ほど高得点。6枚か組を選ぶと捨てられます。"
     # ui.c
     "Tap to continue": "タップで続ける"
     # ui.c

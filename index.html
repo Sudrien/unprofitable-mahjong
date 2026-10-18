@@ -253,6 +253,7 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.35rem, 
         <button class="btn" id="hintBtn" type="button"><span class="t" lang="en">Hint</span><span class="t" lang="ja">ヒント</span><span class="t" lang="zh-Hans">提示</span></button>
         <button class="btn" id="sortBtn" type="button"><span class="t" lang="en">Sort</span><span class="t" lang="ja">並べ替え</span><span class="t" lang="zh-Hans">排序</span></button>
         <label class="toggle" for="autoSort"><input type="checkbox" id="autoSort"> <span class="t" lang="en">Auto-sort</span><span class="t" lang="ja">自動整列</span><span class="t" lang="zh-Hans">自动排序</span></label>
+        <label class="toggle" for="discardSets"><input type="checkbox" id="discardSets"> <span class="t" lang="en">Discard sets</span><span class="t" lang="ja">組を捨てる</span><span class="t" lang="zh-Hans">弃组合</span></label>
         <button class="btn" id="undoBtn" type="button"><span class="t" lang="en">Undo</span><span class="t" lang="ja">元に戻す</span><span class="t" lang="zh-Hans">撤销</span></button>
       </div>
     </div>
@@ -279,6 +280,9 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.35rem, 
     <p class="t" lang="en"><b>Penalty</b> is a separate tally. It starts at −272, two for every tile, and rises by 2 for each tile you clear, so a clean sweep ends at 0. The game ends when every tile is gone or nothing more can be cleared; stranded tiles stay counted. <b>Add 6</b> deals six more tiles beside the 18 for −6; the hand shrinks back to 18 as you clear. You can never have more than 24 tiles out, so you can add again only once you're back to 18. <b>Discard 6</b> sends six selected tiles to the discard pile for −6 and refills to 18. Once the wall runs out, you draw from the discard pile. Adding and discarding are final: Undo can't reach back past them.</p>
     <p class="t" lang="ja"><b>ペナルティ</b>は別の集計です。1枚につき2、合計−272から始まり、1枚消すごとに2ずつ戻るので、すべて消せば0で終わります。すべての牌がなくなるか、もう何も消せなくなるとゲーム終了。取り残された牌はそのまま数えられます。<b>6枚追加</b>は18枚の横にさらに6枚配り、−6。消していくと18枚に戻ります。場に出せるのは最大24枚なので、再び追加できるのは18枚に戻ってから。<b>6枚捨てる</b>は選んだ6枚を捨て牌に送って−6、18枚まで補充します。山がなくなると捨て牌から引きます。追加と捨ては取り消せず、「元に戻す」でもさかのぼれません。</p>
     <p class="t" lang="zh-Hans"><b>罚分</b>单独计算。起始为−272，每张牌2分，每清除一张就回升2分，全部清完正好归零。所有牌清完、或再也无法消除时游戏结束，剩下的牌照样计入。<b>加6张</b>在18张旁边再发6张，−6；随着消除，手牌会回到18张。场上最多24张，所以要回到18张才能再加。<b>弃6张</b>把选中的6张送进弃牌堆，−6，并补回18张。牌墙用完后从弃牌堆摸牌。加牌和弃牌是最终操作，撤销也回不到它们之前。</p>
+    <p class="t" lang="en">With <b>Discard sets</b> ticked, beside Auto-sort, a set from the table can be discarded as well: it goes to the discard pile for what it would have scored, and comes back like any discard. Six tiles always go as Discard 6. It's off unless you turn it on.</p>
+    <p class="t" lang="ja"><b>組を捨てる</b>にチェックを入れると（自動整列の横）、場の組も捨てられます。その組の得点だけ減点で捨て牌に送られ、ほかの捨て牌と同じく戻ってきます。6枚のときは常に「6枚捨てる」になります。チェックしない限り使えません。</p>
+    <p class="t" lang="zh-Hans">勾选<b>弃组合</b>（在自动排序旁边）后，场上的一组也可以弃掉：扣掉它本来的得分，送进弃牌堆，和其他弃牌一样会回来。6张时一律按「弃6张」处理。不勾选就不能用。</p>
     <p class="t" lang="en">Every deal can be finished with no penalty.</p>
     <p class="t" lang="ja">どの配牌もペナルティなしで最後までクリアできます。</p>
     <p class="t" lang="zh-Hans">每一局都能零罚分清完。</p>
@@ -763,6 +767,22 @@ function discardSix() {
   S.log.push({ t: 'discard', k: kinds.sort((a, b) => a - b), cost: DISCARD_COST });
   undo = []; sel.clear(); hintKeys.clear(); commit();
 }
+// Discard set (a setting, off by default): a set from the table goes to the
+// discard pile, and comes back with the rest once the wall is empty. It
+// costs what the set would have scored. Six tiles always go as Discard 6,
+// which is never dearer: every six-tile set is worth more than 6.
+function discardSet() {
+  if (!sel.size || !pool() || !selInHand()) return;
+  const keys = [...sel], kinds = keys.map(get), t = classify(kinds);
+  if (!t) return;
+  const v = setValue(t, kinds);
+  keys.forEach(key => { S.hand[+key.slice(1)] = null; });
+  S.discards.push(...kinds);
+  settle();
+  S.score -= v;
+  S.log.push({ t: 'discard', k: kinds.sort((a, b) => a - b), cost: v });
+  undo = []; sel.clear(); hintKeys.clear(); commit();
+}
 function sortHand() {
   snap();
   const t = S.hand.filter(k => k !== null).sort((a, b) => a - b);
@@ -793,6 +813,12 @@ function finishCheck() {
 // Auto-sort: keep the hand in tile order, and keep the drop-in animation on the tiles that just arrived.
 let autoSort = false;
 try { autoSort = localStorage.getItem('unprofitable-mahjong-autosort') === '1'; } catch (e) {}
+let discardSets = false;
+try { discardSets = localStorage.getItem('unprofitable-mahjong-discardset') === '1'; } catch (e) {}
+// What the Discard button does with this selection: 'six', 'set' or null.
+const discardKind = () => !pool() || !sel.size || !selInHand() ? null
+  : sel.size === DISCARD_N ? 'six'
+  : discardSets && classify([...sel].map(get)) ? 'set' : null;
 function applyAutoSort() {
   if (!autoSort) return;
   const freshKinds = [...fresh].map(get).filter(k => k !== null && k !== undefined);
@@ -931,9 +957,13 @@ function render() {
       const n = inHand(), back = MAX_HAND - ADD_N;
       st = L(`${n} tiles out. You can add 6 again once you're back to ${back}.`, `場に${n}枚。${back}枚に戻れば、また6枚追加できます。`, `场上${n}张。回到${back}张后才能再加6张。`);
     }
-    else st = L('Tap tiles to make a set: pairs, chows, pungs and kongs, or bigger runs and sets for more points. Select 6 to discard.',
-      '牌をタップして組を作ろう。対子・順子・刻子・槓子、大きな組ほど高得点。6枚選ぶと捨てられます。',
-      '点牌组成组合：对子、顺子、刻子、杠子，组合越大得分越高。选6张可以弃牌。');
+    else st = discardSets
+      ? L('Tap tiles to make a set: pairs, chows, pungs and kongs, or bigger runs and sets for more points. Select 6, or a set, to discard.',
+        '牌をタップして組を作ろう。対子・順子・刻子・槓子、大きな組ほど高得点。6枚か組を選ぶと捨てられます。',
+        '点牌组成组合：对子、顺子、刻子、杠子，组合越大得分越高。选6张或一组可以弃牌。')
+      : L('Tap tiles to make a set: pairs, chows, pungs and kongs, or bigger runs and sets for more points. Select 6 to discard.',
+        '牌をタップして組を作ろう。対子・順子・刻子・槓子、大きな組ほど高得点。6枚選ぶと捨てられます。',
+        '点牌组成组合：对子、顺子、刻子、杠子，组合越大得分越高。选6张可以弃牌。');
   } else {
     st = `<strong>${tilesL([...kinds].sort((a, b) => a - b))}</strong><br>`;
     if (t) {
@@ -956,7 +986,12 @@ function render() {
   $('addBtn').disabled = !canAdd();
   const back = MAX_HAND - ADD_N;
   $('addBtn').title = pool() && !canAdd() ? pick(`Clear down to ${back} tiles to add 6 more`, `${back}枚まで減らすと、また6枚追加できます`, `减到${back}张才能再加6张`) : '';
-  $('discardBtn').disabled = !(sel.size === DISCARD_N && pool() && selInHand());
+  const dk = discardKind();
+  $('discardBtn').disabled = !dk;
+  $('discardBtn').innerHTML = dk === 'set'
+    ? L('Discard set', '組を捨てる', '弃组合') + `<span class="c">${pts(-setValue(t, kinds))}</span>`
+    : L('Discard 6', '6枚捨てる', '弃6张') + `<span class="c">${pts(-DISCARD_COST)}</span>`;
+  $('discardSets').checked = discardSets;
   $('meldBtn').disabled = !canMeld();
   $('meldBtn').innerHTML = kongUpgrade() ? L('Make kong', '加槓', '加杠') : L('Meld', '副露', '副露');
   $('undoBtn').disabled = !undo.length;
@@ -1066,10 +1101,15 @@ document.addEventListener('click', e => {
 $('clearBtn').onclick = clearSet;
 $('meldBtn').onclick = meldSet;
 $('addBtn').onclick = addSix;
-$('discardBtn').onclick = discardSix;
+$('discardBtn').onclick = () => discardKind() === 'set' ? discardSet() : discardSix();
 $('hintBtn').onclick = hint;
 $('sortBtn').onclick = sortHand;
 $('undoBtn').onclick = doUndo;
+$('discardSets').onchange = e => {
+  discardSets = e.target.checked;
+  try { localStorage.setItem('unprofitable-mahjong-discardset', discardSets ? '1' : '0'); } catch (err) {}
+  buildGuide(); render();
+};
 $('autoSort').onchange = e => {
   autoSort = e.target.checked;
   try { localStorage.setItem('unprofitable-mahjong-autosort', autoSort ? '1' : '0'); } catch (err) {}
@@ -1162,7 +1202,12 @@ function buildGuide() {
       L('Deal six more beside your 18. Only allowed while you have 18 or fewer out.', '18枚の横にさらに6枚配ります。場が18枚以下のときだけ使えます。', '在18张旁边再发6张。只有场上不超过18张时才能用。')) +
     card(L('Discard 6', '6枚捨てる', '弃6张'), pts(-DISCARD_COST), true,
       `<span class="g-chip">${L('6 to the discard pile', '6枚を捨て牌へ', '6张进弃牌堆')}</span>`,
-      L('Select six tiles to swap out. They come back once the wall is empty.', '6枚選んで入れ替えます。山がなくなると戻ってきます。', '选6张换掉。牌墙摸完后它们会回来。'));
+      L('Select six tiles to swap out. They come back once the wall is empty.', '6枚選んで入れ替えます。山がなくなると戻ってきます。', '选6张换掉。牌墙摸完后它们会回来。')) +
+    (discardSets ? card(L('Discard set', '組を捨てる', '弃组合'), '−' + L('its points', 'その得点', '其分值'), true,
+      `<span class="g-chip">${L('a set to the discard pile', '組を捨て牌へ', '一组进弃牌堆')}</span>`,
+      L('Select a set to swap out. It costs what it would score, and comes back once the wall is empty. Turned on with Discard sets.',
+        '組を選んで入れ替えます。その組の得点だけ減点、山がなくなると戻ってきます。「組を捨てる」で有効になります。',
+        '选一组换掉。扣掉它本来的得分，牌墙摸完后会回来。勾选「弃组合」后可用。')) : '');
   const meldCard = card(L('Meld', '副露', '副露'), '0', false,
     `${minis(R(31, 3))}<span class="gap"></span>${minis(R(32, 3))}`,
     L(`Set aside a pair, chow, pung, kong, run or straight, up to ${MAX_MELDS}. Melds score nothing yet and don’t count toward the 24-tile limit. A melded pung can take its fourth tile from the table to become a kong; otherwise melds are fixed, and runs and straights can’t grow. Tap a meld to use it with table tiles: two dragon pungs melded plus a third on the table clear as Big Three Dragons. A meld can also be cleared on its own.`,

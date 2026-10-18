@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include "i18n.h"
 
-const unsigned i18n_count = 198;
+const unsigned i18n_count = 201;
 const char *const i18n_keys[] = {
     " Undo to fix it.",
     " and a lone ",
@@ -70,6 +70,8 @@ const char *const i18n_keys[] = {
     "Clears and penalties go here.",
     "Dark",
     "Discard 6",
+    "Discard set",
+    "Discard sets",
     "Discard these 6 for -%d.",
     "Done",
     "Double, like the pung.",
@@ -162,6 +164,7 @@ const char *const i18n_keys[] = {
     "Straight",
     "Tap again to deal",
     "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.",
+    "Tap tiles to make a set. Bigger sets score more. Select 6, or a set, to discard.",
     "Tap to continue",
     "The glowing tiles make a set.",
     "The same three-in-a-row in all three suits.",
@@ -214,6 +217,9 @@ const char *const i18n_keys[] = {
 /* [lang * i18n_count + key] */
 const char *const i18n_vals[] = {
     /* en */
+    NULL,
+    NULL,
+    NULL,
     NULL,
     NULL,
     NULL,
@@ -472,6 +478,8 @@ const char *const i18n_vals[] = {
     "已消除的组合和罚分在这里。",
     "深色",
     "弃6张",
+    "弃组合",
+    "弃组合",
     "弃掉这6张：-%d",
     "完成",
     "和刻子一样翻倍。",
@@ -564,6 +572,7 @@ const char *const i18n_vals[] = {
     "杂色顺",
     "再点一次发牌",
     "点牌组成组合，组合越大得分越高。选6张可以弃牌。",
+    "点牌组成组合，组合越大得分越高。选6张或一组可以弃牌。",
     "点击继续",
     "发光的牌可以组成一组。",
     "三种花色的相同顺子。",
@@ -671,6 +680,8 @@ const char *const i18n_vals[] = {
     "消した組とペナルティがここに。",
     "ダーク",
     "6枚捨て",
+    "組を捨てる",
+    "組を捨てる",
     "この6枚を捨てる：-%d",
     "完了",
     "刻子と同じく2倍。",
@@ -763,6 +774,7 @@ const char *const i18n_vals[] = {
     "ストレート",
     "もう一度タップで配牌",
     "牌をタップして組を作ろう。大きな組ほど高得点。6枚選ぶと捨てられます。",
+    "牌をタップして組を作ろう。大きな組ほど高得点。6枚か組を選ぶと捨てられます。",
     "タップで続ける",
     "光っている牌で組が作れます。",
     "同じ順子を3種類すべてで。",

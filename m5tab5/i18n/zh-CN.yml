@@ -125,6 +125,10 @@ zh-CN:
     # ui.c
     "Discard 6": "弃6张"
     # ui.c
+    "Discard set": "弃组合"
+    # ui.c
+    "Discard sets": "弃组合"
+    # ui.c
     "Discard these 6 for -%d.": "弃掉这6张：-%d"
     # ui.c
     "Done": "完成"
@@ -308,6 +312,8 @@ zh-CN:
     "Tap again to deal": "再点一次发牌"
     # ui.c
     "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.": "点牌组成组合，组合越大得分越高。选6张可以弃牌。"
+    # ui.c
+    "Tap tiles to make a set. Bigger sets score more. Select 6, or a set, to discard.": "点牌组成组合，组合越大得分越高。选6张或一组可以弃牌。"
     # ui.c
     "Tap to continue": "点击继续"
     # ui.c

@@ -14,7 +14,8 @@
  *
  * The games are played by a deliberately careless random player, so the
  * odd corners get visited: invalid selections, melds cleared alone,
- * kong upgrades, Add 6 at the limit, discards cycling back.
+ * kong upgrades, Add 6 at the limit, discards cycling back, sets
+ * discarded.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -117,6 +118,10 @@ static void play_mode(uint32_t seed, int games)
                 op = 'D';
                 s = random_sel(&g, 6, false);
                 um_discard_six(&g, s);
+            } else if (r < 87) {                /* discard the hint's set, or a random group */
+                op = 'X';
+                if (!um_hint(&g, &s)) s = random_sel(&g, 2 + below(3), false);
+                um_discard_set(&g, s, NULL);
             } else if (r < 89) {
                 op = 'S';
                 um_sort(&g);

@@ -25,7 +25,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', '..', 'index.html'), 'ut
 const js = html.split('<script>')[1].split('</script>')[0];
 const core = js.slice(js.indexOf('const HAND'), js.indexOf('/* ---------- render'));
 const make = new Function(`function render(){}; ${core};
-  return { setS: v => { S = v; }, get S() { return S; }, sel, clearSet, meldSet, addSix, discardSix, sortHand,
+  return { setS: v => { S = v; }, get S() { return S; }, sel, clearSet, meldSet, addSix, discardSix, discardSet, sortHand,
            findSet, penalty, classify, setValue, hasBonus, remaining, meldKeys };`);
 
 let failures = 0;
@@ -116,7 +116,7 @@ function playCheck() {
       G.sel.clear();
       for (let b = 0; b < 24; b++) if ((+hm >>> b) & 1) G.sel.add('h' + b);
       for (let b = 0; b < 4; b++) if ((+mm >>> b) & 1 && G.S.melds[b]) G.meldKeys(b).forEach(k => G.sel.add(k));
-      ({ C: G.clearSet, M: G.meldSet, A: G.addSix, D: G.discardSix, S: G.sortHand })[op]();
+      ({ C: G.clearSet, M: G.meldSet, A: G.addSix, D: G.discardSix, X: G.discardSet, S: G.sortHand })[op]();
       moves++;
       continue;
     }

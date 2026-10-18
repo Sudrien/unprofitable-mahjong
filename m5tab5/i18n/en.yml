@@ -125,6 +125,10 @@ en:
     # ui.c
     "Discard 6": ~
     # ui.c
+    "Discard set": ~
+    # ui.c
+    "Discard sets": ~
+    # ui.c
     "Discard these 6 for -%d.": ~
     # ui.c
     "Done": ~
@@ -308,6 +312,8 @@ en:
     "Tap again to deal": ~
     # ui.c
     "Tap tiles to make a set. Bigger sets score more. Select 6 to discard.": ~
+    # ui.c
+    "Tap tiles to make a set. Bigger sets score more. Select 6, or a set, to discard.": ~
     # ui.c
     "Tap to continue": ~
     # ui.c

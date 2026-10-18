@@ -25,6 +25,7 @@ After one visit online it plays offline, fonts included. It can also be installe
 - **Penalty:** starts at −272 (2 per tile) and rises as you clear. A clean sweep ends at 0.
   - **Add 6** (−6): six more tiles on the table, up to 24 out.
   - **Discard 6** (−6): six tiles go to the discard pile. Discards come back, in order, once the wall is empty.
+  - **Discard set** (optional, off by default; turn on *Discard sets*): a set from the table goes to the discard pile instead, for what it would have scored. Six tiles always go as Discard 6.
   - Adding and discarding can't be undone.
 - **Every deal is solvable with no penalty.** Deals are built from a full plan of sets, then shuffled while checking that the plan still works.
 

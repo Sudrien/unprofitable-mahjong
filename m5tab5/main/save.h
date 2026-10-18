@@ -15,6 +15,7 @@ typedef struct {
     int32_t best_points;    /* INT32_MIN: none yet */
     int32_t best_penalty;   /* INT32_MIN: none yet */
     uint8_t auto_sort;
+    uint8_t discard_set;    /* Discard set offered: 0 off (the default), 1 on */
     uint8_t lang;           /* an i18n_lang_t: 0 English, 1 Simplified Chinese, 2 Japanese */
     uint8_t rotation;       /* gfx quarter turns, 0..3; 1 (landscape) until changed */
     uint8_t theme;          /* 0 light, 1 dark */

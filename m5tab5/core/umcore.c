@@ -668,6 +668,33 @@ bool um_discard_six(um_game_t *g, um_sel_t s)
     return true;
 }
 
+bool um_can_discard_set(const um_game_t *g, um_sel_t s)
+{
+    if (s.melds || !s.hand || !um_pool(g)) return false;
+    uint8_t kinds[UM_MAX_SEL];
+    const int n = um_sel_kinds(g, s, kinds);
+    return n >= 2 && um_classify(kinds, n) != UM_NONE;
+}
+
+bool um_discard_set(um_game_t *g, um_sel_t s, int *cost_out)
+{
+    if (!um_can_discard_set(g, s)) return false;
+    uint8_t kinds[UM_MAX_SEL];
+    const int n = um_sel_kinds(g, s, kinds);
+    const int v = um_set_value(um_classify(kinds, n), kinds, n);
+    for (int i = 0; i < g->hand_len; i++) if (s.hand & (1u << i)) g->hand[i] = UM_EMPTY;
+    for (int i = 0; i < n; i++) {
+        g->disc[(g->disc_pos + g->disc_n) % UM_TOTAL] = kinds[i];
+        g->disc_n++;
+    }
+    settle(g);
+    g->score -= v;
+    log_push(g, UM_LOG_DISCARD, kinds, n, -v);
+    um_finish_check(g);
+    if (cost_out) *cost_out = v;
+    return true;
+}
+
 void um_sort(um_game_t *g)
 {
     uint8_t t[UM_MAX_HAND];
