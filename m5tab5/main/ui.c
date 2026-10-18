@@ -1310,13 +1310,19 @@ static void press(int b)
  * which leaves room for the 1 Bamboo over the middle; the site is written
  * underneath. The QR is black on white whatever the theme, which is what
  * scanners expect. */
-#define REPLAY_URL  "https://sudrien.github.io/unprofitable-mahjong/#replay="
-#define REPLAY_SITE "sudrien.github.io/unprofitable-mahjong"
+/* sudrien.github.io/umj forwards to the game, #replay= and all: 17
+ * characters fewer than the game's own address, so a smaller code */
+#define REPLAY_URL  "https://sudrien.github.io/umj/#replay="
+#define REPLAY_SITE "sudrien.github.io/umj"
 #ifndef UI_REPLAY_WORK
 #define UI_REPLAY_WORK UM_REPLAY_WORK   /* test/screen may lower it, under the sanitizers */
 #endif
 
-static bool s_share_ok;      /* s_share, the view's open flag, is declared above redraw() */
+static bool s_share_ok;
+/* The icon's height, as a share of the code's: decided by decoding the
+ * screen test's shots with two decoders, shrunk, blurred and skewed as a
+ * phone sees them. test/screen sets it from SCREENTEST_QR_ICON to try others. */
+int ui_qr_icon_pct = 30;      /* s_share, the view's open flag, is declared above redraw() */
 /* about 12 KB between them: in PSRAM, made the first time Share is used */
 static struct {
     uint8_t qr[qrcodegen_BUFFER_LEN_MAX], tmp[qrcodegen_BUFFER_LEN_MAX];
@@ -1373,11 +1379,13 @@ static void draw_share(void)
         for (int x = 0; x < size; x++)
             if (qrcodegen_getModule(s_sh->qr, x, y)) gfx_fill_rect(x0 + (x + 4) * m, y0 + (y + 4) * m, m, m, black);
 
-    /* the 1 Bamboo over the middle, on a white margin a module wide */
+    /* the 1 Bamboo over the middle, on a white margin a module wide, its
+     * height ui_qr_icon_pct of the code's (the quiet zone not counted) */
     const int cx = x0 + px / 2, cy = y0 + px / 2;
-    const int iw = tilefaces_M.w, ih = tilefaces_M.h + TILEDRAW_EDGE_M;
-    gfx_fill_rect(cx - iw / 2 - m, cy - ih / 2 - m, iw + 2 * m, ih + 2 * m, white);
-    tiledraw_tile(&tilefaces_M, 18, cx - iw / 2, cy - ih / 2, TILEDRAW_EDGE_M);
+    const int ih = size * m * ui_qr_icon_pct / 100, edge = ih / 20 > 2 ? ih / 20 : 2;
+    const int fh = ih - edge, fw = fh * tilefaces_L.w / tilefaces_L.h;
+    gfx_fill_rect(cx - fw / 2 - m, cy - ih / 2 - m, fw + 2 * m, ih + 2 * m, white);
+    tiledraw_tile_scaled(&tilefaces_L, 18, cx - fw / 2, cy - ih / 2, fw, fh, edge);
 
     /* the site, and how to leave */
     const int sy = y0 + px + 16;

@@ -1544,7 +1544,11 @@ try { if (localStorage.getItem('unprofitable-mahjong-guide') === '0') $('guide')
 $('guide').addEventListener('toggle', () => { try { localStorage.setItem('unprofitable-mahjong-guide', $('guide').open ? '1' : '0'); } catch (e) {} });
 
 /* ---------- share and replay ---------- */
-const replayLink = code => location.href.replace(/#.*$/, '') + '#replay=' + code;
+// On the published site, links use sudrien.github.io/umj, which forwards
+// here with the #replay= intact: the Tab5's QR codes use it too. Anywhere
+// else (a fork, a copy on disk) the page's own address.
+const replayLink = code => (location.hostname === 'sudrien.github.io' && location.pathname.startsWith('/unprofitable-mahjong')
+  ? 'https://sudrien.github.io/umj/' : location.href.replace(/#.*$/, '')) + '#replay=' + code;
 let shareJob = 0;
 $('shareBtn').onclick = () => {
   const dlg = $('shareDlg'), job = ++shareJob;

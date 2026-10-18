@@ -91,15 +91,16 @@ void touch_set_rotation(int quarter_turns) { (void)quarter_turns; }
 void save_init(void) {}
 /* SCREENTEST_DEAL=dragons: three dragon pungs on top, for the meld row
  * and the limit-hand celebration. SCREENTEST_DEAL=played: a game forty
- * entries in, for the rail. Anything else: a normal deal. */
+ * entries in (SCREENTEST_PLAYED=n for another number), for the rail. Anything else: a normal deal. */
 bool save_load_game(um_game_t *g)
 {
     const char *d = getenv("SCREENTEST_DEAL");
     if (d && !strcmp(d, "played")) {
         /* a long rail: the hint's sets, with a Discard 6 between, until
          * forty entries are logged */
+        const int want = getenv("SCREENTEST_PLAYED") ? atoi(getenv("SCREENTEST_PLAYED")) : 40;
         um_new(g, 20261017u);
-        for (int step = 0; step < 400 && g->log_n < 40 && !g->done; step++) {
+        for (int step = 0; step < 400 && g->log_n < want && !g->done; step++) {
             um_sel_t s = { 0, 0 };
             if (step % 2 == 0 && um_hint(g, &s)) { um_clear(g, s, NULL, NULL); continue; }
             for (int i = 0, n = 0; i < g->hand_len && n < UM_DISCARD_N; i++) if (g->hand[i] != UM_EMPTY) { s.hand |= 1u << i; n++; }
@@ -130,8 +131,11 @@ void save_load_prefs(save_prefs_t *p)
 }
 void save_prefs(const save_prefs_t *p) { (void)p; }
 
+extern int ui_qr_icon_pct;
+
 int main(int argc, char **argv)
 {
+    if (getenv("SCREENTEST_QR_ICON")) ui_qr_icon_pct = atoi(getenv("SCREENTEST_QR_ICON"));   /* the QR icon's height, % */
     if (argc < 2) { fprintf(stderr, "usage: screentest <out-prefix> [x,y ...]\n"); return 2; }
     s_prefix = argv[1];
     s_argv = argv;
