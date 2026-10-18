@@ -199,9 +199,19 @@ static int valid_mode(void)
     BAD("a log kind", { um_log_t *e = &c.log[(c.log_n - 1) % UM_LOG_N]; e->k[0] = UM_KINDS; });
     BAD("a log type", c.log[(c.log_n - 1) % UM_LOG_N].t = UM_SET_COUNT);
     BAD("five of a kind", { for (int i = 0; i < c.hand_len; i++) if (c.hand[i] != UM_EMPTY) c.hand[i] = 0; });
+    BAD("had with a bit it never sets", c.had |= 0x10);
+    /* the move record: these would have the replay code read past it */
+    if (!g.moves_ok || g.mv_len < 8) { fprintf(stderr, "valid: setup kept no moves\n"); return 1; }
+    BAD("a move cut short", c.mv_len--);
+    BAD("a move's count past the record", c.mv[1] = 255);
+    BAD("a move's count past a selection", { c.mv[1] = UM_MAX_SEL + 1; c.mv_len = UM_MOVES_BYTES; });
+    BAD("a move letter", c.mv[0] = 'Q');
+    BAD("a move letter of 0", c.mv[0] = 0);
+    BAD("a move's tile kind", { if (c.mv[1]) c.mv[2] = UM_KINDS; else c.mv[0] = 'Z'; });
+    BAD("a record of one byte past the moves", c.mv_len++);
 #undef BAD
     if (bad) return 1;
-    printf("valid: a game in play passes, 18 corruptions fail\n");
+    printf("valid: a game in play passes, 26 corruptions fail\n");
     return 0;
 }
 

@@ -1095,6 +1095,15 @@ bool um_valid(const um_game_t *g)
     uint8_t mok;
     memcpy(&mok, &g->moves_ok, 1);
     if (mok > 1 || g->mv_len > UM_MOVES_BYTES) return false;
+    /* each move whole within mv_len, a letter it can be, its tiles real
+     * kinds: the replay code reads every record through to its last byte */
+    for (int p = 0; p < g->mv_len; ) {
+        if (p + 3 > g->mv_len || !g->mv[p] || !strchr("ACMKDX", g->mv[p])) return false;
+        const int n = g->mv[p + 1];
+        if (n > UM_MAX_SEL || p + 3 + n > g->mv_len) return false;
+        for (int j = 0; j < n; j++) if (g->mv[p + 2 + j] >= UM_KINDS) return false;
+        p += 3 + n;
+    }
     if (g->had & ~(UM_HAD_POKER | UM_HAD_PAIR | UM_HAD_TRACKED)) return false;
     /* now safe to count */
     uint8_t rem[UM_KINDS];

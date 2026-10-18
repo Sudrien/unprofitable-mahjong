@@ -186,7 +186,8 @@ The same run also checks two things the web version cannot speak for.
 out by the plan it was built from, using the game's own clears: every
 clear must be allowed and the game must end with every tile gone and a
 penalty of 0. `umtest valid` checks that a saved game with a value out
-of range is refused before the board plays it, and `test/savecheck` runs
+of range, or a move record that is cut short or garbled, is refused
+before the board plays it, and `test/savecheck` runs
 `main/save.c` over an in-memory NVS: settings and games round trip, and
 games saved before the rail kept 64 entries, or before the moves were
 kept, are still read. check.js also takes the Tab5's replay codes from
