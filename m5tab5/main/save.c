@@ -5,6 +5,7 @@
  */
 #include "save.h"
 
+#include <stddef.h>
 #include <string.h>
 
 #include "esp_log.h"
@@ -13,7 +14,15 @@
 
 static const char *TAG = "save";
 #define NS          "umj"
-#define GAME_VER    (1u)
+#define GAME_VER    (2u)    /* 2: the rail keeps 64 entries, not 32 */
+
+/* Version 1 is version 2 with a 32-entry log: the log is the last member
+ * and everything before it is the same, so a version 1 game is read by
+ * copying what precedes the log and moving the 32 kept entries to where
+ * a 64-entry ring keeps them. A game in progress survives the update. */
+#define V1_LOG_N    (32)
+#define V1_SIZE     ((offsetof(um_game_t, log) + V1_LOG_N * sizeof(um_log_t) + _Alignof(um_game_t) - 1) \
+                     / _Alignof(um_game_t) * _Alignof(um_game_t))
 
 typedef struct {
     uint32_t ver;
@@ -21,7 +30,8 @@ typedef struct {
     um_game_t g;
 } blob_t;
 
-static blob_t s_blob;   /* 1 KB: off the stack */
+static blob_t s_blob;   /* 2 KB: off the stack */
+static um_log_t s_v1_log[V1_LOG_N];
 
 void save_init(void)
 {
@@ -41,7 +51,21 @@ bool save_load_game(um_game_t *g)
     size_t len = sizeof s_blob;
     const esp_err_t err = nvs_get_blob(h, "game", &s_blob, &len);
     nvs_close(h);
-    if (err != ESP_OK || len != sizeof s_blob || s_blob.ver != GAME_VER || s_blob.size != sizeof(um_game_t)) return false;
+    if (err != ESP_OK) return false;
+    if (s_blob.ver == 1 && s_blob.size == V1_SIZE && len == offsetof(blob_t, g) + V1_SIZE) {
+        um_game_t *n = &s_blob.g;
+        memcpy(s_v1_log, (const uint8_t *)n + offsetof(um_game_t, log), sizeof s_v1_log);
+        memset(n->log, 0, sizeof n->log);
+        /* log_n counts entries ever logged and the rail keeps the last
+         * min(log_n, UM_LOG_N): renumbered from 0, the 32 that were kept
+         * are all there is, oldest first */
+        const int keep = n->log_n < V1_LOG_N ? n->log_n : V1_LOG_N;
+        for (int j = 0; j < keep; j++) n->log[keep - 1 - j] = s_v1_log[(n->log_n - 1 - j) % V1_LOG_N];
+        n->log_n = (uint16_t)keep;
+        ESP_LOGI(TAG, "read a version 1 game");
+    } else if (len != sizeof s_blob || s_blob.ver != GAME_VER || s_blob.size != sizeof(um_game_t)) {
+        return false;
+    }
     /* The version and size catch most other builds' saves, not all: a
      * struct reordered at the same size, or a damaged page, still gets
      * here. Out-of-range kinds would index past the tile names and the

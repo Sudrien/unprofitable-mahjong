@@ -483,35 +483,81 @@ static void draw_top(void)
     gfx_draw_text(sx, sy, sub, SMALL, ws + 2, C_MUTED);
 }
 
+/* The rail: every clear and shortcut still kept (UM_LOG_N), newest at
+ * the left. It is wider than the screen after a few moves, so a finger
+ * drags it sideways (rail_touch, from ui_run's loop); a new entry brings
+ * it back to the newest. */
+static int s_rail_scroll, s_rail_max, s_rail_seen = -1;
+static struct { bool active; int x0, scroll0; } s_rdrag;
+
+static bool rail_hit(int x, int y)
+{
+    (void)x;
+    return s_g.log_n && y >= L.rail_y - 8 && y < L.table_y;
+}
+
 static void draw_rail(void)
 {
-    int x = M_X;
-    if (!s_g.log_n) { gfx_draw_text(x, L.rail_y + 2, _("Clears and penalties go here."), TXT, gfx_w() - 2 * M_X, C_MUTED); return; }
+    if (!s_g.log_n) { gfx_draw_text(M_X, L.rail_y + 2, _("Clears and penalties go here."), TXT, gfx_w() - 2 * M_X, C_MUTED); return; }
+    if (s_g.log_n != s_rail_seen) { s_rail_seen = s_g.log_n; s_rail_scroll = 0; }
+    const int win_x = M_X, win_w = gfx_w() - 2 * M_X;
+    /* one pass to measure, so the scroll can be held inside the list */
     const int keep = s_g.log_n < UM_LOG_N ? s_g.log_n : UM_LOG_N;
-    for (int j = 0; j < keep; j++) {
-        const um_log_t *e = &s_g.log[(s_g.log_n - 1 - j) % UM_LOG_N];
-        char v[16];
-        int w;
-        if (e->t == UM_LOG_ADD) {
-            snprintf(v, sizeof v, "+%d", e->n);
-            w = gfx_text_w(v, SMALL) + 12;
-            if (x + w > gfx_w() - M_X) break;
-            gfx_fill_rect(x, L.rail_y, w, 2, C_WARN); gfx_fill_rect(x, L.rail_y + 34, w, 2, C_WARN);
-            gfx_fill_rect(x, L.rail_y, 2, 36, C_WARN); gfx_fill_rect(x + w - 2, L.rail_y, 2, 36, C_WARN);
-            gfx_draw_text(x + 6, L.rail_y + 6, v, SMALL, w, C_WARN);
-        } else {
-            w = e->n * (tilefaces_S.w + 1);
-            if (x + w > gfx_w() - M_X) break;
-            for (int i = 0; i < e->n; i++) tiledraw_tile(&tilefaces_S, e->k[i], x + i * (tilefaces_S.w + 1), L.rail_y, TILEDRAW_EDGE_S);
-            if (e->t == UM_LOG_DISCARD) gfx_fill_rect(x, L.rail_y + tilefaces_S.h + 4, w, 2, C_WARN);
+    int total = 0;
+    for (int pass = 0; pass < 2; pass++) {
+        if (pass == 1) {
+            s_rail_max = total > win_w ? total - win_w : 0;
+            if (s_rail_scroll > s_rail_max) s_rail_scroll = s_rail_max;
+            if (s_rail_scroll < 0) s_rail_scroll = 0;
         }
-        /* what it was worth, beside it */
-        char pv[16];
-        if (e->t == UM_LOG_ADD || e->t == UM_LOG_DISCARD) pts_text(e->v, pv, sizeof pv);
-        else snprintf(pv, sizeof pv, "+%d", e->v);
-        gfx_draw_text(x + w + 4, L.rail_y + 6, pv, SMALL, 80, e->v < 0 ? C_WARN : C_MUTED);
-        x += w + 4 + gfx_text_w(pv, SMALL) + 18;
+        int x = win_x - s_rail_scroll;
+        for (int j = 0; j < keep; j++) {
+            const um_log_t *e = &s_g.log[(s_g.log_n - 1 - j) % UM_LOG_N];
+            char v[16], pv[16];
+            int w;
+            if (e->t == UM_LOG_ADD) { snprintf(v, sizeof v, "+%d", e->n); w = gfx_text_w(v, SMALL) + 12; }
+            else w = e->n * (tilefaces_S.w + 1);
+            if (e->t == UM_LOG_ADD || e->t == UM_LOG_DISCARD) pts_text(e->v, pv, sizeof pv);
+            else snprintf(pv, sizeof pv, "+%d", e->v);
+            const int step = w + 4 + gfx_text_w(pv, SMALL) + 18;
+            if (pass == 0) { total += step; continue; }
+            if (x + step > 0 && x < gfx_w()) {
+                if (e->t == UM_LOG_ADD) {
+                    gfx_fill_rect(x, L.rail_y, w, 2, C_WARN); gfx_fill_rect(x, L.rail_y + 34, w, 2, C_WARN);
+                    gfx_fill_rect(x, L.rail_y, 2, 36, C_WARN); gfx_fill_rect(x + w - 2, L.rail_y, 2, 36, C_WARN);
+                    gfx_draw_text_clipped(x + 6, L.rail_y + 6, win_x, win_w, v, SMALL, C_WARN);
+                } else {
+                    for (int i = 0; i < e->n; i++) tiledraw_tile(&tilefaces_S, e->k[i], x + i * (tilefaces_S.w + 1), L.rail_y, TILEDRAW_EDGE_S);
+                    if (e->t == UM_LOG_DISCARD) gfx_fill_rect(x, L.rail_y + tilefaces_S.h + 4, w, 2, C_WARN);
+                }
+                /* what it was worth, beside it */
+                gfx_draw_text_clipped(x + w + 4, L.rail_y + 6, win_x, win_w, pv, SMALL, e->v < 0 ? C_WARN : C_MUTED);
+            }
+            x += step;
+        }
     }
+    /* the margins, over whatever reached into them */
+    gfx_fill_rect(0, L.rail_y - 2, win_x, 48, C_BG);
+    gfx_fill_rect(win_x + win_w, L.rail_y - 2, gfx_w() - win_x - win_w, 48, C_BG);
+    /* a hint that there is more off either end */
+    if (s_rail_max > 0) {
+        if (s_rail_scroll > 0) gfx_fill_rect(win_x - 10, L.rail_y + 4, 4, 28, C_LINE);
+        if (s_rail_scroll < s_rail_max) gfx_fill_rect(win_x + win_w + 6, L.rail_y + 4, 4, 28, C_LINE);
+    }
+}
+
+/* The finger on the rail, every pass of the loop while a drag is on.
+ * Dragging left brings older entries in from the right. Returns whether
+ * the screen needs drawing. */
+static bool rail_touch(bool down, int x)
+{
+    if (!down) { s_rdrag.active = false; return false; }
+    int to = s_rdrag.scroll0 + (s_rdrag.x0 - x);
+    if (to > s_rail_max) to = s_rail_max;
+    if (to < 0) to = 0;
+    if (to == s_rail_scroll) return false;
+    s_rail_scroll = to;
+    return true;
 }
 
 static void draw_melds(void)
@@ -1265,8 +1311,14 @@ void ui_run(void)
     for (;;) {
         int x = 0, y = 0;
         const bool down = touch_get(&x, &y);
-        if (s_guide) {
+        if (s_rdrag.active) {
+            if (rail_touch(down, x)) dirty = true;
+        } else if (s_guide) {
             if (guide_touch(down, x, y)) dirty = true;
+        } else if (down && !was_down && !s_menu && rail_hit(x, y)) {
+            s_rdrag.active = true;          /* a press on the rail starts a drag, not a tap */
+            s_rdrag.x0 = x;
+            s_rdrag.scroll0 = s_rail_scroll;
         } else if (down && !was_down) {
             tap(x, y);
             dirty = true;

@@ -90,10 +90,23 @@ void touch_set_rotation(int quarter_turns) { (void)quarter_turns; }
 /* NVS: nothing saved, nothing loaded */
 void save_init(void) {}
 /* SCREENTEST_DEAL=dragons: three dragon pungs on top, for the meld row
- * and the limit-hand celebration. Anything else: a normal deal. */
+ * and the limit-hand celebration. SCREENTEST_DEAL=played: a game forty
+ * entries in, for the rail. Anything else: a normal deal. */
 bool save_load_game(um_game_t *g)
 {
     const char *d = getenv("SCREENTEST_DEAL");
+    if (d && !strcmp(d, "played")) {
+        /* a long rail: the hint's sets, with a Discard 6 between, until
+         * forty entries are logged */
+        um_new(g, 20261017u);
+        for (int step = 0; step < 400 && g->log_n < 40 && !g->done; step++) {
+            um_sel_t s = { 0, 0 };
+            if (step % 2 == 0 && um_hint(g, &s)) { um_clear(g, s, NULL, NULL); continue; }
+            for (int i = 0, n = 0; i < g->hand_len && n < UM_DISCARD_N; i++) if (g->hand[i] != UM_EMPTY) { s.hand |= 1u << i; n++; }
+            if (!um_discard_six(g, s) && !um_add_six(g)) break;
+        }
+        return true;
+    }
     if (!d || strcmp(d, "dragons")) return false;
     uint8_t wall[UM_TOTAL], cnt[UM_KINDS] = { 0 };
     int n = 0;

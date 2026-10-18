@@ -103,6 +103,8 @@ jobs:
           SCREENTEST_ROT=0 SCREENTEST_LANG=2 SCREENTEST_THEME=1 ./test/screen/screentest test/screen/out/ci-ja 670,28 670,28
           # Discard sets on: select a dragon pung and discard it
           SCREENTEST_DEAL=dragons SCREENTEST_DSET=1 ./test/screen/screentest test/screen/out/ci-dset 200,286 310,286 420,286 690,670
+          # a long rail: drag it to the older end and back
+          SCREENTEST_DEAL=played ./test/screen/screentest test/screen/out/ci-rail '1000,95>300,95' '1000,95>200,95' '300,95>1100,95'
           # Sets: open, scroll down and back, choose a set, close
           ./test/screen/screentest test/screen/out/ci-sets 1126,28 '640,450>640,100' '640,100>640,450' 300,170 1150,670
 

@@ -15,6 +15,10 @@ DEALS  ?= 500
 umtest: umtest.c ../core/umcore.c ../core/umcore.h
 	$(CC) $(CFLAGS) -I../core -o $@ umtest.c ../core/umcore.c
 
+# main/save.c over an in-memory NVS (fake/)
+savecheck: savecheck.c ../main/save.c ../main/save.h ../core/umcore.c ../core/umcore.h fake/*.h
+	$(CC) $(CFLAGS) -Ifake -I../core -I../main -o $@ savecheck.c ../main/save.c ../core/umcore.c
+
 guidecheck: guidecheck.c ../main/guide.c ../main/guide.h ../core/umcore.c ../core/umcore.h
 	$(CC) $(CFLAGS) -I../core -I../main -o $@ guidecheck.c ../main/guide.c ../core/umcore.c
 
@@ -25,13 +29,14 @@ dealcheck: dealcheck.c ../core/umcore.c ../core/umcore.h
 tilecheck: tilecheck.c ../main/tilefaces.c ../main/tilefaces.h
 	$(CC) $(CFLAGS) -I../main -o $@ tilecheck.c ../main/tilefaces.c
 
-check: umtest tilecheck dealcheck guidecheck
+check: umtest tilecheck dealcheck guidecheck savecheck
 	./tilecheck
 	./umtest valid
 	./dealcheck $(DEALS)
+	./savecheck
 	node check.js ./umtest $(GAMES) ./guidecheck
 
 .DEFAULT_GOAL := check
 .PHONY: check clean
 clean:
-	rm -f umtest tilecheck dealcheck guidecheck
+	rm -f umtest tilecheck dealcheck guidecheck savecheck

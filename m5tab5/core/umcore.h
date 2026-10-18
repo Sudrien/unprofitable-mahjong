@@ -35,7 +35,7 @@ extern "C" {
 #define UM_MELD_MAX     (9)     /* a full straight is the longest meld */
 #define UM_MAX_SEL      (18)    /* four kongs and a pair */
 #define UM_COMBO_BONUS  (1)
-#define UM_LOG_N        (32)    /* recent clears kept for the rail */
+#define UM_LOG_N        (64)    /* recent clears kept for the rail: a whole ordinary game */
 #define UM_EMPTY        (-1)
 
 static inline bool um_is_honor(int k) { return k >= 27; }

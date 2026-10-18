@@ -73,7 +73,9 @@ clears, the meld row, the hand (two rows of 9, or 12 after Add 6), the
 status and seven buttons in a row. Portrait is 720×1280: the hand six
 across in three rows (four after Add 6), the status under it, and the
 buttons in three rows at the bottom. Tap tiles to select them;
-tap a meld to select all of it. Undo goes back up to 64 moves, and like
+tap a meld to select all of it. The rail of recent clears, newest at the
+left, keeps the last 64 entries -- a whole ordinary game -- and drags
+sideways to show the ones that do not fit. Undo goes back up to 64 moves, and like
 the web version it cannot reach past Add 6 or Discard 6.
 
 ![Two dragon pungs melded, the third on the table](screenshots/melds.png)
@@ -120,7 +122,8 @@ one:
     ./screentest out/shot 660,660 310,290 640,435 75,660
 
 `SCREENTEST_DEAL=dragons` starts from three dragon pungs, for the meld
-row and the celebration, `SCREENTEST_ROT=0..3` picks the orientation
+row and the celebration, `SCREENTEST_DEAL=played` from a game forty
+entries in, for the rail, `SCREENTEST_ROT=0..3` picks the orientation
 (landscape, 1, by default), `SCREENTEST_LANG` the language (0 English,
 1 Chinese, 2 Japanese), `SCREENTEST_THEME=1` the dark theme and
 `SCREENTEST_DSET=1` turns Discard sets on. The screenshots above came from
@@ -145,7 +148,9 @@ The same run also checks two things the web version cannot speak for.
 out by the plan it was built from, using the game's own clears: every
 clear must be allowed and the game must end with every tile gone and a
 penalty of 0. `umtest valid` checks that a saved game with a value out
-of range is refused before the board plays it.
+of range is refused before the board plays it, and `test/savecheck` runs
+`main/save.c` over an in-memory NVS: settings and games round trip, and a
+game saved before the rail kept 64 entries is still read.
 
 ## Credits
 
