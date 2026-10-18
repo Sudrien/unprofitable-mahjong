@@ -48,11 +48,33 @@ jobs:
         with:
           ref: ${{ github.event.inputs.git_ref || github.ref }}
 
+      # A manual run with "release" ticked must name a tag that exists.
+      # Otherwise the release step would create one: action-gh-release
+      # makes a missing tag on the default branch's newest commit, not on
+      # what was built, so the binaries would be published under a tag
+      # for some other tree. Checked first, before an IDF install and a
+      # build are spent on it.
+      - name: Check that a release is of a tag
+        if: github.event_name == 'workflow_dispatch' && inputs.release
+        env:
+          GIT_REF: ${{ github.event.inputs.git_ref }}
+        run: |
+          if ! git ls-remote --exit-code --tags origin "refs/tags/$GIT_REF" > /dev/null; then
+            echo "::error::'$GIT_REF' is not a tag; a release can only be made from a tag"
+            exit 1
+          fi
+
       # github.ref_name is the branch on a workflow_dispatch, not what was
-      # checked out; the input names the build when there is one.
+      # checked out; the input names the build when there is one. The
+      # input comes in through the environment, never pasted into the
+      # script, and a / (feature/x) becomes - so it can be a file name.
       - name: Work out the version string
         id: ver
-        run: echo "name=${{ github.event.inputs.git_ref || github.ref_name }}" >> "$GITHUB_OUTPUT"
+        env:
+          REF_NAME: ${{ github.event.inputs.git_ref || github.ref_name }}
+        run: |
+          echo "ref=$REF_NAME" >> "$GITHUB_OUTPUT"
+          echo "name=${REF_NAME//\//-}" >> "$GITHUB_OUTPUT"
 
       - name: Install ESP-IDF
         uses: espressif/install-esp-idf-action@v1
@@ -80,14 +102,16 @@ jobs:
           SCREENTEST_ROT=0 SCREENTEST_LANG=2 SCREENTEST_THEME=1 ./test/screen/screentest test/screen/out/ci-ja 670,28 670,28
 
       - name: Build and Merge Binaries
+        env:
+          NAME: ${{ steps.ver.outputs.name }}
         run: |
           # the release string into esp_app_desc_t.version, so the banner
           # in the console log says which build this is
-          echo "${{ steps.ver.outputs.name }}" > version.txt
+          echo "$NAME" > version.txt
           idf.py build
           idf.py merge-bin
-          mv build/merged-binary.bin build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5_standalone.bin
-          mv build/unprofitable_mahjong_m5tab5.bin build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5.bin
+          mv build/merged-binary.bin "build/unprofitable_mahjong_${NAME}_m5tab5_standalone.bin"
+          mv build/unprofitable_mahjong_m5tab5.bin "build/unprofitable_mahjong_${NAME}_m5tab5.bin"
 
       - name: Archive build output artifacts
         uses: actions/upload-artifact@v4
@@ -107,13 +131,18 @@ jobs:
           if-no-files-found: ignore
 
       # Pushing a tag releases; a manual run only with the box ticked,
-      # and only against a tag -- against a branch it fails, and should.
+      # and only against a tag, which the check at the top has made sure
+      # of. Asked by event, not by github.ref: a manual run started from
+      # a tag in the Actions menu has a tag for github.ref whatever it
+      # builds. The only push this workflow takes is a tag's. tag_name
+      # is the ref as given, not the file-name form of it, so the
+      # release lands on the tag that was built.
       - name: Publish release
-        if: startsWith(github.ref, 'refs/tags/') || inputs.release
+        if: github.event_name == 'push' || inputs.release
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.ver.outputs.name }}
-          name: ${{ steps.ver.outputs.name }}
+          tag_name: ${{ steps.ver.outputs.ref }}
+          name: ${{ steps.ver.outputs.ref }}
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
