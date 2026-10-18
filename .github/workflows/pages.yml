@@ -1,0 +1,54 @@
+name: Publish the web version
+
+# Publishes the site to GitHub Pages, with the commit it was built from
+# written into index.html's footer, so the page says which build it is
+# and links to its code. Everything the branch served before is
+# published as it was; only the footer's data-build changes.
+#
+# Pages must be set to deploy from GitHub Actions (Settings -> Pages ->
+# Build and deployment -> Source: GitHub Actions), not from the branch.
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deploy at a time; a newer push waits rather than cancelling a
+# deploy halfway.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Stamp the build
+        run: |
+          # exactly the committed files, as the branch served them
+          mkdir _site
+          git archive HEAD -- . ':!.github' | tar -x -C _site
+          sed -i "s/data-build=\"__BUILD_SHA__\"/data-build=\"${GITHUB_SHA}\"/" _site/index.html
+          # refuse to publish an unstamped page
+          grep -q "data-build=\"${GITHUB_SHA}\"" _site/index.html
+
+      - name: Upload
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

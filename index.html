@@ -361,7 +361,9 @@ dialog.share .buttons { display: flex; gap: 8px; justify-content: flex-end; marg
     <p class="t" lang="zh-Hans">每一局都能零罚分清完。</p>
   </details>
 
-  <footer class="foot"><a href="https://github.com/Sudrien/unprofitable-mahjong">github.com/Sudrien/unprofitable-mahjong</a></footer>
+  <!-- The deploy (.github/workflows/pages.yml) writes the commit into
+       data-build; anywhere else it is left as it is, and reads "local". -->
+  <footer class="foot"><a href="https://github.com/Sudrien/unprofitable-mahjong">github.com/Sudrien/unprofitable-mahjong</a> · <span id="build" data-build="__BUILD_SHA__">local</span></footer>
 </div>
 
 <script>
@@ -1715,6 +1717,12 @@ function buildGuide() {
 const FIRSTS = [...new Set(GUIDE.flatMap(([, items]) => items.map(([, groups]) => classify(groups.flat())))
   .flatMap(t => t.startsWith('run of ') ? RUNS.map(n => 'run of ' + n) : [t]))];
 buildGuide();
+// which build this is: the commit the deploy stamped, linked to its code
+(() => {
+  const el = $('build'), sha = el.dataset.build;
+  if (!/^[0-9a-f]{40}$/.test(sha)) return;
+  el.innerHTML = `<a href="https://github.com/Sudrien/unprofitable-mahjong/commit/${sha}" title="${pick('The build you are playing', '遊んでいる版', '你正在玩的版本')}">${sha.slice(0, 7)}</a>`;
+})();
 try { if (localStorage.getItem('unprofitable-mahjong-guide') === '0') $('guide').open = false; } catch (e) {}
 $('guide').addEventListener('toggle', () => { try { localStorage.setItem('unprofitable-mahjong-guide', $('guide').open ? '1' : '0'); } catch (e) {} });
 

@@ -12,6 +12,8 @@ Open [index.html](https://sudrien.github.io/unprofitable-mahjong/) in a browser.
 
 After one visit online it plays offline, fonts included. It can also be installed as an app: *Install* in Chrome or Edge's address bar, or *Share → Add to Home Screen* on iPhone and iPad. Online, it always loads the newest version.
 
+The footer names the build you're playing: the commit it was published from, linked to its code. `.github/workflows/pages.yml` publishes the site and writes that commit in, so Pages is set to deploy from GitHub Actions; anywhere else the footer says *local*.
+
 `index.html` also runs on its own, opened straight from disk; it just won't play offline or install that way. The offline copy is kept by `sw.js`, and `manifest.webmanifest` makes it installable. The icons are drawn by `tools/icons.py`.
 
 ## Rules
