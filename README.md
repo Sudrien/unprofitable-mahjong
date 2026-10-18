@@ -30,33 +30,9 @@ After one visit online it plays offline, fonts included. It can also be installe
 
 The in-game **Sets and scores** guide shows every set with example tiles and its points. Tap a limit-hand card to preview its animation.
 
-## Strategy notes
-
-These come from the bots in `sim/`, which play using the game's own code:
-
-| Strategy | Points | Penalty |
-|---|---|---|
-| Follow Hint every turn | ~200 | ~−11, never clears every tile |
-| Careful (only clear sets that leave everything groupable) | ~200 | ~0, clears every tile |
-| Careful with melds | ~223 | ~−2 |
-| Chase big hands, never Add 6 | ~260 | ~−8 |
-| Chase big hands using Add 6 | ~290 | ~−65 |
-| Bank winds in the discard pile, 6 at a time | ~273 | ~−27, with a wind limit hand in almost every game |
-
-Banking works because discards return in order: winds discarded together come back together, ready for Big or Little Four Winds.
-
 ## Simulations
 
-Requires Node.js. Each bot loads the game logic straight from `index.html`.
-
-```sh
-node sim/hint.js index.html 5                              # follow Hint
-node sim/careful.js index.html 50                          # careful, no leftovers
-node sim/strategies.js index.html 50 8 melds summary noadd # big hands, never add
-node sim/strategies.js index.html 5 8 melds rows windbank  # bank winds, one row per game
-```
-
-`strategies.js` modes are `big`, `noadd`, `hybrid<wall>` (careful once the wall drops below `<wall>` tiles), `carefulmelds`, `stash<n>`, `windbank` and `honorbank`. The third argument is the smallest set value the bot waits for.
+The bots in `sim/` play the game with its own code; see [sim/README.md](sim/README.md).
 
 ## Porting to the Tab5
 
