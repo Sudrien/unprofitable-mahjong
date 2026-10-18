@@ -10,6 +10,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 #include "umcore.h"
+#include "umach.h"
 
 typedef struct {
     int32_t best_points;    /* INT32_MIN: none yet */
@@ -26,3 +27,8 @@ bool save_load_game(um_game_t *g);          /* false: nothing saved, saved by an
 void save_game(const um_game_t *g);
 void save_load_prefs(save_prefs_t *p);      /* defaults when nothing is saved */
 void save_prefs(const save_prefs_t *p);
+/* The achievements (umach.h), whole, behind a version and a size like the
+ * game. Nothing saved, another build's struct, or records that fail
+ * um_ach_valid read as none yet. */
+void save_load_ach(um_ach_t *a);
+void save_ach(const um_ach_t *a);

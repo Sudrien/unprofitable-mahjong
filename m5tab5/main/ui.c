@@ -32,6 +32,7 @@
 #include "guide.h"
 #include "qrcodegen.h"
 #include "tiledraw.h"
+#include "umach.h"
 #include "umcore.h"
 #include "umreplay.h"
 
@@ -107,6 +108,7 @@ static um_sel_t s_sel;
 static uint32_t s_hint_mask;
 static int64_t s_hint_until, s_armed_until;
 static save_prefs_t s_prefs;
+static um_ach_t s_ach;          /* the achievements, saved whole whenever one changes */
 static um_game_t *s_undo;      /* UNDO_N snapshots, a ring, in PSRAM */
 static int s_undo_head, s_undo_n;
 static bool s_guide;                /* the list of valid hands is open */
@@ -1238,6 +1240,12 @@ static void after_move(bool was_done)
         if (s_prefs.best_penalty == INT32_MIN || um_penalty(&s_g) > s_prefs.best_penalty) s_prefs.best_penalty = um_penalty(&s_g);
         if (s_prefs.best_points == INT32_MIN || s_g.points > s_prefs.best_points) s_prefs.best_points = s_g.points;
         save_prefs(&s_prefs);
+        const uint8_t wins = um_ach_win(&s_ach, &s_g);
+        if (wins) {
+            ESP_LOGI(TAG, "game %u: won%s%s", (unsigned)s_g.game_no,
+                     wins & (1u << UM_WIN_NO_POKER) ? ", no poker hands" : "", wins & (1u << UM_WIN_NO_PAIRS) ? ", no pairs" : "");
+            save_ach(&s_ach);
+        }
     }
     s_sel.hand = 0;
     s_sel.melds = 0;
@@ -1248,6 +1256,8 @@ static void after_move(bool was_done)
 static void new_deal(void)
 {
     um_new(&s_g, esp_random());
+    um_ach_new_game(&s_ach, &s_g);
+    save_ach(&s_ach);
     s_undo_n = 0;
     after_move(false);
 }
@@ -1264,6 +1274,13 @@ static void press(int b)
         int v;
         undo_push();
         if (!um_clear(&s_g, s_sel, &t, &v)) { undo_pop(); return; }
+        bool flood = false;
+        const um_award_t aw = um_ach_clear(&s_ach, &s_g, t, &flood);
+        if (aw != UM_AWARD_NONE) {
+            ESP_LOGI(TAG, "game %u: %s %s%s", (unsigned)s_g.game_no, aw == UM_AWARD_FIRST ? "first" : "full", um_set_key(t),
+                     flood ? "; The Yellow River Floods Again" : "");
+            save_ach(&s_ach);
+        }
         if (um_set_is_limit(t)) celebrate(t, k, n, v);
         break;
     }
@@ -1508,6 +1525,7 @@ void ui_run(void)
     s_undo = heap_caps_malloc(sizeof(um_game_t) * UNDO_N, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     if (!s_undo) ESP_LOGW(TAG, "no PSRAM for undo; playing without it");
     save_load_prefs(&s_prefs);
+    save_load_ach(&s_ach);
     i18n_set_lang((i18n_lang_t)s_prefs.lang);
     apply_theme(s_prefs.theme);
     apply_rotation(s_prefs.rotation);

@@ -10,7 +10,9 @@
  *     and moves_ok false, and so are version 1 games;
  *   - a version 3 game (no game number or had) is read with its moves,
  *     and both 0;
- *   - a save of the wrong size or version is turned down.
+ *   - a save of the wrong size or version is turned down;
+ *   - the achievements round trip, read as none with nothing saved, and
+ *     records that fail um_ach_valid are dropped.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -195,7 +197,30 @@ int main(void)
     save_v1(&g, 2, (uint32_t)v1, 8 + v1);
     CHECK(!save_load_game(&back), "a version 2 save of version 1's size was read");
 
+    /* the achievements */
+    {
+        static um_ach_t a, b;
+        save_load_ach(&b);
+        CHECK(!b.games && !um_ach_firsts(&b), "achievements: some with nothing saved");
+        static um_game_t ag;
+        um_new(&ag, 5);
+        um_ach_new_game(&a, &ag);
+        const uint8_t pair[2] = { 4, 4 };
+        um_note_set(&ag, UM_PAIR, pair, 2);
+        CHECK(um_ach_clear(&a, &ag, UM_PAIR, NULL) == UM_AWARD_FIRST, "achievements: setup: no First");
+        save_ach(&a);
+        save_load_ach(&b);
+        CHECK(!memcmp(&a, &b, sizeof a), "achievements: not the same after a round trip");
+        a.first[UM_CHOW].game = a.games + 1;     /* from a game not yet dealt */
+        save_ach(&a);
+        save_load_ach(&b);
+        CHECK(!b.games && !um_ach_firsts(&b), "achievements: records out of range were read");
+        put("ach", (const uint8_t *)&a, 12);
+        save_load_ach(&b);
+        CHECK(!b.games, "achievements: a short save was read");
+    }
+
     if (s_bad) return 1;
-    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused\n");
+    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip\n");
     return 0;
 }

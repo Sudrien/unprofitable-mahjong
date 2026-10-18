@@ -35,8 +35,8 @@ changed and blitted a band at a time, so tapping a tile costs one row of
 tiles, not a frame. Text is Ark12 at scale; it carries the CJK the
 Japanese and Chinese screens need, except 雀 (see Languages).
 
-Saves (the game in progress, best scores, settings) go in NVS after
-every move, so pulling the power loses nothing. The SD card is not
+Saves (the game in progress, best scores, settings, achievements) go
+in NVS after every move, so pulling the power loses nothing. The SD card is not
 needed for anything yet, so `feckless_storage_handler` is not a
 dependency until something is.
 
@@ -174,8 +174,9 @@ kept, are still read. check.js also takes the Tab5's replay codes from
 `umtest code` and has the web version read and replay them, and pack
 the same moves into the same payload, byte for byte.
 
-The achievements are in `core/umach.c`, ahead of the screen that will
-show them. check.js runs one script of 400 games -- deals, clears,
+The achievements are in `core/umach.c`, which the game calls at each new deal, clear
+and finished game, saving them in NVS when one changes; the screen
+does not show them yet. check.js runs one script of 400 games -- deals, clears,
 wins, a few games saved before games were counted -- through it and
 through the web version's own achievement code, and compares every
 record after every step: each set's First and Full, both wins, and The

@@ -130,6 +130,15 @@ void save_load_prefs(save_prefs_t *p)
     p->theme = (uint8_t)(t ? atoi(t) & 1 : 0);
 }
 void save_prefs(const save_prefs_t *p) { (void)p; }
+void save_load_ach(um_ach_t *a) { memset(a, 0, sizeof *a); }
+/* SCREENTEST_ACH=1 reports each save of the achievements, to see them change */
+void save_ach(const um_ach_t *a)
+{
+    if (!getenv("SCREENTEST_ACH")) return;
+    fprintf(stderr, "ach: %u games, %d firsts, %d full,", (unsigned)a->games, um_ach_firsts(a), um_ach_fulls(a));
+    for (int t = 1; t < UM_SET_COUNT; t++) if (a->first[t].game) fprintf(stderr, " %s@%u", um_set_key((um_set_t)t), (unsigned)a->first[t].game);
+    fprintf(stderr, "\n");
+}
 
 extern int ui_qr_icon_pct;
 

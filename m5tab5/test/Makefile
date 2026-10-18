@@ -16,8 +16,8 @@ umtest: umtest.c ../core/umcore.c ../core/umcore.h ../core/umreplay.c ../core/um
 	$(CC) $(CFLAGS) -I../core -o $@ umtest.c ../core/umcore.c ../core/umreplay.c ../core/umach.c
 
 # main/save.c over an in-memory NVS (fake/)
-savecheck: savecheck.c ../main/save.c ../main/save.h ../core/umcore.c ../core/umcore.h fake/*.h
-	$(CC) $(CFLAGS) -Ifake -I../core -I../main -o $@ savecheck.c ../main/save.c ../core/umcore.c
+savecheck: savecheck.c ../main/save.c ../main/save.h ../core/umcore.c ../core/umcore.h ../core/umach.c ../core/umach.h fake/*.h
+	$(CC) $(CFLAGS) -Ifake -I../core -I../main -o $@ savecheck.c ../main/save.c ../core/umcore.c ../core/umach.c
 
 guidecheck: guidecheck.c ../main/guide.c ../main/guide.h ../core/umcore.c ../core/umcore.h
 	$(CC) $(CFLAGS) -I../core -I../main -o $@ guidecheck.c ../main/guide.c ../core/umcore.c

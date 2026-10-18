@@ -41,6 +41,14 @@ typedef struct {
 } blob_t;
 
 static blob_t s_blob;   /* 3 KB: off the stack */
+
+#define ACH_VER     (1u)
+typedef struct {
+    uint32_t ver;
+    uint32_t size;
+    um_ach_t a;
+} ach_blob_t;
+static ach_blob_t s_ach_blob;   /* 1.5 KB: off the stack too */
 static um_log_t s_v1_log[V1_LOG_N];
 
 void save_init(void)
@@ -103,6 +111,33 @@ void save_game(const um_game_t *g)
     s_blob.size = sizeof(um_game_t);
     memcpy(&s_blob.g, g, sizeof *g);
     if (nvs_set_blob(h, "game", &s_blob, sizeof s_blob) == ESP_OK) nvs_commit(h);
+    nvs_close(h);
+}
+
+void save_load_ach(um_ach_t *a)
+{
+    memset(a, 0, sizeof *a);
+    nvs_handle_t h;
+    if (nvs_open(NS, NVS_READONLY, &h) != ESP_OK) return;
+    size_t len = sizeof s_ach_blob;
+    const esp_err_t err = nvs_get_blob(h, "ach", &s_ach_blob, &len);
+    nvs_close(h);
+    if (err != ESP_OK) return;
+    if (len != sizeof s_ach_blob || s_ach_blob.ver != ACH_VER || s_ach_blob.size != sizeof(um_ach_t) || !um_ach_valid(&s_ach_blob.a)) {
+        ESP_LOGW(TAG, "saved achievements unreadable; starting over");
+        return;
+    }
+    memcpy(a, &s_ach_blob.a, sizeof *a);
+}
+
+void save_ach(const um_ach_t *a)
+{
+    nvs_handle_t h;
+    if (nvs_open(NS, NVS_READWRITE, &h) != ESP_OK) return;
+    s_ach_blob.ver = ACH_VER;
+    s_ach_blob.size = sizeof(um_ach_t);
+    memcpy(&s_ach_blob.a, a, sizeof *a);
+    if (nvs_set_blob(h, "ach", &s_ach_blob, sizeof s_ach_blob) == ESP_OK) nvs_commit(h);
     nvs_close(h);
 }
 
