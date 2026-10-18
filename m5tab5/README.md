@@ -126,6 +126,13 @@ the games: the table, melds, wall, discard pile, points, penalty, the
 hint's choice and the stranded-honor warning. It needs a C compiler and
 Node.js, and builds with AddressSanitizer and UBSan.
 
+The same run also checks two things the web version cannot speak for.
+`test/dealcheck` takes 500 deals (`DEALS=` for more) and plays each one
+out by the plan it was built from, using the game's own clears: every
+clear must be allowed and the game must end with every tile gone and a
+penalty of 0. `umtest valid` checks that a saved game with a value out
+of range is refused before the board plays it.
+
 ## Credits
 
 Same as the web version: designed by Sudrien, written with Claude.
