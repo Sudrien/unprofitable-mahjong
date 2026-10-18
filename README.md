@@ -8,7 +8,11 @@ Available in English, 日本語 and 简体中文. The default follows the browse
 
 ## Play
 
-Open [index.html](https://sudrien.github.io/unprofitable-mahjong/) in a browser. There's nothing to install or build, and it works offline once loaded, apart from the web fonts. Your game, best scores, language and settings are saved in the browser.
+Open [index.html](https://sudrien.github.io/unprofitable-mahjong/) in a browser. There's nothing to install or build. Your game, best scores, language and settings are saved in the browser.
+
+After one visit online it plays offline, fonts included. It can also be installed as an app: *Install* in Chrome or Edge's address bar, or *Share → Add to Home Screen* on iPhone and iPad. Online, it always loads the newest version.
+
+`index.html` also runs on its own, opened straight from disk; it just won't play offline or install that way. The offline copy is kept by `sw.js`, and `manifest.webmanifest` makes it installable. The icons are drawn by `tools/icons.py`.
 
 ## Rules
 
