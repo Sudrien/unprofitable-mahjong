@@ -106,6 +106,22 @@ Chinese), and the points counting up.
 
 ![Big Three Dragons](screenshots/limit-hand.png)
 
+The achievements are the web version's, kept on the board: each set's
+First and Full, the two wins, and The Yellow River Floods Again. Each
+plays the same celebration when it is earned, once, headed with what
+it is and the game number (games are counted on the board, one per
+deal); when two come at once, such as a last set and the win it
+finishes, they play one after the other. The Sets list opens with them:
+how many sets have a First and how many are Full, the river rising
+toward all 40, and the wins, each with the game it was earned in; tap
+one for what it asks. Every set below is marked once cleared, a check
+or, when Full, a star (both drawn, since Ark12 has neither), with the
+games underneath; the runs card shows each run length.
+
+![The achievements, at the top of the Sets list](screenshots/achievements.png)
+
+![A pung's First](screenshots/first-time.png)
+
 ## Languages
 
 Every word on the screen is marked in the source the way
@@ -145,7 +161,8 @@ row and the celebration, `SCREENTEST_DEAL=played` from a game forty
 entries in, for the rail, `SCREENTEST_ROT=0..3` picks the orientation
 (landscape, 1, by default), `SCREENTEST_LANG` the language (0 English,
 1 Chinese, 2 Japanese), `SCREENTEST_THEME=1` the dark theme and
-`SCREENTEST_DSET=1` turns Discard sets on. The screenshots above came from
+`SCREENTEST_DSET=1` turns Discard sets on, and `SCREENTEST_ACH=sample` starts from
+some achievements (`=1` only reports each save of them). The screenshots above came from
 it.
 
 ## Testing the rules
@@ -175,8 +192,7 @@ kept, are still read. check.js also takes the Tab5's replay codes from
 the same moves into the same payload, byte for byte.
 
 The achievements are in `core/umach.c`, which the game calls at each new deal, clear
-and finished game, saving them in NVS when one changes; the screen
-does not show them yet. check.js runs one script of 400 games -- deals, clears,
+and finished game, saving them in NVS when one changes. check.js runs one script of 400 games -- deals, clears,
 wins, a few games saved before games were counted -- through it and
 through the web version's own achievement code, and compares every
 record after every step: each set's First and Full, both wins, and The

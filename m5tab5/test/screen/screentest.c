@@ -130,7 +130,20 @@ void save_load_prefs(save_prefs_t *p)
     p->theme = (uint8_t)(t ? atoi(t) & 1 : 0);
 }
 void save_prefs(const save_prefs_t *p) { (void)p; }
-void save_load_ach(um_ach_t *a) { memset(a, 0, sizeof *a); }
+/* SCREENTEST_ACH=sample starts from some achievements, for the Sets
+ * list's marks: about half the sets' Firsts, a few Fulls, one win */
+void save_load_ach(um_ach_t *a)
+{
+    memset(a, 0, sizeof *a);
+    const char *e = getenv("SCREENTEST_ACH");
+    if (!e || strcmp(e, "sample")) return;
+    a->games = 12;
+    for (int t = 1; t < UM_SET_COUNT; t += 2) a->first[t] = (um_rec_t){ (uint32_t)(1 + t % 11), 1000u + (uint32_t)t };
+    a->first[UM_RUN6] = (um_rec_t){ 4, 4 };
+    const um_set_t full[] = { UM_PAIR, UM_CHOW, UM_RUN4 };
+    for (unsigned i = 0; i < sizeof full / sizeof full[0]; i++) { a->first[full[i]] = (um_rec_t){ 1, 1 }; a->full[full[i]] = (um_rec_t){ 7, 7 }; }
+    a->win[UM_WIN_NO_POKER] = (um_rec_t){ 9, 9 };
+}
 /* SCREENTEST_ACH=1 reports each save of the achievements, to see them change */
 void save_ach(const um_ach_t *a)
 {

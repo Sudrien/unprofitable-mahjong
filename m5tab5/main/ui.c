@@ -113,6 +113,7 @@ static um_game_t *s_undo;      /* UNDO_N snapshots, a ring, in PSRAM */
 static int s_undo_head, s_undo_n;
 static bool s_guide;                /* the list of valid hands is open */
 static int s_guide_sel = -1;
+static int s_gach_sel = -1;    /* an achievement card chosen in the Sets list, for its note */
 
 /* ------------------------------------------------------------------ */
 /* Words                                                               */
@@ -154,6 +155,31 @@ static const char *const SET_NAMES[UM_SET_COUNT] = {
     [UM_ALL_GREEN] = N_("All Green"), [UM_FOUR_KONGS] = N_("Four Kongs"),
 };
 static const char *set_name(um_set_t t) { return (t > UM_NONE && t < UM_SET_COUNT) ? _(SET_NAMES[t]) : ""; }
+
+/* The achievements' names and notes, the web version's WINS and
+ * FLOOD_NAME, in umach.h's order. */
+static const char *const WIN_NAMES[UM_WIN_N] = { N_("Win with no poker hands"), N_("Win with no pairs") };
+static const char *const WIN_NOTES[UM_WIN_N] = {
+    N_("All 136 cleared without two pair, a flush, a straight, a full house or a royal flush."),
+    N_("All 136 cleared and no set held a pair: no pairs, two pair or full houses, and no hand with a pair in it, like All Honors or Seven Pairs."),
+};
+#define FLOOD_NAME N_("The Yellow River Floods Again")
+#define FLOOD_NOTE N_("Clear every set at least once. The river rises with each one.")
+
+/* A heading in English, as the web version's title(): each word's first
+ * letter up, "of" left alone -- Full House, Run of 4. Other languages
+ * have no case and are copied as they are. */
+static const char *heading(const char *in, char *out, size_t cap, bool en)
+{
+    if (!en) return in;
+    size_t i = 0;
+    for (; in[i] && i + 1 < cap; i++) {
+        const bool start = !i || in[i - 1] == ' ';
+        out[i] = (start && in[i] >= 'a' && in[i] <= 'z' && strncmp(in + i, "of ", 3)) ? (char)(in[i] - 32) : in[i];
+    }
+    out[i] = 0;
+    return out;
+}
 
 /* printf onto the end of out, never past cap */
 static void put(char *out, size_t cap, size_t *at, const char *fmt, ...)
@@ -882,6 +908,16 @@ static const char *set_name_in(um_set_t t, i18n_lang_t lg)
     return s;
 }
 
+/* Any marked string in another language, the same way. */
+static const char *tr_in(const char *key, i18n_lang_t lg)
+{
+    const i18n_lang_t was = i18n_lang();
+    i18n_set_lang(lg);
+    const char *s = _(key);
+    i18n_set_lang(was);
+    return s;
+}
+
 /* The hand in its sets, as the Sets list groups them (um_limit_groups):
  * each set drops in together, a beat after the one before, and is named
  * under it; then the hand's name, its name in another language (the
@@ -916,11 +952,24 @@ static void cel_draw_cap(const cel_t *c, int g)
     gfx_draw_text((c->gx0[g] + c->gx1[g] - w) / 2, c->gy[g] + tilefaces_M.h + TILEDRAW_EDGE_M + 6, c->cap[g], SMALL, w + 2, C_MUTED);
 }
 
-static void celebrate(um_set_t t, const uint8_t *kinds, int n, int v)
+/* kick: the line above, for an achievement (a limit hand's own when
+ * NULL); name_key: the achievement's name, a marked string, when it is
+ * not the set's. Any set can be celebrated: one that splits into sets
+ * (double and triple chows, the classic hands, two pair, full house) is
+ * shown in them, as the web version does, anything else as one row. */
+static void celebrate(um_set_t t, const uint8_t *kinds, int n, int v, const char *kick_in, const char *name_key)
 {
     cel_t *c = &s_cel;
     memset(c, 0, sizeof *c);
-    c->ng = um_limit_groups(t, kinds, n, c->k, c->glen);
+    const bool split = um_set_is_limit(t) || um_set_is_classic(t) || t == UM_TWO_PAIR || t == UM_FULL_HOUSE ||
+                       (t >= UM_MIXED_DOUBLE_CHOW && t <= UM_PURE_TRIPLE_CHOW);
+    if (split) c->ng = um_limit_groups(t, kinds, n, c->k, c->glen);
+    else if (n >= 1 && n <= UM_MAX_SEL) {
+        memcpy(c->k, kinds, (size_t)n);
+        for (int i = 1; i < n; i++) for (int j = i; j > 0 && c->k[j] < c->k[j - 1]; j--) { const uint8_t x = c->k[j]; c->k[j] = c->k[j - 1]; c->k[j - 1] = x; }
+        c->glen[0] = (uint8_t)n;
+        c->ng = 1;
+    }
     if (c->ng < 1) return;
 
     /* lay the sets out in rows: a set that fits a row is not split, a run
@@ -945,8 +994,11 @@ static void celebrate(um_set_t t, const uint8_t *kinds, int n, int v)
     }
     c->rows = row + 1;
 
-    const char *kick = _("LIMIT HAND"), *nm = set_name(t);
-    const char *alt = set_name_in(t, i18n_lang() == I18N_EN ? I18N_JA : I18N_EN);
+    static char nmb[96], altb[96];
+    const char *kick = kick_in ? kick_in : _("LIMIT HAND");
+    const i18n_lang_t other = i18n_lang() == I18N_EN ? I18N_JA : I18N_EN;
+    const char *nm = name_key ? _(name_key) : heading(set_name(t), nmb, sizeof nmb, i18n_lang() == I18N_EN);
+    const char *alt = name_key ? tr_in(name_key, other) : heading(set_name_in(t, other), altb, sizeof altb, other == I18N_EN);
     const int ns = gfx_text_w(nm, 5) <= avail ? 5 : 4;       /* portrait is 720 wide */
     const int total = GFX_GLYPH_H(TXT) + 24 + c->rows * CEL_ROW + 16 + GFX_GLYPH_H(ns) + 12 +
                       GFX_GLYPH_H(TXT) + 24 + GFX_GLYPH_H(4) + 40 + GFX_GLYPH_H(TXT);
@@ -1083,7 +1135,51 @@ static int guide_tiles(const guide_item_t *g, int w, int *tx, int *ty)
     return row + 1;
 }
 
-static int guide_item_h(const guide_item_t *g, int w) { return G_NAME_H + 8 + guide_tiles(g, w, NULL, NULL) * G_LINE + 12; }
+/* What the achievements say of a set's card: a First (done), and Full.
+ * The runs card stands for every run length, as on the web: done when
+ * any length has a First, full when any is Full. */
+static bool is_run(um_set_t t) { return t >= UM_RUN4 && t <= UM_RUN8; }
+static void item_marks(um_set_t t, bool *done, bool *full)
+{
+    *done = *full = false;
+    for (int r = UM_RUN4; r <= UM_RUN8; r++) if (is_run(t)) { *done |= s_ach.first[r].game != 0; *full |= s_ach.full[r].game != 0; }
+    if (!is_run(t) && t > UM_NONE && t < UM_SET_COUNT) { *done = s_ach.first[t].game != 0; *full = s_ach.full[t].game != 0; }
+}
+
+/* The marks, drawn: Ark12 has neither a check nor a star. */
+static const char *const MARK_TICK[] = { "......#", ".....##", "#...##.", "##.##..", ".###...", "..#...." };
+static const char *const MARK_STAR[] = { "...#...", "..###..", "#######", ".#####.", "..###..", ".##.##.", ".#...#." };
+#define MARK_PX  (4)
+#define MARK_W   (7 * MARK_PX + 12)     /* with the gap before the name */
+static void draw_mark(const char *const *rows, int nrows, int x, int y, uint16_t c)
+{
+    y += (G_NAME_H - nrows * MARK_PX) / 2;
+    for (int r = 0; r < nrows; r++)
+        for (int col = 0; rows[r][col]; col++)
+            if (rows[r][col] == '#') gfx_fill_rect(x + col * MARK_PX, y + r * MARK_PX, MARK_PX, MARK_PX, c);
+}
+
+#define G_WHEN_H   (GFX_GLYPH_H(SMALL) + 10)  /* the line under a set's tiles: the games, or the run lengths */
+#define C_RIVER    (0xBC21)                 /* the river's gold, #B8860B, in either theme */
+static int guide_item_h(const guide_item_t *g, int w)
+{
+    bool done, full;
+    item_marks(um_classify(g->k, g->n), &done, &full);
+    return G_NAME_H + 8 + guide_tiles(g, w, NULL, NULL) * G_LINE + (done ? G_WHEN_H : 0) + 12;
+}
+
+/* The achievements, above the sets: a summary, then The Yellow River
+ * Floods Again and the two wins as cards, the web version's
+ * Achievements section. */
+#define A_CARDS    (1 + UM_WIN_N)
+#define A_BAR_H    (12)
+#define A_SUM_LINE (GFX_GLYPH_H(SMALL) + 4)
+static gpos_t s_apos[A_CARDS];
+static int s_ahead_y, s_asum_y;
+static char s_asum[320];
+static int ach_card_h(void) { return G_NAME_H + 8 + A_BAR_H + 8 + G_WHEN_H + 12; }
+static const char *ach_card_name(int i) { return i ? WIN_NAMES[i - 1] : FLOOD_NAME; }
+static const um_rec_t *ach_card_rec(int i) { return i ? &s_ach.win[i - 1] : &s_ach.flood; }
 
 /* Each section: its heading across the width, then its sets, left to
  * right and down, so the list reads in order as it scrolls. */
@@ -1091,6 +1187,20 @@ static void guide_layout(void)
 {
     const int cols = guide_cols(), cw = guide_col_w();
     int y = 0;
+    s_ahead_y = y;
+    y += G_HEAD_H;
+    snprintf(s_asum, sizeof s_asum, _("%d of %d sets cleared at least once, %d of them full (cleared in 3 of 5 games in a row). Games played: %d."),
+             um_ach_firsts(&s_ach), UM_ACH_SETS, um_ach_fulls(&s_ach), (int)s_ach.games);
+    s_asum_y = y;
+    y += gfx_para_rows(s_asum, SMALL, gfx_w() - 2 * M_X) * A_SUM_LINE + 12;
+    /* the river across the whole width, the wins in columns under it */
+    s_apos[0] = (gpos_t){ M_X, y, ach_card_h() };
+    y += ach_card_h();
+    for (int i = 1; i < A_CARDS; i += cols) {
+        for (int c = 0; c < cols && i + c < A_CARDS; c++) s_apos[i + c] = (gpos_t){ M_X + c * (cw + G_COL_GAP), y, ach_card_h() };
+        y += ach_card_h();
+    }
+    y += 8;
     for (int s = 0; s < guide_section_count && s < GD_SECTIONS; s++) {
         const guide_section_t *sec = &guide_sections[s];
         s_ghead_y[s] = y;
@@ -1130,6 +1240,34 @@ static void draw_guide(void)
         if (hy + G_HEAD_H > top - G_HEAD_H && hy < bottom)
             gfx_draw_text(M_X, hy + 8, _(guide_sections[s].head), SMALL, gfx_w() - 2 * M_X, C_MUTED);
     }
+    gfx_draw_text(M_X, s_ahead_y + dy + 8, _("Achievements"), SMALL, gfx_w() - 2 * M_X, C_MUTED);
+    gfx_draw_para(M_X, s_asum_y + dy, s_asum, SMALL, gfx_w() - 2 * M_X, A_SUM_LINE, 4, C_MUTED);
+    for (int i = 0; i < A_CARDS; i++) {
+        const gpos_t *p = &s_apos[i];
+        const int y = p->y + dy;
+        if (y + p->h < top || y > bottom) continue;
+        const int cw = i ? guide_col_w() : gfx_w() - 2 * M_X;     /* the river's card is the whole width */
+        if (i == s_gach_sel) box(p->x - 10, y - 6, cw + 20, p->h, C_ACCENT, C_RAISED);
+        const um_rec_t *r = ach_card_rec(i);
+        int nx = p->x, nw = cw;
+        if (r->game) { draw_mark(MARK_TICK, 6, p->x, y, C_GREEN); nx += MARK_W; nw -= MARK_W; }
+        char when[96] = "";
+        gfx_draw_text(nx, y, _(ach_card_name(i)), TXT, nw, C_INK);
+        /* the river, rising with each First, and how far it has come;
+         * the wins have none */
+        const int by = y + G_NAME_H + 8;
+        if (!i) {
+            char v[24];
+            snprintf(v, sizeof v, "%d/%d", um_ach_firsts(&s_ach), UM_ACH_SETS);
+            const int vw = gfx_text_w(v, SMALL), bw = cw - vw - 16;
+            gfx_fill_rect(p->x, by, bw, A_BAR_H, C_LINE);
+            gfx_fill_rect(p->x, by, bw * um_ach_firsts(&s_ach) / UM_ACH_SETS, A_BAR_H, C_RIVER);
+            gfx_draw_text(p->x + cw - vw, by + (A_BAR_H - GFX_GLYPH_H(SMALL)) / 2, v, SMALL, vw + 2, C_GREEN);
+        }
+        if (r->game) snprintf(when, sizeof when, i ? _("won in game %d") : _("flooded in game %d"), (int)r->game);
+        else if (i) snprintf(when, sizeof when, "%s", _("not yet"));
+        gfx_draw_text(p->x, by + A_BAR_H + 8, when, SMALL, cw, r->game ? C_GREEN : C_MUTED);
+    }
     int tx[GUIDE_MAX_TILES], ty[GUIDE_MAX_TILES];
     for (int i = 0; i < guide_item_count && i < G_ITEMS; i++) {
         const gpos_t *p = &s_gpos[i];
@@ -1141,11 +1279,39 @@ static void draw_guide(void)
         const um_set_t t = um_classify(g->k, g->n);
         snprintf(v, sizeof v, "+%d", t ? um_set_value(t, g->k, g->n) : 0);
         const int vw = gfx_text_w(v, TXT);
-        gfx_draw_text(p->x, y, _(g->name), TXT, cw - vw - 16, C_INK);
+        bool done, full;
+        item_marks(t, &done, &full);
+        int nx = p->x;
+        if (full) draw_mark(MARK_STAR, 7, p->x, y, C_KICK);
+        else if (done) draw_mark(MARK_TICK, 6, p->x, y, C_GREEN);
+        if (done) nx += MARK_W;
+        gfx_draw_text(nx, y, _(g->name), TXT, cw - vw - 16 - (nx - p->x), C_INK);
         gfx_draw_text(p->x + cw - vw, y, v, TXT, vw + 2, C_GREEN);
-        guide_tiles(g, cw, tx, ty);
+        const int rows = guide_tiles(g, cw, tx, ty);
         for (int j = 0; j < g->n; j++)
             tiledraw_tile(&tilefaces_M, g->k[j], p->x + tx[j], y + G_NAME_H + 8 + ty[j], TILEDRAW_EDGE_M);
+        if (!done) continue;
+        /* under the tiles: the games it was first cleared and went full
+         * in; for the runs card, each run length, lit once cleared and
+         * filled once full */
+        const int wy = y + G_NAME_H + 8 + rows * G_LINE;
+        if (is_run(t)) {
+            const int bw = 44, bh = GFX_GLYPH_H(SMALL) + 4;
+            for (int r = UM_RUN4; r <= UM_RUN8; r++) {
+                const int bx = p->x + (r - UM_RUN4) * (bw + 8);
+                const bool on = s_ach.first[r].game != 0, fu = s_ach.full[r].game != 0;
+                box(bx, wy, bw, bh, on ? C_GREEN : C_LINE, fu ? C_GREEN : C_RAISED);
+                char d[4];
+                snprintf(d, sizeof d, "%d", r - UM_RUN4 + 4);
+                gfx_draw_text(bx + (bw - gfx_text_w(d, SMALL)) / 2, wy + 2, d, SMALL, bw, fu ? C_SURFACE : on ? C_GREEN : C_MUTED);
+            }
+        } else {
+            char when[128];
+            size_t at = 0;
+            put(when, sizeof when, &at, _("first in game %d"), (int)s_ach.first[t].game);
+            if (full) { put(when, sizeof when, &at, " · "); put(when, sizeof when, &at, _("full in game %d"), (int)s_ach.full[t].game); }
+            gfx_draw_text(p->x, wy, when, SMALL, cw, C_GREEN);
+        }
     }
 
     /* the title over the top of the window, the footer over the bottom */
@@ -1165,7 +1331,8 @@ static void draw_guide(void)
 
     /* the chosen set's note, or how to get one */
     const int ny = guide_note_y();
-    if (s_guide_sel >= 0) gfx_draw_para(M_X, ny, _(guide_items[s_guide_sel].note), TXT, gfx_w() - 2 * M_X, LINE, guide_note_rows(), C_INK);
+    if (s_gach_sel >= 0) gfx_draw_para(M_X, ny, _(s_gach_sel ? WIN_NOTES[s_gach_sel - 1] : FLOOD_NOTE), TXT, gfx_w() - 2 * M_X, LINE, guide_note_rows(), C_INK);
+    else if (s_guide_sel >= 0) gfx_draw_para(M_X, ny, _(guide_items[s_guide_sel].note), TXT, gfx_w() - 2 * M_X, LINE, guide_note_rows(), C_INK);
     else gfx_draw_para(M_X, ny, _("Drag to scroll. Tap a set to read about it."), TXT, gfx_w() - 2 * M_X, LINE, guide_note_rows(), C_MUTED);
 
     box(s_gdone.x, s_gdone.y, s_gdone.w, BTN_H, C_ACCENT, C_ACCENT);
@@ -1180,17 +1347,27 @@ static void guide_tap(int x, int y)
     if (x >= s_gdone.x && x < s_gdone.x + s_gdone.w && y >= s_gdone.y && y < s_gdone.y + BTN_H) {
         s_guide = false;
         s_guide_sel = -1;
+        s_gach_sel = -1;
         return;
     }
     if (y < guide_top() || y >= guide_bottom()) return;
     const int cw = guide_col_w(), ly = y - guide_top() + s_gscroll;
+    for (int i = 0; i < A_CARDS; i++) {
+        const gpos_t *p = &s_apos[i];
+        const int aw = i ? cw : gfx_w() - 2 * M_X;
+        if (x < p->x - 10 || x >= p->x + aw + 10 || ly < p->y - 6 || ly >= p->y - 6 + p->h) continue;
+        s_gach_sel = i;
+        s_guide_sel = -1;
+        return;
+    }
     for (int i = 0; i < guide_item_count && i < G_ITEMS; i++) {
         const gpos_t *p = &s_gpos[i];
         if (x < p->x - 10 || x >= p->x + cw + 10 || ly < p->y - 6 || ly >= p->y - 6 + p->h) continue;
         s_guide_sel = i;
+        s_gach_sel = -1;
         const guide_item_t *g = &guide_items[i];
         const um_set_t t = um_classify(g->k, g->n);
-        if (um_set_is_limit(t)) celebrate(t, g->k, g->n, um_set_value(t, g->k, g->n));
+        if (um_set_is_limit(t)) celebrate(t, g->k, g->n, um_set_value(t, g->k, g->n), NULL, NULL);
         return;
     }
 }
@@ -1245,6 +1422,12 @@ static void after_move(bool was_done)
             ESP_LOGI(TAG, "game %u: won%s%s", (unsigned)s_g.game_no,
                      wins & (1u << UM_WIN_NO_POKER) ? ", no poker hands" : "", wins & (1u << UM_WIN_NO_PAIRS) ? ", no pairs" : "");
             save_ach(&s_ach);
+            /* each win celebrates with the last set cleared and the game's points */
+            const um_log_t *e = &s_g.log[(s_g.log_n - 1) % UM_LOG_N];
+            static char kick[64];
+            snprintf(kick, sizeof kick, _("WIN · GAME %d"), (int)s_g.game_no);
+            for (int w = 0; w < UM_WIN_N && e->t < UM_SET_COUNT; w++)
+                if (wins & (1u << w)) celebrate((um_set_t)e->t, e->k, e->n, (int)s_g.points, kick, WIN_NAMES[w]);
         }
     }
     s_sel.hand = 0;
@@ -1281,7 +1464,17 @@ static void press(int b)
                      flood ? "; The Yellow River Floods Again" : "");
             save_ach(&s_ach);
         }
-        if (um_set_is_limit(t)) celebrate(t, k, n, v);
+        /* the set's own celebration, then the flood's: each waits for a tap */
+        static char kick[96];
+        const int gn = (int)s_g.game_no;
+        if (aw == UM_AWARD_FIRST && um_set_is_limit(t)) snprintf(kick, sizeof kick, _("FIRST LIMIT HAND · GAME %d"), gn);
+        else if (aw == UM_AWARD_FIRST) snprintf(kick, sizeof kick, _("FIRST TIME · GAME %d"), gn);
+        else if (aw == UM_AWARD_FULL) snprintf(kick, sizeof kick, _("FULL · 3 OF 5 GAMES · GAME %d"), gn);
+        if (aw != UM_AWARD_NONE || um_set_is_limit(t)) celebrate(t, k, n, v, aw != UM_AWARD_NONE ? kick : NULL, NULL);
+        if (flood) {
+            snprintf(kick, sizeof kick, _("EVERY SET · GAME %d"), gn);
+            celebrate(t, k, n, UM_ACH_SETS, kick, FLOOD_NAME);
+        }
         break;
     }
     case B_MELD:
@@ -1475,7 +1668,7 @@ static void tap(int x, int y)
     {
         int sx0, sy0, sw, sh;
         sets_rect(&sx0, &sy0, &sw, &sh);
-        if (x >= sx0 && x < sx0 + sw && y >= sy0 && y < sy0 + sh) { s_guide = true; s_guide_sel = -1; s_hint_until = 0; s_gtouch.ignore = true; return; }
+        if (x >= sx0 && x < sx0 + sw && y >= sy0 && y < sy0 + sh) { s_guide = true; s_guide_sel = -1; s_gach_sel = -1; s_hint_until = 0; s_gtouch.ignore = true; return; }
     }
     {
         int gx, gy, gw, gh;
