@@ -298,7 +298,19 @@ const NUM = ['一','二','三','四','五','六','七','八','九'];
 const HON = ['東','南','西','北','中','發',''];
 const HON_NAMES = ['East wind','South wind','West wind','North wind','Red dragon','Green dragon','White dragon'];
 const SUITS = [['Character','Characters'],['Dot','Dots'],['Bamboo','Bamboo']];
-const rand = n => Math.floor(Math.random() * n);
+// Deals come from a 32-bit seed through xorshift32, the same generator and
+// the same calls in the same order as the Tab5's deal() (m5tab5/core), so a
+// seed is the same deal on both, and a replay code need only carry the seed.
+let rngState = 0x9E3779B9;
+const rngNext = () => {
+  let x = rngState;
+  x ^= x << 13; x >>>= 0; x ^= x >>> 17; x ^= x << 5; x >>>= 0;
+  return (rngState = x);
+};
+const rand = n => Math.floor(rngNext() * n / 4294967296);    // floor(random * n); exact: x * n < 2^53
+const randomSeed = () => {
+  try { return crypto.getRandomValues(new Uint32Array(1))[0]; } catch (e) { return Math.floor(Math.random() * 4294967296) >>> 0; }
+};
 const shuffle = a => { for (let i = a.length - 1; i > 0; i--) { const j = rand(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const isHonor = k => k >= 27;
 function kindName(k) {
@@ -386,10 +398,12 @@ function partSuit(base) {
     else { const n = { pung: 3, kong: 4, pair: 2 }[o]; c[r] -= n; out.push(Array(n).fill(base + r)); }
   }
 }
-function deal() {
+function deal(seed) {
+  rngState = (seed >>> 0) || 0x9E3779B9;    // 0 would stick at 0
   const plan = [];
   for (let h = 27; h < 34; h++) {
-    if (Math.random() < .4) plan.push([h,h,h,h]); else plan.push([h,h], [h,h]);
+    // 40%: the C version compares with 0.4 * 2^32 truncated to an integer
+    if (rngNext() < 1717986918) plan.push([h,h,h,h]); else plan.push([h,h], [h,h]);
   }
   for (let s = 0; s < 3; s++) { let res = null; while (!res) res = partSuit(s * 9); plan.push(...res); }
   shuffle(plan);
@@ -489,9 +503,10 @@ function setValue(t, kinds) {
   return (t === 'pung' || t === 'kong') && isEdge(kinds[0]) ? v * 2 : v;
 }
 const hasBonus = (t, kinds) => POKER.has(t) && tradValue(kinds) !== null;
-function newGame() {
-  const wall = deal();
-  S = { wall, discards: [], hand: wall.splice(0, HAND), melds: [], log: [], score: 0, points: 0, done: false };
+function newGame(seed) {
+  seed = seed === undefined ? randomSeed() : seed >>> 0;
+  const wall = deal(seed);
+  S = { seed, wall, discards: [], hand: wall.splice(0, HAND), melds: [], log: [], score: 0, points: 0, done: false };
   undo = []; sel.clear(); hintKeys.clear(); fresh = new Set(S.hand.map((_, i) => 'h' + i));
   commit();
 }

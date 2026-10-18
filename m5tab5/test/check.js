@@ -7,6 +7,7 @@
 //   classify   tens of thousands of tile groups: same set, same points
 //   play       random games, move by move: same table, melds, wall,
 //              discard pile, points, penalty, hint and warnings
+//   deal       the walls dealt from 400 seeds, C and web, tile for tile
 //   guide      main/guide.c against the web version's GUIDE: sections,
 //              names, notes, tiles, and the set and points each makes
 //
@@ -25,7 +26,7 @@ const html = fs.readFileSync(path.join(__dirname, '..', '..', 'index.html'), 'ut
 const js = html.split('<script>')[1].split('</script>')[0];
 const core = js.slice(js.indexOf('const HAND'), js.indexOf('/* ---------- render'));
 const make = new Function(`function render(){}; ${core};
-  return { setS: v => { S = v; }, get S() { return S; }, sel, clearSet, meldSet, addSix, discardSix, discardSet, sortHand,
+  return { deal, setS: v => { S = v; }, get S() { return S; }, sel, clearSet, meldSet, addSix, discardSix, discardSet, sortHand,
            findSet, penalty, classify, setValue, hasBonus, remaining, meldKeys };`);
 
 let failures = 0;
@@ -62,6 +63,23 @@ function classifyCheck() {
     if (out[i] !== want) fail(`classify [${ks}] C=${out[i]} JS=${want}`);
   });
   console.log(`classify: ${cases.length} groups compared`);
+}
+
+/* ---------- deal ---------- */
+// The same seed deals the same wall in both: seeds 0 (remapped) and 1..,
+// and some from the top of the range.
+function dealCheck() {
+  const G = make();
+  let n = 0;
+  for (const first of [0, 4294967000]) {
+    const out = execFileSync(UMTEST, ['deal', String(first), '200'], { maxBuffer: 1 << 26 }).toString().trim().split('\n');
+    out.forEach((line, i) => {
+      const seed = (first + i) >>> 0, js = G.deal(seed).join(' ');
+      if (line !== js) fail(`deal ${seed}\n   C: ${line.slice(0, 60)}...\n  JS: ${js.slice(0, 60)}...`);
+      n++;
+    });
+  }
+  console.log(`deal: ${n} seeds dealt the same`);
 }
 
 /* ---------- guide ---------- */
@@ -129,6 +147,7 @@ function playCheck() {
 }
 
 classifyCheck();
+dealCheck();
 playCheck();
 if (GUIDECHECK) guideCheck();
 if (failures) { console.error(`${failures} mismatches`); process.exit(1); }

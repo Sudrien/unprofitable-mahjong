@@ -4,6 +4,7 @@
  *
  *   umtest classify            one line of kinds per input line ->
  *                              "<set>|<points>|<bonus>" per line
+ *   umtest deal <seed> <n>     the walls dealt for n seeds from <seed>
  *   umtest play <seed> <games> random games: the wall, then each move
  *                              with the state after it
  *
@@ -188,8 +189,21 @@ static int valid_mode(void)
     return 0;
 }
 
+/* The walls um_new deals for seeds first .. first + n - 1, one per line,
+ * for check.js to compare with the web version's deal(seed). */
+static void deal_mode(uint32_t first, int n)
+{
+    static um_game_t g;
+    for (int i = 0; i < n; i++) {
+        um_new(&g, first + (uint32_t)i);
+        for (int j = 0; j < UM_TOTAL; j++) printf("%s%d", j ? " " : "", g.wall[j]);
+        printf("\n");
+    }
+}
+
 int main(int argc, char **argv)
 {
+    if (argc >= 4 && !strcmp(argv[1], "deal")) { deal_mode((uint32_t)strtoul(argv[2], NULL, 10), atoi(argv[3])); return 0; }
     if (argc >= 2 && !strcmp(argv[1], "valid")) return valid_mode();
     if (argc >= 2 && !strcmp(argv[1], "classify")) return classify_mode();
     if (argc >= 4 && !strcmp(argv[1], "play")) { play_mode((uint32_t)strtoul(argv[2], NULL, 10), atoi(argv[3])); return 0; }
