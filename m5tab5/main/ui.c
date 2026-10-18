@@ -68,7 +68,10 @@ static const theme_t *P = &THEMES[0];
 #define M_X        (24)
 #define TOP_Y      (8)
 #define HAND_LIFT  (12)
-#define BTN_H      (80)
+/* Buttons: 80 px tall in landscape, where they sit in one row; 64 in
+ * portrait, where three rows of them would otherwise crowd the status
+ * line. L is the layout, below; this only ever expands after it. */
+#define BTN_H      (L.land ? 80 : 64)
 /* Text scales. The panel is about 294 pixels to the inch, so Ark12 at
  * 24 px (scale 2) is under 6 pt: too small to read across a table.
  * Everything to read is 36 px (scale 3, about 9 pt); 24 px is kept for
@@ -640,10 +643,19 @@ static void draw_status(void)
     }
     /* The tiles chosen, then what they make, wrapped to as many rows as
      * reach the buttons. Landscape has room for the tile list only at
-     * 24 px; it repeats what the lifted tiles already show. */
-    const int w = gfx_w() - 2 * M_X, l1s = L.land ? SMALL : TXT;
+     * 24 px, on one line; it repeats what the lifted tiles already show.
+     * Portrait gives the list two lines at 36 px, since 720 px holds
+     * little of a big hand on one, and a third when a big one needs it
+     * and the line of what it makes still fits under it. */
+    const int w = gfx_w() - 2 * M_X;
     int y = status_top() + (L.land ? 6 : 2);
-    if (l1[0]) { gfx_draw_text(M_X, y, l1, l1s, w, C_INK); y += GFX_GLYPH_H(l1s) + 8; }
+    if (l1[0] && L.land) { gfx_draw_text(M_X, y, l1, SMALL, w, C_INK); y += GFX_GLYPH_H(SMALL) + 8; }
+    else if (l1[0]) {
+        int r1 = gfx_para_rows(l1, TXT, w);
+        if (r1 > 3) r1 = 3;
+        if (r1 == 3 && y + 3 * LINE + 4 + GFX_GLYPH_H(TXT) > L.btn_y - 16) r1 = 2;
+        y += gfx_draw_para(M_X, y, l1, TXT, w, LINE, r1, C_INK) * LINE + 4;
+    }
     int rows = (L.btn_y - 16 - y - GFX_GLYPH_H(TXT)) / LINE + 1;
     if (rows > 3) rows = 3;
     if (rows < 1) rows = 1;
