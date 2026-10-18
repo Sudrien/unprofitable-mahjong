@@ -107,11 +107,13 @@ Chinese), and the points counting up.
 ![Big Three Dragons](screenshots/limit-hand.png)
 
 The achievements are the web version's, kept on the board: each set's
-First and Full, the two wins, and The Yellow River Floods Again. Each
-plays the same celebration when it is earned, once, headed with what
-it is and the game number (games are counted on the board, one per
-deal); when two come at once, such as a last set and the win it
-finishes, they play one after the other. The Sets list opens with them:
+First and Full, the two wins, and The Yellow River Floods Again, each
+earned once, with the game number (games are counted on the board, one
+per deal). An ordinary set's First or Full is a banner over the rail
+for a few seconds -- a check or a star, the set, what it earned and its
+tiles -- that never stops play; limit hands, the wins and the flood play
+the full celebration, and when two of those come at once, such as a
+last set and the win it finishes, they play one after the other. The Sets list opens with them:
 how many sets have a First and how many are Full, the river rising
 toward all 40, and the wins, each with the game it was earned in; tap
 one for what it asks. Every set below is marked once cleared, a check
@@ -120,7 +122,7 @@ games underneath; the runs card shows each run length.
 
 ![The achievements, at the top of the Sets list](screenshots/achievements.png)
 
-![A pung's First](screenshots/first-time.png)
+![A pung's First, over the rail](screenshots/first-time.png)
 
 ## Languages
 

@@ -107,6 +107,16 @@ static um_game_t s_g;
 static um_sel_t s_sel;
 static uint32_t s_hint_mask;
 static int64_t s_hint_until, s_armed_until;
+/* A set's First or Full: a banner over the rail until `until`, then gone.
+ * Full screen is for limit hands, wins and the flood. */
+#define BANNER_US (2500000)
+static struct {
+    int64_t until;
+    um_set_t t;
+    bool full;
+    uint8_t n, k[UM_MAX_SEL];
+    char kick[96];
+} s_ban;
 static save_prefs_t s_prefs;
 static um_ach_t s_ach;          /* the achievements, saved whole whenever one changes */
 static um_game_t *s_undo;      /* UNDO_N snapshots, a ring, in PSRAM */
@@ -877,6 +887,8 @@ static void draw_guide(void);
 static void draw_share(void);
 static bool s_share;
 
+static void draw_banner(void);
+
 static void redraw(void)
 {
     if (s_guide) { draw_guide(); gfx_blit(0, gfx_h()); return; }
@@ -889,6 +901,7 @@ static void redraw(void)
     draw_hand();
     draw_status();
     draw_buttons();
+    if (esp_timer_get_time() < s_ban.until) draw_banner();
     if (s_menu) draw_menu();
     gfx_blit(0, gfx_h());
 }
@@ -1151,12 +1164,34 @@ static const char *const MARK_TICK[] = { "......#", ".....##", "#...##.", "##.##
 static const char *const MARK_STAR[] = { "...#...", "..###..", "#######", ".#####.", "..###..", ".##.##.", ".#...#." };
 #define MARK_PX  (4)
 #define MARK_W   (7 * MARK_PX + 12)     /* with the gap before the name */
-static void draw_mark(const char *const *rows, int nrows, int x, int y, uint16_t c)
+static void draw_mark_in(const char *const *rows, int nrows, int x, int y, int h, uint16_t c)
 {
-    y += (G_NAME_H - nrows * MARK_PX) / 2;
+    y += (h - nrows * MARK_PX) / 2;
     for (int r = 0; r < nrows; r++)
         for (int col = 0; rows[r][col]; col++)
             if (rows[r][col] == '#') gfx_fill_rect(x + col * MARK_PX, y + r * MARK_PX, MARK_PX, MARK_PX, c);
+}
+static void draw_mark(const char *const *rows, int nrows, int x, int y, uint16_t c) { draw_mark_in(rows, nrows, x, y, G_NAME_H, c); }
+
+/* The banner, over the rail's band: the mark, the set's name, what it
+ * earned, and its tiles at the rail's size on the right. One line, so
+ * the table below never moves. */
+static void draw_banner(void)
+{
+    const int x0 = M_X / 2, w = gfx_w() - M_X, y0 = L.rail_y - 6, h = L.table_y - 6 - y0;
+    box(x0, y0, w, h, s_ban.full ? C_KICK : C_GREEN, C_RAISED);
+    int x = x0 + 14;
+    if (s_ban.full) draw_mark_in(MARK_STAR, 7, x, y0, h, C_KICK);
+    else draw_mark_in(MARK_TICK, 6, x, y0, h, C_GREEN);
+    x += MARK_W;
+    const int tw = s_ban.n * (tilefaces_S.w + 1), tx = x0 + w - 14 - tw;
+    static char nmb[96];
+    const char *nm = heading(set_name(s_ban.t), nmb, sizeof nmb, i18n_lang() == I18N_EN);
+    const int nw = gfx_text_w(nm, TXT);
+    gfx_draw_text(x, y0 + (h - GFX_GLYPH_H(TXT)) / 2, nm, TXT, tx - 16 - x, C_INK);
+    x += nw + 20;
+    if (x < tx - 40) gfx_draw_text(x, y0 + (h - GFX_GLYPH_H(SMALL)) / 2, s_ban.kick, SMALL, tx - 16 - x, s_ban.full ? C_KICK : C_GREEN);
+    for (int i = 0; i < s_ban.n; i++) tiledraw_tile(&tilefaces_S, s_ban.k[i], tx + i * (tilefaces_S.w + 1), y0 + (h - tilefaces_S.h) / 2, TILEDRAW_EDGE_S);
 }
 
 #define G_WHEN_H   (GFX_GLYPH_H(SMALL) + 10)  /* the line under a set's tiles: the games, or the run lengths */
@@ -1440,6 +1475,7 @@ static void new_deal(void)
 {
     um_new(&s_g, esp_random());
     um_ach_new_game(&s_ach, &s_g);
+    s_ban.until = 0;
     save_ach(&s_ach);
     s_undo_n = 0;
     after_move(false);
@@ -1470,7 +1506,17 @@ static void press(int b)
         if (aw == UM_AWARD_FIRST && um_set_is_limit(t)) snprintf(kick, sizeof kick, _("FIRST LIMIT HAND · GAME %d"), gn);
         else if (aw == UM_AWARD_FIRST) snprintf(kick, sizeof kick, _("FIRST TIME · GAME %d"), gn);
         else if (aw == UM_AWARD_FULL) snprintf(kick, sizeof kick, _("FULL · 3 OF 5 GAMES · GAME %d"), gn);
-        if (aw != UM_AWARD_NONE || um_set_is_limit(t)) celebrate(t, k, n, v, aw != UM_AWARD_NONE ? kick : NULL, NULL);
+        if (um_set_is_limit(t)) celebrate(t, k, n, v, aw != UM_AWARD_NONE ? kick : NULL, NULL);
+        else if (aw != UM_AWARD_NONE) {
+            /* a new one replaces any still showing */
+            s_ban.t = t;
+            s_ban.full = aw == UM_AWARD_FULL;
+            s_ban.n = (uint8_t)n;
+            memcpy(s_ban.k, k, (size_t)n);
+            for (int i = 1; i < n; i++) for (int j = i; j > 0 && s_ban.k[j] < s_ban.k[j - 1]; j--) { const uint8_t x = s_ban.k[j]; s_ban.k[j] = s_ban.k[j - 1]; s_ban.k[j - 1] = x; }
+            snprintf(s_ban.kick, sizeof s_ban.kick, "%s", kick);
+            s_ban.until = esp_timer_get_time() + BANNER_US;
+        }
         if (flood) {
             snprintf(kick, sizeof kick, _("EVERY SET · GAME %d"), gn);
             celebrate(t, k, n, UM_ACH_SETS, kick, FLOOD_NAME);
@@ -1726,7 +1772,7 @@ void ui_run(void)
     else new_deal();
 
     bool was_down = false, dirty = true;
-    int64_t hint_seen = 0, armed_seen = 0;
+    int64_t hint_seen = 0, armed_seen = 0, ban_seen = 0;
     for (;;) {
         int x = 0, y = 0;
         const bool down = touch_get(&x, &y);
@@ -1743,11 +1789,11 @@ void ui_run(void)
             dirty = true;
         }
         was_down = down;
-        /* the hint glow and the armed New deal (in the panel) time out on their own */
+        /* the hint glow, the armed New deal (in the panel) and the banner time out on their own */
         const int64_t now = esp_timer_get_time();
-        const bool hint_on = now < s_hint_until, armed_on = now < s_armed_until;
-        if (hint_on != (hint_seen != 0) || armed_on != (armed_seen != 0)) dirty = true;
-        hint_seen = hint_on; armed_seen = armed_on;
+        const bool hint_on = now < s_hint_until, armed_on = now < s_armed_until, ban_on = now < s_ban.until;
+        if (hint_on != (hint_seen != 0) || armed_on != (armed_seen != 0) || ban_on != (ban_seen != 0)) dirty = true;
+        hint_seen = hint_on; armed_seen = armed_on; ban_seen = ban_on;
         if (dirty) { redraw(); dirty = false; }
         vTaskDelay(pdMS_TO_TICKS(15));
     }
