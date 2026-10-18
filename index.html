@@ -213,6 +213,21 @@ dialog.share .buttons { display: flex; gap: 8px; justify-content: flex-end; marg
   animation: cel-in .25s ease-out;
 }
 .celebrate.out { animation: cel-out .22s ease-in forwards; }
+/* a set's First or Full: a strip at the top that leaves on its own and never blocks a tap */
+.banner { position: fixed; z-index: 45; top: max(10px, env(safe-area-inset-top, 0px)); left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 10px; max-width: min(94vw, 640px); padding: 8px 14px; pointer-events: none;
+  background: var(--raised); border: 1px solid var(--line); border-radius: 10px; box-shadow: 0 6px 20px rgba(0, 0, 0, .14);
+  animation: ban-in .3s cubic-bezier(.2, .9, .3, 1.2); }
+.banner.out { animation: ban-out .25s ease-in forwards; }
+.banner .mark { font-weight: 700; font-size: 1.1rem; color: var(--t-green); }
+.banner .mark.full { color: var(--t-red); }
+.banner .what { display: grid; gap: 1px; min-width: 0; }
+.banner .what small { font-size: .68rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); font-weight: 600; }
+.banner .what b { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.banner .row { display: flex; gap: 2px; flex: none; }
+.banner .tile.mini { width: 20px; }
+@keyframes ban-in { from { transform: translate(-50%, -140%); opacity: 0; } }
+@keyframes ban-out { to { transform: translate(-50%, -140%); opacity: 0; } }
 .cel-panel { position: relative; display: grid; justify-items: center; gap: 14px; text-align: center; max-width: 100%; }
 /* a soft ring opening behind the hand as its last set lands */
 .cel-panel::before { content: ""; position: absolute; left: 50%; top: 42%; width: 70vmin; height: 70vmin; margin: -35vmin 0 0 -35vmin; border-radius: 50%; z-index: -1; pointer-events: none;
@@ -246,7 +261,7 @@ dialog.share .buttons { display: flex; gap: 8px; justify-content: flex-end; marg
 @keyframes rise { from { transform: translateY(14px) scale(.96); opacity: 0; } }
 @keyframes shimmer { to { background-position: -130% 0; } }
 @media (prefers-reduced-motion: reduce) {
-  .celebrate, .celebrate.out, .cel-kicker, .cel-tiles .tile, .cel-tiles .tile::after, .cel-name, .cel-pts, .cel-tap, .cel-cap, .cel-alt, .cel-panel::before { animation: none; }
+  .banner, .banner.out, .celebrate, .celebrate.out, .cel-kicker, .cel-tiles .tile, .cel-tiles .tile::after, .cel-name, .cel-pts, .cel-tap, .cel-cap, .cel-alt, .cel-panel::before { animation: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .tile, .bar i { transition: none; }
@@ -307,6 +322,7 @@ dialog.share .buttons { display: flex; gap: 8px; justify-content: flex-end; marg
   </section>
 
   <div class="celebrate" id="celebrate" hidden role="dialog" aria-modal="true"></div>
+  <div class="banner" id="banner" hidden role="status" aria-live="polite"></div>
 
   <dialog class="share" id="shareDlg">
     <h2><span class="t" lang="en">Replay code</span><span class="t" lang="ja">リプレイコード</span><span class="t" lang="zh-Hans">回放码</span></h2>
@@ -793,7 +809,8 @@ function clearSet() {
   S.log.push({ t, k: kinds.sort((a, b) => a - b), v });
   if (S.moves) S.moves.push({ o: 'C', k: tableKinds, m: [...gone].sort((a, b) => a - b) });
   const award = typeof setAward === 'function' && !replaying ? setAward(t) : null;
-  if ((award || LIMIT.has(t)) && typeof celebrate === 'function' && !replaying) celebrate(t, kinds, v, award);
+  if (LIMIT.has(t) && typeof celebrate === 'function' && !replaying) celebrate(t, kinds, v, award);
+  else if (award && typeof banner === 'function') banner(t, kinds, award);
   sel.clear(); hintKeys.clear(); finishCheck(); commit();
 }
 // Set a basic set aside as a meld: no points yet, and it no longer counts toward the 24-tile limit.
@@ -1404,7 +1421,7 @@ function setAward(t) {
   let award = null;
   if (!firsts.has(t)) {
     firsts.set(t, record()); writeMap(FIRSTS_KEY, firsts);
-    award = { kicker: (LIMIT.has(t) ? L('First limit hand', '初めての役満', '首次大满贯') : L('First time', '初めての役', '首次达成')) + ' · ' + gameNo(g) };
+    award = { kind: 'first', kicker: (LIMIT.has(t) ? L('First limit hand', '初めての役満', '首次大满贯') : L('First time', '初めての役', '首次达成')) + ' · ' + gameNo(g) };
     if (!flood && FIRSTS.every(x => firsts.has(x))) {
       flood = record();
       try { localStorage.setItem(FLOOD_KEY, JSON.stringify(flood)); } catch (e) {}
@@ -1414,7 +1431,7 @@ function setAward(t) {
     }
   } else if (!fulls.has(t) && gs.length >= FULL_OF) {
     fulls.set(t, record()); writeMap(FULL_KEY, fulls);
-    award = { kicker: L(`Full · ${FULL_OF} of ${FULL_IN} games`, `フル · ${FULL_IN}局中${FULL_OF}局`, `全满 · ${FULL_IN}局中${FULL_OF}局`) + ' · ' + gameNo(g) };
+    award = { kind: 'full', kicker: L(`Full · ${FULL_OF} of ${FULL_IN} games`, `フル · ${FULL_IN}局中${FULL_OF}局`, `全满 · ${FULL_IN}局中${FULL_OF}局`) + ' · ' + gameNo(g) };
   }
   if (award) buildGuide();
   return award;
@@ -1445,6 +1462,24 @@ function winAwards() {
     celebrate(last.t, last.k, S.points, { kicker: L('Win', '完全消去', '清完') + ' · ' + gameNo(g), name });
   }
   buildGuide();
+}
+
+/* ---------- a set's First or Full: the banner ---------- */
+// Full screen is for limit hands, wins and the flood; an ordinary set's
+// First or Full is a strip at the top for a few seconds, so a first game
+// full of Firsts is not stopped at every set. A new one replaces it.
+let banTimer = null;
+function banner(t, kinds, award) {
+  const el = $('banner');
+  clearTimeout(banTimer);
+  el.classList.remove('out');
+  const full = award.kind === 'full';
+  el.innerHTML = `<span class="mark${full ? ' full' : ''}" aria-hidden="true">${full ? '★' : '✓'}</span>` +
+    `<span class="what"><small>${award.kicker}</small><b>${LA(setNameArr(t).map((x, i) => i ? x : t.startsWith('run of ') ? 'Run of ' + t.slice(7) : title(x)))}</b></span>` +
+    `<span class="row" aria-hidden="true">${minis(kinds.slice().sort((a, b) => a - b))}</span>`;
+  el.hidden = false;
+  el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';   // slide in again when one replaces another
+  banTimer = setTimeout(() => { el.classList.add('out'); banTimer = setTimeout(() => { el.hidden = true; el.classList.remove('out'); }, 250); }, 2500);
 }
 
 /* ---------- limit hand celebration ---------- */

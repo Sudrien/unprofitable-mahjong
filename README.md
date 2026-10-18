@@ -31,9 +31,9 @@ After one visit online it plays offline, fonts included. It can also be installe
 
 The in-game **Sets and scores** guide shows every set with example tiles and its points. Tap a limit-hand card to preview its animation.
 
-**Firsts:** the first time you clear each kind of set (40 in all, each run length counting on its own), it plays the limit-hand celebration, marked *First time* with the game number. Games are counted on the device, one per deal. Each set celebrates once per device. The guide ticks the sets you've cleared, notes the game each was first cleared in, and counts how many you have. Replays never count, and don't add to the game count.
+**Firsts:** the first time you clear each kind of set (40 in all, each run length counting on its own), a banner slides in at the top for a few seconds, marked *First time* with the game number; it never stops play. A limit hand's First plays its full celebration instead, marked *First limit hand*. Games are counted on the device, one per deal. Each set celebrates once per device. The guide ticks the sets you've cleared, notes the game each was first cleared in, and counts how many you have. Replays never count, and don't add to the game count.
 
-**More achievements**, each also celebrated once per device:
+**More achievements**, each earned once per device. Full shows the same banner; the wins and the flood play the full celebration:
 
 - **Full** (★ in the guide): clear a set in 3 of any 5 games in a row. Each set, and each run length, has its own.
 - **Win with no poker hands:** clear all 136 without two pair, a flush, a straight, a full house or a royal flush.
@@ -41,7 +41,7 @@ The in-game **Sets and scores** guide shows every set with example tiles and its
 
 - **The Yellow River Floods Again:** clear every set at least once, all 40 Firsts. Its card at the top of the guide fills like a rising river as you go.
 
-When two come at once, such as the last set's celebration and a win, they play one after the other. Each achievement records the game it was earned in and that game's seed. The guide shows the game number; the seed is kept in the browser, not shown.
+When two full celebrations come at once, such as a limit hand and a win, they play one after the other. Each achievement records the game it was earned in and that game's seed. The guide shows the game number; the seed is kept in the browser, not shown.
 
 ## Replay codes
 
