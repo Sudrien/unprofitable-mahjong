@@ -162,6 +162,12 @@ def write_c(palette, ncol, data, commit):
  * from index.html ({commit}), rendered in Chromium with Noto Serif CJK
  * Bold for the characters.
  *
+ * The code and the drawings are MIT. The characters (the numbers, 萬,
+ * the winds and two of the dragons) are pictures of Noto Serif CJK
+ * glyphs: (c) 2017 Adobe, https://github.com/notofonts/noto-cjk, under
+ * the SIL Open Font License 1.1. The OFL covers the font, not what is
+ * drawn with it; this says where they come from.
+ *
  * One RGB565 palette (index 0 is transparent: the rounded corners) and,
  * per face, run-length rows of (count, index) byte pairs that never
  * cross a row. {total} bytes of runs for all three sizes.

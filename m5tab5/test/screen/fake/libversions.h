@@ -1,6 +1,8 @@
 /* The screen test's libversions.h: what cmake/libversions.cmake writes
  * for a board build, with this checkout's components, written by hand
- * since the screen test has no CMake configure step. */
+ * since the screen test has no CMake configure step.
+ *
+ * SPDX-License-Identifier: MIT */
 #pragma once
 #define LIBVERSIONS_COUNT (14)
 /* module, checkout, licence */

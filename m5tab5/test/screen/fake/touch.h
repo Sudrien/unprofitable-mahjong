@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* screentest's touch: scripted taps, see screentest.c */
 #pragma once
 #include <stdbool.h>

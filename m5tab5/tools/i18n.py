@@ -273,6 +273,7 @@ HEADER = """\
 # ~ means not translated: the board shows the key. Then run
 # ./tools/i18n.py compile and commit main/i18n_tab.c with this file.
 # Format: tools/i18n.py's docstring.
+# SPDX-License-Identifier: MIT
 """
 
 

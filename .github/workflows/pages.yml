@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 name: Publish the web version
 
 # Publishes the site to GitHub Pages, with the commit it was built from

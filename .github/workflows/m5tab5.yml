@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: MIT
 name: Build the M5Stack Tab5 firmware
 
 # The same shape as defeatist-music-player-for-m5tab5's main.yml: a tag

@@ -1,4 +1,5 @@
 // Strategy bots. Usage: node sim/strategies.js index.html [games] [min set value] [melds|nomelds] [rows|summary] [mode]
+// SPDX-License-Identifier: MIT
 // Modes: big, noadd, hybrid<wall>, carefulmelds, stash<n>, wind, honor
 // "None left" bot: only clears sets that keep every remaining tile (shown + unseen) groupable into sets.
 const fs = require('fs');

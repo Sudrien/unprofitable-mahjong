@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* test/fake: an in-memory NVS, see savecheck.c. */
 #pragma once
 #include "esp_log.h"

@@ -65,7 +65,7 @@ Designed by Sudrien. Built with [Claude](https://claude.ai) (Anthropic's Claude 
 
 ## Licence
 
-Unprofitable Mahjong is MIT-licensed; see [LICENSE](LICENSE). That covers the page, the strategy bots, the Tab5 firmware's own code, the tile drawings and the icons.
+Unprofitable Mahjong is MIT-licensed; see [LICENSE](LICENSE). That covers the page, the strategy bots, the Tab5 firmware's own code, the tile drawings and the icons. Every source file says so in its header, and a file that carries someone else's work also names it and its licence there.
 
 It uses other people's work under their own licences:
 
@@ -76,5 +76,7 @@ It uses other people's work under their own licences:
 | [feckless-graphics-handler-for-m5tab5](https://github.com/Sudrien/feckless-graphics-handler-for-m5tab5), [feckless-drivers-for-m5tab5](https://github.com/Sudrien/feckless-drivers-for-m5tab5) | Tab5 firmware, fetched when it's built | MIT |
 | [ESP-IDF](https://github.com/espressif/esp-idf) and the Espressif components it pulls in (touch controllers, USB host) | Tab5 firmware, fetched when it's built | Apache 2.0 |
 | [QR Code generator library](https://github.com/nayuki/QR-Code-generator) (C), © Project Nayuki | The Tab5's replay QR code, vendored in `m5tab5/components/qrcodegen` | MIT |
+| [Noto Serif CJK](https://github.com/notofonts/noto-cjk), © 2017 Adobe | The Tab5's tile faces (`m5tab5/main/tilefaces.c`): the characters are pictures of its glyphs, rendered by `m5tab5/tools/gen_tiles.py`. The font itself is not included | SIL Open Font License 1.1 |
+| [MurmurHash2](https://github.com/aappleby/smhasher), Austin Appleby | The replay codes' proof of work, in `index.html` and `m5tab5/core/umreplay.c` | Public domain |
 
 The firmware binaries on the releases page contain the Tab5 entries in this table, so anyone redistributing them should carry those licences too. Each project's repository has its licence text.

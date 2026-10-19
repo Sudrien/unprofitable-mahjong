@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: MIT */
 /* test/fake: just enough of ESP-IDF for main/save.c on the host. */
 #pragma once
 #include <stddef.h>

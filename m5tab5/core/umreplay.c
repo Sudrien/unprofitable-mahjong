@@ -12,7 +12,9 @@ static const char B64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0
 static const char OPS[] = "ACMKDX";     /* the web version's OPS, in its order */
 
 /* MurmurHash2 (murmur2): defeatist's, word for word, including the
- * memcpy load, since the payload has no alignment to promise. */
+ * memcpy load, since the payload has no alignment to promise.
+ * MurmurHash2 is Austin Appleby's, released into the public domain
+ * (https://github.com/aappleby/smhasher). */
 uint32_t um_murmur2(const void *key, size_t len)
 {
     const uint32_t m = 0x5bd1e995u;

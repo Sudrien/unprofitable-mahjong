@@ -12,6 +12,8 @@
 //   - the full proof of work (REPLAY_WORK bits) is found and checked.
 //
 // Usage: node test/replaycheck.js [index.html] [games]
+//
+// SPDX-License-Identifier: MIT
 'use strict';
 const fs = require('fs');
 const path = require('path');

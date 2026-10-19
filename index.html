@@ -1,4 +1,13 @@
 <!doctype html>
+<!--
+  Unprofitable Mahjong. Copyright (c) 2026 Sudrien; see LICENSE.
+  SPDX-License-Identifier: MIT
+
+  Others' work used here, under its own terms:
+  - Figtree, Shippori Mincho and Noto Serif SC, loaded from Google Fonts
+    and not part of this file: SIL Open Font License 1.1.
+  - MurmurHash2 (murmur2, below): Austin Appleby's, public domain.
+-->
 <html lang="en">
 <head>
 <meta charset="utf-8">
@@ -995,6 +1004,7 @@ const REPLAY_VER = 1, REPLAY_WORK = 20, OPS = ['A', 'C', 'M', 'K', 'D', 'X'];
 
 // MurmurHash2, 32-bit: defeatist-music-player-for-m5tab5's
 // albumart_cover_hash, seed and all, over the payload's ASCII bytes.
+// MurmurHash2 is Austin Appleby's, released into the public domain.
 function murmur2(str) {
   const m = 0x5bd1e995;
   let len = str.length, h = (0x9747b28c ^ len) >>> 0, i = 0;

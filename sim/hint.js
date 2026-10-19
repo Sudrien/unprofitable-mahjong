@@ -1,4 +1,5 @@
 // Follows Hint every turn. Usage: node sim/hint.js index.html [games]
+// SPDX-License-Identifier: MIT
 const fs = require('fs');
 const html = fs.readFileSync(process.argv[2], 'utf8');
 const js = html.split('<script>')[1].split('</script>')[0];
