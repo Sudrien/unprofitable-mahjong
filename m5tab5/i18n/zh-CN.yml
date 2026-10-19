@@ -120,6 +120,8 @@ zh-CN:
     "Big Three Dragons": "大三元"
     # guide.c
     "Bigger sets": "大组合"
+    # ui.c
+    "Checkout": "检出版本"
     # guide.c
     "Chow": "顺子"
     # guide.c
@@ -219,6 +221,10 @@ zh-CN:
     # ui.c
     "Language": "语言"
     # ui.c
+    "Licence": "许可证"
+    # ui.c
+    "Licences": "许可证"
+    # ui.c
     "Light": "浅色"
     # guide.c
     "Limit hands · tap one to see its animation": "大满贯牌型 · 点一下看动画"
@@ -252,6 +258,8 @@ zh-CN:
     "Mixed double chow": "喜相逢"
     # guide.c
     "Mixed triple chow": "三色三同顺"
+    # ui.c
+    "Module": "模块"
     # ui.c
     "New deal": "重新发牌"
     # guide.c, ui.c

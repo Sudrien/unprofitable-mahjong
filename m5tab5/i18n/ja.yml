@@ -120,6 +120,8 @@ ja:
     "Big Three Dragons": "大三元"
     # guide.c
     "Bigger sets": "大きな組"
+    # ui.c
+    "Checkout": "チェックアウト"
     # guide.c
     "Chow": "順子"
     # guide.c
@@ -219,6 +221,10 @@ ja:
     # ui.c
     "Language": "言語"
     # ui.c
+    "Licence": "ライセンス"
+    # ui.c
+    "Licences": "ライセンス"
+    # ui.c
     "Light": "ライト"
     # guide.c
     "Limit hands · tap one to see its animation": "役満 · タップで演出を見る"
@@ -252,6 +258,8 @@ ja:
     "Mixed double chow": "二色同順"
     # guide.c
     "Mixed triple chow": "三色同順"
+    # ui.c
+    "Module": "モジュール"
     # ui.c
     "New deal": "新しく配る"
     # guide.c, ui.c

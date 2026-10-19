@@ -32,6 +32,7 @@
 #include "guide.h"
 #include "qrcodegen.h"
 #include "tiledraw.h"
+#include "libversions.h"     /* generated: cmake/libversions.cmake */
 #include "umach.h"
 #include "umcore.h"
 #include "umreplay.h"
@@ -769,12 +770,13 @@ static void draw_buttons(void)
 /* ------------------------------------------------------------------ */
 /* Settings: the gear's panel                                          */
 
-/* Four rows of choices, then New deal and Done. Each choice takes
- * effect as it is tapped -- the panel turns with the screen, recolours
- * with the theme and changes language under the finger -- so there is
- * nothing to confirm and Done only closes it. New deal asks for a
- * second tap, as it did as a button. In landscape the four sit in two
- * columns, since 720 px does not hold them stacked at 36 px text. */
+/* The whole screen: New deal and Share, then five rows of choices, Done,
+ * and the licences. Each choice takes effect as it is tapped -- the
+ * panel turns with the screen, recolours with the theme and changes
+ * language under the finger -- so there is nothing to confirm and Done
+ * only closes it. New deal asks for a second tap, as it did as a button.
+ * In landscape the choices sit in two columns, since 720 px does not
+ * hold them stacked at 36 px text. */
 enum { G_ROT, G_THEME, G_LANG, G_AUTO, G_DSET, G_NEW, G_SHARE, G_DONE };
 #define G_SECTIONS (5)
 #define CHIP_H     (72)
@@ -813,21 +815,49 @@ static chip_t *add_chip(int group, int value, const char *label, int min_w)
     return c;
 }
 
+/* The settings fill the screen: New deal and Share at the top, then the
+ * settings under their heading, then Done, then the licences of what
+ * this firmware was built from (libversions.h, generated when the build
+ * is configured). Taller than the screen in landscape, so it scrolls
+ * under a finger like the Sets list, and a tap is a press and release
+ * that did not move. Every position here is in the panel; s_mscroll
+ * moves it up the screen. */
+#define M_PAD     (28)
+#define M_GAP     (12)
+#define LIC_LINE  (GFX_GLYPH_H(SMALL) + 8)
+static int s_mscroll, s_menu_h, s_lic_y, s_lic_cx[3];
+static bool s_lic_two;        /* too narrow for three columns: each entry on two lines */
+static struct { bool down, drag, ignore; int x0, y0, scroll0; } s_mtouch;   /* ignore: the press that opened it */
+static const char *const LIC_HEADS[3] = { N_("Module"), N_("Checkout"), N_("Licence") };
+
+static int menu_max_scroll(void) { const int m = s_menu_h - gfx_h(); return m > 0 ? m : 0; }
+
 static void layout_menu(void)
 {
-    const int pw = gfx_w() - 2 * M_X, pad = 28, gap = 12;
-    const int cols = L.land ? 2 : 1, iw = pw - 2 * pad, cw = (iw - (cols - 1) * 32) / cols;
-    s_title_y = 20;
+    const int pw = gfx_w() - 2 * M_X;
+    const int cols = L.land ? 2 : 1, iw = pw - 2 * M_PAD, cw = (iw - (cols - 1) * 32) / cols;
+    s_chip_n = 0;
+    int y = 20;
+
+    /* the game's two actions, first */
+    const bool armed = esp_timer_get_time() < s_armed_until;
+    chip_t *nd = add_chip(G_NEW, 0, armed ? _("Tap again to deal") : _("New deal"), 180);
+    nd->x = M_PAD; nd->y = y;
+    chip_t *sh = add_chip(G_SHARE, 0, _("Share"), 150);
+    sh->x = nd->x + nd->w + M_GAP; sh->y = y;
+    y += CHIP_H + 28;
+
+    /* the settings, under their heading */
+    s_title_y = y;
     const int top = s_title_y + GFX_GLYPH_H(TXT) + 28;
     int col_y[2] = { top, top };
-    s_chip_n = 0;
     for (int g = 0; g < G_SECTIONS; g++) {
         /* landscape: orientation and theme on the left, the rest on the right */
-        const int col = cols == 2 ? (g < G_LANG ? 0 : 1) : 0, x0 = pad + col * (cw + 32);
-        int y = col_y[col];
+        const int col = cols == 2 ? (g < G_LANG ? 0 : 1) : 0, x0 = M_PAD + col * (cw + 32);
+        int gy = col_y[col];
         s_head_x[g] = x0;
-        s_head_y[g] = y;
-        y += GFX_GLYPH_H(TXT) + 10;
+        s_head_y[g] = gy;
+        gy += GFX_GLYPH_H(TXT) + 10;
         const int n = g == G_ROT ? 4 : g == G_LANG ? I18N_LANG_COUNT : 2;
         int cx = x0;
         for (int i = 0; i < n; i++) {
@@ -836,41 +866,58 @@ static void layout_menu(void)
                       : g == G_THEME ? add_chip(g, i, _(THEME_NAMES[i]), 128)
                       : g == G_AUTO || g == G_DSET ? add_chip(g, i, _(AUTO_NAMES[i]), 128)
                       : add_chip(g, LANG_ORDER[i], i18n_lang_name((i18n_lang_t)LANG_ORDER[i]), 128);
-            if (cx > x0 && cx + c->w > x0 + cw) { cx = x0; y += CHIP_H + gap; }
-            c->x = cx; c->y = y;
-            cx += c->w + gap;
+            if (cx > x0 && cx + c->w > x0 + cw) { cx = x0; gy += CHIP_H + M_GAP; }
+            c->x = cx; c->y = gy;
+            cx += c->w + M_GAP;
         }
-        col_y[col] = y + CHIP_H + 26;
+        col_y[col] = gy + CHIP_H + 26;
     }
-    int y = (col_y[0] > col_y[1] ? col_y[0] : col_y[1]) + 4;
-    const bool armed = esp_timer_get_time() < s_armed_until;
-    chip_t *nd = add_chip(G_NEW, 0, armed ? _("Tap again to deal") : _("New deal"), 180);
-    nd->x = pad; nd->y = y;
-    chip_t *sh = add_chip(G_SHARE, 0, _("Share"), 150);
-    sh->x = nd->x + nd->w + gap; sh->y = y;
+    y = (col_y[0] > col_y[1] ? col_y[0] : col_y[1]) + 4;
+
+    /* Done, closing the settings */
     chip_t *d = add_chip(G_DONE, 0, _("Done"), 200);
-    d->x = pw - pad - d->w; d->y = y;
-    if (sh->x + sh->w + gap > d->x) { d->y += CHIP_H + gap; y += CHIP_H + gap; }
-    y += CHIP_H + 24;
-    /* centred across, from a fixed top: a choice that rewraps a row (a
-     * language, a turn) moves what is below it, never what is above */
-    s_pan_w = pw; s_pan_h = y;
+    d->x = pw - M_PAD - d->w; d->y = y;
+    y += CHIP_H + 40;
+
+    /* the licences: module, checkout and licence in columns, each as wide
+     * as its widest entry */
+    s_lic_y = y;
+    int w[3] = { 0, 0, 0 };
+    for (int c = 0; c < 3; c++) w[c] = gfx_text_w(_(LIC_HEADS[c]), SMALL);
+    for (int i = 0; i < LIBVERSIONS_COUNT; i++)
+        for (int c = 0; c < 3; c++) { const int tw = gfx_text_w(k_libversions[i][c], SMALL); if (tw > w[c]) w[c] = tw; }
+    s_lic_cx[0] = M_PAD;
+    s_lic_cx[1] = s_lic_cx[0] + w[0] + 28;
+    s_lic_cx[2] = s_lic_cx[1] + w[1] + 28;
+    /* in portrait the three do not fit across: the module on one line,
+     * its checkout and licence indented under it */
+    s_lic_two = s_lic_cx[2] + w[2] > pw - M_PAD;
+    if (s_lic_two) { s_lic_cx[1] = M_PAD + 32; s_lic_cx[2] = s_lic_cx[1] + w[1] + 28; }
+    y += GFX_GLYPH_H(TXT) + 28 + LIC_LINE * (1 + LIBVERSIONS_COUNT * (s_lic_two ? 2 : 1)) + 24;
+
     s_pan_x = (gfx_w() - pw) / 2;
-    s_pan_y = L.land ? (gfx_h() - y) / 2 : 120;
-    if (s_pan_y < 4) s_pan_y = 4;
-    s_title_y += s_pan_y;
-    for (int g = 0; g < G_SECTIONS; g++) { s_head_x[g] += s_pan_x; s_head_y[g] += s_pan_y; }
-    for (int i = 0; i < s_chip_n; i++) { s_chip[i].x += s_pan_x; s_chip[i].y += s_pan_y; }
+    s_pan_y = 0;
+    s_pan_w = pw;
+    s_pan_h = s_menu_h = y;
+    if (s_mscroll > menu_max_scroll()) s_mscroll = menu_max_scroll();
+    if (s_mscroll < 0) s_mscroll = 0;
+    const int dy = -s_mscroll;
+    s_title_y += dy;
+    s_lic_y += dy;
+    for (int g = 0; g < G_SECTIONS; g++) { s_head_x[g] += s_pan_x; s_head_y[g] += dy; }
+    for (int i = 0; i < s_chip_n; i++) { s_chip[i].x += s_pan_x; s_chip[i].y += dy; }
+    for (int c = 0; c < 3; c++) s_lic_cx[c] += s_pan_x;
 }
 
 static void draw_menu(void)
 {
     layout_menu();
-    box(s_pan_x - 2, s_pan_y - 2, s_pan_w + 4, s_pan_h + 4, C_LINE, C_RAISED);
-    gfx_draw_text(s_pan_x + 28, s_title_y, _("Settings"), TXT, s_pan_w - 56, C_INK);
-    gfx_fill_rect(s_pan_x + 28, s_title_y + GFX_GLYPH_H(TXT) + 12, s_pan_w - 56, 2, C_LINE);
+    const int x0 = s_pan_x + M_PAD, rw = s_pan_w - 2 * M_PAD;
+    gfx_fill_rect(0, 0, gfx_w(), gfx_h(), C_BG);
+    gfx_draw_text(x0, s_title_y, _("Settings"), TXT, rw, C_INK);
+    gfx_fill_rect(x0, s_title_y + GFX_GLYPH_H(TXT) + 12, rw, 2, C_LINE);
     for (int g = 0; g < G_SECTIONS; g++)
-        gfx_draw_text(s_head_x[g], s_head_y[g], _(HEADS[g]), TXT, s_pan_w - 56, C_MUTED);
+        gfx_draw_text(s_head_x[g], s_head_y[g], _(HEADS[g]), TXT, rw, C_MUTED);
     const bool armed = esp_timer_get_time() < s_armed_until;
     for (int i = 0; i < s_chip_n; i++) {
         const chip_t *c = &s_chip[i];
@@ -880,6 +927,40 @@ static void draw_menu(void)
         box(c->x, c->y, c->w, CHIP_H, border, on ? C_ACCENT : C_BG);
         gfx_draw_text(c->x + (c->w - gfx_text_w(c->label, TXT)) / 2, c->y + (CHIP_H - GFX_GLYPH_H(TXT)) / 2,
                       c->label, TXT, c->w, fg);
+    }
+
+    /* the licences */
+    gfx_draw_text(x0, s_lic_y, _("Licences"), TXT, rw, C_INK);
+    gfx_fill_rect(x0, s_lic_y + GFX_GLYPH_H(TXT) + 12, rw, 2, C_LINE);
+    int ly = s_lic_y + GFX_GLYPH_H(TXT) + 28;
+    const int right = s_pan_x + s_pan_w - M_PAD;
+    if (s_lic_two) {
+        /* the headings on the lines their entries use */
+        gfx_draw_text(s_lic_cx[0], ly, _(LIC_HEADS[0]), SMALL, right - s_lic_cx[0], C_MUTED);
+        ly += LIC_LINE;
+        for (int c = 1; c < 3; c++) gfx_draw_text(s_lic_cx[c], ly, _(LIC_HEADS[c]), SMALL, (c < 2 ? s_lic_cx[2] - 12 : right) - s_lic_cx[c], C_MUTED);
+    } else {
+        for (int c = 0; c < 3; c++) gfx_draw_text(s_lic_cx[c], ly, _(LIC_HEADS[c]), SMALL, (c < 2 ? s_lic_cx[c + 1] - 12 : right) - s_lic_cx[c], C_MUTED);
+    }
+    for (int i = 0; i < LIBVERSIONS_COUNT; i++) {
+        ly += LIC_LINE;
+        if (s_lic_two) {
+            gfx_draw_text(s_lic_cx[0], ly, k_libversions[i][0], SMALL, right - s_lic_cx[0], C_INK);
+            ly += LIC_LINE;
+            gfx_draw_text(s_lic_cx[1], ly, k_libversions[i][1], SMALL, s_lic_cx[2] - 12 - s_lic_cx[1], C_MUTED);
+            gfx_draw_text(s_lic_cx[2], ly, k_libversions[i][2], SMALL, right - s_lic_cx[2], C_MUTED);
+            continue;
+        }
+        if (ly + LIC_LINE < 0 || ly > gfx_h()) continue;
+        for (int c = 0; c < 3; c++)
+            gfx_draw_text(s_lic_cx[c], ly, k_libversions[i][c], SMALL, (c < 2 ? s_lic_cx[c + 1] - 12 : right) - s_lic_cx[c], c ? C_MUTED : C_INK);
+    }
+
+    /* where in the panel the screen is */
+    const int max = menu_max_scroll();
+    if (max > 0) {
+        const int track = gfx_h() - 16, bar = track * gfx_h() / s_menu_h;
+        gfx_fill_rect(gfx_w() - 8, 8 + (track - bar) * s_mscroll / max, 4, bar, C_LINE);
     }
 }
 
@@ -1665,7 +1746,6 @@ static void apply_theme(int t) { P = &THEMES[t == 1 ? 1 : 0]; }
 static void menu_tap(int x, int y)
 {
     layout_menu();
-    if (x < s_pan_x || x >= s_pan_x + s_pan_w || y < s_pan_y || y >= s_pan_y + s_pan_h) { s_menu = false; return; }
     for (int i = 0; i < s_chip_n; i++) {
         const chip_t *c = &s_chip[i];
         if (x < c->x || x >= c->x + c->w || y < c->y || y >= c->y + CHIP_H) continue;
@@ -1707,10 +1787,44 @@ static void menu_tap(int x, int y)
     }
 }
 
+/* The finger, every pass of the loop while the settings are open.
+ * Returns whether the screen needs drawing. */
+static bool menu_touch(bool down, int x, int y)
+{
+    if (s_mtouch.ignore) {
+        if (!down) s_mtouch.ignore = false;
+        return false;
+    }
+    if (down && !s_mtouch.down) {
+        s_mtouch.down = true;
+        s_mtouch.drag = false;
+        s_mtouch.x0 = x;
+        s_mtouch.y0 = y;
+        s_mtouch.scroll0 = s_mscroll;
+        return false;
+    }
+    if (down) {
+        const int d = y - s_mtouch.y0;
+        if (!s_mtouch.drag && (d > G_SLOP || d < -G_SLOP || x - s_mtouch.x0 > G_SLOP || s_mtouch.x0 - x > G_SLOP))
+            s_mtouch.drag = menu_max_scroll() > 0;
+        if (!s_mtouch.drag) return false;
+        int to = s_mtouch.scroll0 - d;
+        if (to > menu_max_scroll()) to = menu_max_scroll();
+        if (to < 0) to = 0;
+        if (to == s_mscroll) return false;
+        s_mscroll = to;
+        return true;
+    }
+    if (!s_mtouch.down) return false;
+    s_mtouch.down = false;
+    if (s_mtouch.drag) return false;
+    menu_tap(s_mtouch.x0, s_mtouch.y0);
+    return true;
+}
+
 static void tap(int x, int y)
 {
     if (s_share) { s_share = false; return; }   /* any tap closes the QR */
-    if (s_menu) { menu_tap(x, y); return; }
     {
         int sx0, sy0, sw, sh;
         sets_rect(&sx0, &sy0, &sw, &sh);
@@ -1719,7 +1833,7 @@ static void tap(int x, int y)
     {
         int gx, gy, gw, gh;
         gear_rect(&gx, &gy, &gw, &gh);
-        if (x >= gx && x < gx + gw && y >= gy && y < gy + gh) { s_menu = true; s_hint_until = 0; s_armed_until = 0; return; }
+        if (x >= gx && x < gx + gw && y >= gy && y < gy + gh) { s_menu = true; s_mscroll = 0; s_mtouch.ignore = true; s_mtouch.down = false; s_hint_until = 0; s_armed_until = 0; return; }
     }
     /* buttons */
     if (y >= L.btn_y) {
@@ -1780,6 +1894,8 @@ void ui_run(void)
             if (rail_touch(down, x)) dirty = true;
         } else if (s_guide) {
             if (guide_touch(down, x, y)) dirty = true;
+        } else if (s_menu) {
+            if (menu_touch(down, x, y)) dirty = true;
         } else if (down && !was_down && !s_menu && rail_hit(x, y)) {
             s_rdrag.active = true;          /* a press on the rail starts a drag, not a tap */
             s_rdrag.x0 = x;

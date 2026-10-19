@@ -120,6 +120,8 @@ en:
     "Big Three Dragons": ~
     # guide.c
     "Bigger sets": ~
+    # ui.c
+    "Checkout": ~
     # guide.c
     "Chow": ~
     # guide.c
@@ -219,6 +221,10 @@ en:
     # ui.c
     "Language": ~
     # ui.c
+    "Licence": ~
+    # ui.c
+    "Licences": ~
+    # ui.c
     "Light": ~
     # guide.c
     "Limit hands · tap one to see its animation": ~
@@ -252,6 +258,8 @@ en:
     "Mixed double chow": ~
     # guide.c
     "Mixed triple chow": ~
+    # ui.c
+    "Module": ~
     # ui.c
     "New deal": ~
     # guide.c, ui.c

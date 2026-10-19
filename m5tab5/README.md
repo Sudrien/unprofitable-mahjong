@@ -42,13 +42,18 @@ dependency until something is.
 
 ## The screen
 
-The gear, top right, opens the settings: the orientation (landscape,
-portrait, or either one flipped), a light or dark theme, the language
--- English, 日本語 or 简体中文 -- auto-sort, and Discard sets, off
-until turned on, which lets Discard take a set from the table for what
-it would have scored (six tiles still go as Discard 6). Each takes effect as it
-is tapped and is saved; Done, or a tap outside the panel, closes it.
-New deal is there too, and asks for a second tap. The picture
+The gear, top right, opens the settings across the whole screen. New
+deal, which asks for a second tap, and Share come first; then the
+orientation (landscape, portrait, or either one flipped), a light or
+dark theme, the language -- English, 日本語 or 简体中文 -- auto-sort,
+and Discard sets, off until turned on, which lets Discard take a set
+from the table for what it would have scored (six tiles still go as
+Discard 6). Each takes effect as it is tapped and is saved; Done closes
+the settings. Below Done are the licences: every module this firmware
+was built from, its checkout and its licence, written by
+`cmake/libversions.cmake` from `dependencies.lock` and the vendored pins
+when the build is configured, so the list is what was compiled. The
+panel scrolls under a finger to reach them. The picture
 and the touch coordinates always turn together. The dark theme is the
 web version's; the tiles keep their ivory faces in both.
 
@@ -64,7 +69,7 @@ the web version's, points included.
 
 ![Sets](screenshots/sets.png)
 
-Share, in the gear's panel beside New deal, shows the game's replay link
+Share, in the settings beside New deal, shows the game's replay link
 as a QR code: point a phone's camera at it and the web version opens the
 game and plays it back move by move. The code is the web version's
 (`core/umreplay.c` makes the same one, character for character), with
