@@ -74,7 +74,9 @@ and a patch that changes either side runs it.
   full house among a won game's sets. A royal flush counts as the flush.
 - **Secrets**, listed only once earned, and no part of the river:
   A Place for Everything (a game ended with no tiles left) and Wait
-  Wait Wait (Sort, or turning Auto-sort on, threw a selection away).
+  Wait Wait (Sort, or turning Auto-sort on, threw a selection away),
+  and Intentional Game Design (Meld pressed on a melded pair and its
+  third tile; Meld still looks disabled, but takes the press).
 
 ## Not yet built
 
@@ -95,9 +97,6 @@ and a patch that changes either side runs it.
   500). It is not a hand, so it is no part of The Yellow River Floods
   Again or The Capital is Gone.
 - Secret achivements?
-  - Intentional game design: tried and failed to add to a pair in meld.
-    Open: Meld is disabled for a melded pair plus its third tile, so
-    there is no press to catch yet.
   - Overcompensating: used 4 tiles of a kind in a limit hand that requires 3
   - Try try again: load a seed already represented in achivements
   - guaranteed random: load a playable seed

@@ -215,6 +215,8 @@ zh-CN:
     "Half Flush": "混一色"
     # ui.c
     "Hint": "提示"
+    # ui.c
+    "Intentional Game Design": "这是设计好的"
     # guide.c
     "Kong": "杠子"
     # guide.c
@@ -387,6 +389,8 @@ zh-CN:
     "Three kongs cleared together.": "三组杠子一起消除。"
     # guide.c
     "Three wind pungs and a pair of the fourth.": "三组风牌刻子，加第四种风牌的对子。"
+    # ui.c
+    "Tried to grow a melded pair into a pung. Only a pung grows.": "想把副露的对子变成刻子。只有刻子能变大。"
     # guide.c, ui.c
     "Triple Pung": "三同刻"
     # guide.c

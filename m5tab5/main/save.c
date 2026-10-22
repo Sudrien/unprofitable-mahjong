@@ -42,7 +42,8 @@ typedef struct {
 
 static blob_t s_blob;   /* 3 KB: off the stack */
 
-#define ACH_VER     (2u)    /* 2: a third win, Win with every poker hand, and the secrets */
+#define ACH_VER     (3u)    /* 3: a third secret; 2: a third win, Win with every poker hand, and the secrets */
+#define ACH_V2_SECRETS (2)  /* version 2 is version 3 with two secrets, the last member: a prefix */
 typedef struct {
     uint32_t ver;
     uint32_t size;
@@ -157,6 +158,18 @@ void save_load_ach(um_ach_t *a)
             return;
         }
         ESP_LOGI(TAG, "achievements read from version 1");
+        memcpy(a, &s_ach_blob.a, sizeof *a);
+        return;
+    }
+    if (s_ach_blob.ver == 2u && s_ach_blob.size == sizeof(um_ach_t) - (UM_SECRET_N - ACH_V2_SECRETS) * sizeof(um_rec_t)
+        && len == offsetof(ach_blob_t, a) + s_ach_blob.size) {
+        /* the secrets it did not have start unearned */
+        memset((uint8_t *)&s_ach_blob.a + s_ach_blob.size, 0, sizeof s_ach_blob.a - s_ach_blob.size);
+        if (!um_ach_valid(&s_ach_blob.a)) {
+            ESP_LOGW(TAG, "saved achievements (version 2) unreadable; starting over");
+            return;
+        }
+        ESP_LOGI(TAG, "achievements read from version 2");
         memcpy(a, &s_ach_blob.a, sizeof *a);
         return;
     }

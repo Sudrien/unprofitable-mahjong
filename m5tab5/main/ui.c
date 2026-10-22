@@ -177,10 +177,11 @@ static const char *const WIN_NOTES[UM_WIN_N] = {
     N_("All 136 cleared with two pair, a flush, a straight and a full house among the sets. A royal flush counts as the flush."),
 };
 /* The secrets, the web version's SECRETS: listed only once earned. */
-static const char *const SECRET_NAMES[UM_SECRET_N] = { N_("A Place for Everything"), N_("Wait Wait Wait") };
+static const char *const SECRET_NAMES[UM_SECRET_N] = { N_("A Place for Everything"), N_("Wait Wait Wait"), N_("Intentional Game Design") };
 static const char *const SECRET_NOTES[UM_SECRET_N] = {
     N_("Finished a game with no tiles left."),
     N_("Sorted the hand with tiles chosen, and lost the choice."),
+    N_("Tried to grow a melded pair into a pung. Only a pung grows."),
 };
 #define FLOOD_NAME N_("The Yellow River Floods Again")
 #define FLOOD_NOTE N_("Clear every set at least once. The river rises with each one.")
@@ -1597,19 +1598,20 @@ static void after_move(bool was_done)
     save_game(&s_g);
 }
 
-/* A sort threw the selection away; the first time, that is a secret,
- * shown in the banner with no tiles. */
-static void sorted_away(void)
+/* A secret earned away from a clear, shown in the banner with no tiles. */
+static void secret_banner(int s)
 {
-    if (!um_ach_secret(&s_ach, &s_g, UM_SECRET_WAIT)) return;
-    ESP_LOGI(TAG, "game %u: wait wait wait", (unsigned)s_g.game_no);
+    if (!um_ach_secret(&s_ach, &s_g, s)) return;
+    ESP_LOGI(TAG, "game %u: secret %s", (unsigned)s_g.game_no, SECRET_NAMES[s]);
     save_ach(&s_ach);
-    s_ban.name = SECRET_NAMES[UM_SECRET_WAIT];
+    s_ban.name = SECRET_NAMES[s];
     s_ban.full = true;
     s_ban.n = 0;
     snprintf(s_ban.kick, sizeof s_ban.kick, _("SECRET · GAME %d"), (int)s_g.game_no);
     s_ban.until = esp_timer_get_time() + BANNER_US;
 }
+/* A sort threw the selection away: Wait Wait Wait, the first time. */
+static void sorted_away(void) { secret_banner(UM_SECRET_WAIT); }
 
 static void new_deal(void)
 {
@@ -1623,7 +1625,12 @@ static void new_deal(void)
 
 static void press(int b)
 {
-    if (!s_btn[b].enabled) return;
+    if (!s_btn[b].enabled) {
+        /* Meld stays drawn disabled, but a press on a melded pair and
+         * its third tile is caught: Intentional Game Design */
+        if (b == B_MELD && um_pair_grow(&s_g, s_sel)) secret_banner(UM_SECRET_DESIGN);
+        return;
+    }
     const bool was_done = s_g.done;
     switch (b) {
     case B_CLEAR: {

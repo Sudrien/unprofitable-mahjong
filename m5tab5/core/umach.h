@@ -12,7 +12,8 @@
  *   The Yellow River Floods Again: every set's First
  *   Secrets shown only once earned, and no part of the river:
  *           A Place for Everything (a game ended with no tiles left),
- *           Wait Wait Wait (a sort threw a selection away)
+ *           Wait Wait Wait (a sort threw a selection away),
+ *           Intentional Game Design (Meld pressed to grow a melded pair)
  *
  * The sets are every um_set_t, UM_PAIR to UM_FOUR_KONGS: the 40 the web
  * version counts. Each record is the game it was earned in, by the
@@ -41,7 +42,7 @@ typedef struct {
 } um_rec_t;
 
 enum { UM_WIN_NO_POKER, UM_WIN_NO_PAIRS, UM_WIN_ALL_POKER, UM_WIN_N };   /* the web version's WINS, in order */
-enum { UM_SECRET_PLACE, UM_SECRET_WAIT, UM_SECRET_N };                  /* its SECRETS, in order */
+enum { UM_SECRET_PLACE, UM_SECRET_WAIT, UM_SECRET_DESIGN, UM_SECRET_N }; /* its SECRETS, in order */
 
 typedef struct {
     uint32_t games;                                 /* games dealt on this device */
@@ -73,7 +74,8 @@ uint8_t um_ach_win(um_ach_t *a, um_game_t *g);
 
 /* Secret s earned in g (secretAward): true if it is new. The caller
  * decides when: PLACE when a game ends with every tile cleared, WAIT
- * when a sort throws a selection away. */
+ * when a sort throws a selection away, DESIGN when Meld is pressed on
+ * um_pair_grow's selection. */
 bool um_ach_secret(um_ach_t *a, um_game_t *g, int s);
 
 int  um_ach_firsts(const um_ach_t *a);   /* sets with a First, of UM_ACH_SETS */

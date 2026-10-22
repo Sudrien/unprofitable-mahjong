@@ -215,6 +215,8 @@ ja:
     "Half Flush": "混一色"
     # ui.c
     "Hint": "ヒント"
+    # ui.c
+    "Intentional Game Design": "仕様です"
     # guide.c
     "Kong": "槓子"
     # guide.c
@@ -387,6 +389,8 @@ ja:
     "Three kongs cleared together.": "槓子3組をまとめて消す。"
     # guide.c
     "Three wind pungs and a pair of the fourth.": "風牌の刻子3組と、残りの風牌の対子。"
+    # ui.c
+    "Tried to grow a melded pair into a pung. Only a pung grows.": "副露した対子を刻子に伸ばそうとした。伸ばせるのは刻子だけ。"
     # guide.c, ui.c
     "Triple Pung": "三色同刻"
     # guide.c

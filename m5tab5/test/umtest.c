@@ -294,6 +294,7 @@ static void code_mode(uint32_t seed, int games)
  *   C <key>|<k,k,...>   that set cleared
  *   W             the game ends with every tile cleared
  *   S             a sort threw a selection away
+ *   D             Meld pressed on a melded pair and its third tile
  * and after each, the award and every record, for check.js to compare
  * with the web version's. */
 static um_ach_t s_ach;
@@ -343,6 +344,8 @@ static int ach_mode(void)
             wins = um_ach_win(&s_ach, &s_ag);
         } else if (line[0] == 'S') {
             um_ach_secret(&s_ach, &s_ag, UM_SECRET_WAIT);
+        } else if (line[0] == 'D') {
+            um_ach_secret(&s_ach, &s_ag, UM_SECRET_DESIGN);
         }
         if (!um_ach_valid(&s_ach)) { fprintf(stderr, "ach: um_ach_valid refused the records\n"); return 1; }
         printf("R %s %d %d %u | ", award, flood, wins, (unsigned)s_ach.games);
@@ -353,7 +356,7 @@ static int ach_mode(void)
         printf(" | flood");
         if (s_ach.flood.game) printf(";%u/%u", (unsigned)s_ach.flood.game, (unsigned)s_ach.flood.seed);
         printf(" | secret");
-        static const char *SN[UM_SECRET_N] = { "place", "wait" };
+        static const char *SN[UM_SECRET_N] = { "place", "wait", "design" };
         for (int s = 0; s < UM_SECRET_N; s++) if (s_ach.secret[s].game) printf(";%s=%u/%u", SN[s], (unsigned)s_ach.secret[s].game, (unsigned)s_ach.secret[s].seed);
         printf("\n");
     }

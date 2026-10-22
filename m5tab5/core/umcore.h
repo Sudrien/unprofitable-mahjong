@@ -177,6 +177,9 @@ int  um_sel_count(const um_game_t *g, um_sel_t s);
 /* Actions. Each returns false and changes nothing when not allowed. */
 bool um_clear(um_game_t *g, um_sel_t s, um_set_t *t_out, int *v_out);
 bool um_can_meld(const um_game_t *g, um_sel_t s);
+/* pairGrow: a melded pair, whole, and one more of its tile from the
+ * table -- the selection Meld refuses because only a pung grows. */
+bool um_pair_grow(const um_game_t *g, um_sel_t s);
 bool um_meld(um_game_t *g, um_sel_t s);     /* includes pung -> kong */
 bool um_is_kong_upgrade(const um_game_t *g, um_sel_t s);
 bool um_can_add(const um_game_t *g);

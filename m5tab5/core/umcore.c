@@ -723,6 +723,16 @@ bool um_is_kong_upgrade(const um_game_t *g, um_sel_t s)
     return g->meld_len[m] == 3 && g->melds[m][0] == g->melds[m][2] && g->hand[h] == g->melds[m][0];
 }
 
+/* pairGrow */
+bool um_pair_grow(const um_game_t *g, um_sel_t s)
+{
+    if (__builtin_popcount(s.hand) != 1 || __builtin_popcount(s.melds) != 1) return false;
+    const int m = __builtin_ctz(s.melds), h = __builtin_ctz(s.hand);
+    if (m >= g->meld_n || g->meld_len[m] != 2 || g->melds[m][0] != g->melds[m][1]) return false;
+    if (h >= UM_MAX_HAND || g->hand[h] < 0) return false;
+    return g->hand[h] == g->melds[m][0];
+}
+
 bool um_can_meld(const um_game_t *g, um_sel_t s)
 {
     if (um_is_kong_upgrade(g, s)) return true;

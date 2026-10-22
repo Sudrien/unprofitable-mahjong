@@ -215,6 +215,8 @@ en:
     "Half Flush": ~
     # ui.c
     "Hint": ~
+    # ui.c
+    "Intentional Game Design": ~
     # guide.c
     "Kong": ~
     # guide.c
@@ -387,6 +389,8 @@ en:
     "Three kongs cleared together.": ~
     # guide.c
     "Three wind pungs and a pair of the fourth.": ~
+    # ui.c
+    "Tried to grow a melded pair into a pung. Only a pung grows.": ~
     # guide.c, ui.c
     "Triple Pung": ~
     # guide.c

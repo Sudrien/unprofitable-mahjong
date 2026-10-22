@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include "i18n.h"
 
-const unsigned i18n_count = 236;
+const unsigned i18n_count = 238;
 const char *const i18n_keys[] = {
     " Undo to fix it.",
     " and a lone ",
@@ -115,6 +115,7 @@ const char *const i18n_keys[] = {
     "Green dragon",
     "Half Flush",
     "Hint",
+    "Intentional Game Design",
     "Kong",
     "Kong of 1s, 9s or honors",
     "LIMIT HAND",
@@ -201,6 +202,7 @@ const char *const i18n_keys[] = {
     "Three in a row in one suit. Winds and dragons can’t make chows.",
     "Three kongs cleared together.",
     "Three wind pungs and a pair of the fourth.",
+    "Tried to grow a melded pair into a pung. Only a pung grows.",
     "Triple Pung",
     "Two dragon pungs and a pair of the third dragon.",
     "Two identical tiles. The cheapest way to clear.",
@@ -252,6 +254,8 @@ const char *const i18n_keys[] = {
 /* [lang * i18n_count + key] */
 const char *const i18n_vals[] = {
     /* en */
+    NULL,
+    NULL,
     NULL,
     NULL,
     NULL,
@@ -593,6 +597,7 @@ const char *const i18n_vals[] = {
     "发财",
     "混一色",
     "提示",
+    "这是设计好的",
     "杠子",
     "幺九或字牌杠子",
     "大满贯",
@@ -679,6 +684,7 @@ const char *const i18n_vals[] = {
     "同花色三张连续的牌。风牌和箭牌不能组成顺子。",
     "三组杠子一起消除。",
     "三组风牌刻子，加第四种风牌的对子。",
+    "想把副露的对子变成刻子。只有刻子能变大。",
     "三同刻",
     "两组箭牌刻子，加第三种箭牌的对子。",
     "两张相同的牌。最便宜的消法。",
@@ -830,6 +836,7 @@ const char *const i18n_vals[] = {
     "發",
     "混一色",
     "ヒント",
+    "仕様です",
     "槓子",
     "么九牌・字牌の槓子",
     "役満",
@@ -916,6 +923,7 @@ const char *const i18n_vals[] = {
     "同じ種類の数牌3枚の連続。字牌は順子になりません。",
     "槓子3組をまとめて消す。",
     "風牌の刻子3組と、残りの風牌の対子。",
+    "副露した対子を刻子に伸ばそうとした。伸ばせるのは刻子だけ。",
     "三色同刻",
     "三元牌の刻子2組と、残りの三元牌の対子。",
     "同じ牌2枚。いちばん安い消し方。",

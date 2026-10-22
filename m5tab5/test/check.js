@@ -250,11 +250,12 @@ function achCheck() {
     for (const e of clears) {
       script.push({ op: 'C', e });
       if (rnd(60) === 0) script.push({ op: 'S' });   // a sort with tiles chosen
+      if (rnd(90) === 0) script.push({ op: 'D' });   // Meld pressed on a melded pair and its third tile
     }
     if (rnd(2) === 0 || last) script.push({ op: 'W' });
   }
   const out = execFileSync(UMTEST, ['ach'], {
-    input: script.map(x => x.op === 'C' ? `C ${x.e.t}|${x.e.k.join(',')}` : x.op === 'W' || x.op === 'S' ? x.op : `${x.op} ${x.seed}`).join('\n') + '\n',
+    input: script.map(x => x.op === 'C' ? `C ${x.e.t}|${x.e.k.join(',')}` : x.op === 'W' || x.op === 'S' || x.op === 'D' ? x.op : `${x.op} ${x.seed}`).join('\n') + '\n',
     maxBuffer: 1 << 28 }).toString().trim().split('\n');
   const norm = line => line.split(' | ').map(p => p.split(';').sort().join(';')).join(' | ');
   const recs = (name, m) => [name, ...[...m].map(([t, r]) => `${t}=${r.g}/${r.s}`)].join(';');
@@ -269,6 +270,7 @@ function achCheck() {
       const a = A.setAward(x.e.t);
       award = !a ? '-' : a.kicker.startsWith('First') ? 'first' : a.kicker.startsWith('Full') ? 'full' : '?';
     } else if (x.op === 'S') A.secretAward('wait');
+    else if (x.op === 'D') A.secretAward('design');
     else if (!legacy) A.winAwards();
     // a game saved before games were counted had nothing tracked on the
     // Tab5, so it earns no win there; the web version would read its log.

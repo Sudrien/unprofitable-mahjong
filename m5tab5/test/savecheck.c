@@ -240,9 +240,21 @@ int main(void)
               && b.win[UM_WIN_NO_PAIRS].game == a.games && !b.win[UM_WIN_ALL_POKER].game
               && !b.secret[UM_SECRET_PLACE].game && !b.secret[UM_SECRET_WAIT].game,
               "achievements: a version 1 save was not read as it was");
+
+        /* version 2: version 3 without the last secret */
+        a.secret[UM_SECRET_WAIT] = (um_rec_t){ a.games, 5 };
+        static uint8_t v2[8 + sizeof a - sizeof(um_rec_t)];
+        const uint32_t ver2 = 2, size2 = (uint32_t)(sizeof a - sizeof(um_rec_t));
+        memcpy(v2, &ver2, 4);
+        memcpy(v2 + 4, &size2, 4);
+        memcpy(v2 + 8, &a, size2);
+        put("ach", v2, sizeof v2);
+        save_load_ach(&b);
+        CHECK(b.games == a.games && b.secret[UM_SECRET_WAIT].game == a.games && !b.secret[UM_SECRET_DESIGN].game,
+              "achievements: a version 2 save was not read as it was");
     }
 
     if (s_bad) return 1;
-    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip, and version 1's read\n");
+    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip, and versions 1 and 2 read\n");
     return 0;
 }

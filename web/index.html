@@ -136,9 +136,9 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.35rem, 
   font: 600 .92rem var(--f-ui); color: var(--ink); background: var(--raised); border: 1px solid var(--line);
   padding: 10px 15px; border-radius: 7px; cursor: pointer; min-height: 44px; font-variant-numeric: tabular-nums;
 }
-.btn:hover:not(:disabled) { border-color: var(--accent); }
+.btn:hover:not(:disabled):not([aria-disabled="true"]) { border-color: var(--accent); }
 .btn:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
-.btn:disabled { opacity: .45; cursor: default; }
+.btn:disabled, .btn[aria-disabled="true"] { opacity: .45; cursor: default; }
 .btn.primary { background: var(--accent); color: var(--on-accent); border-color: var(--accent); min-width: 9.5em; }
 .btn.cost .c { color: var(--warn); margin-left: 6px; }
 .btn.quiet { background: transparent; }
@@ -834,13 +834,26 @@ function kongUpgrade() {
   if (!m || m.length !== 3 || m[0] !== m[2] || !mk.every(k => +k.slice(1).split('.')[0] === i)) return null;
   return get(hk[0]) === m[0] ? { i, h: +hk[0].slice(1) } : null;
 }
+// A melded pair, all of it, and one more of its tile from the table:
+// what a player selects to grow a pair the way a pung grows. Only a
+// pung grows, so Meld refuses it.
+function pairGrow() {
+  const keys = [...sel], mk = keys.filter(k => k[0] === 'm'), hk = keys.filter(k => k[0] === 'h');
+  if (hk.length !== 1 || mk.length !== 2) return false;
+  const i = +mk[0].slice(1).split('.')[0], m = S.melds[i];
+  if (!m || m.length !== 2 || m[0] !== m[1] || !mk.every(k => +k.slice(1).split('.')[0] === i)) return false;
+  return get(hk[0]) === m[0];
+}
 function canMeld() {
   if (kongUpgrade()) return true;
   if (S.melds.length >= MAX_MELDS || !sel.size || !selInHand()) return false;
   return MELDABLE.has(classify([...sel].map(get)));
 }
 function meldSet() {
-  if (!canMeld()) return;
+  if (!canMeld()) {
+    if (pairGrow()) { const a = typeof secretAward === 'function' ? secretAward('design') : null; if (a) secretBanner(a); }
+    return;
+  }
   snap();
   const up = kongUpgrade();
   if (up) {
@@ -1351,7 +1364,9 @@ function render() {
     ? L('Discard set', '組を捨てる', '弃组合') + `<span class="c">${pts(-setValue(t, kinds))}</span>`
     : L('Discard 6', '6枚捨てる', '弃6张') + `<span class="c">${pts(-DISCARD_COST)}</span>`;
   $('discardSets').checked = discardSets;
-  $('meldBtn').disabled = !canMeld();
+  // looks and reads disabled, but takes the press: a melded pair plus its
+  // third tile is refused there, and that refusal is a secret
+  $('meldBtn').setAttribute('aria-disabled', String(!canMeld()));
   $('meldBtn').innerHTML = kongUpgrade() ? L('Make kong', '加槓', '加杠') : L('Meld', '副露', '副露');
   $('undoBtn').disabled = !undo.length;
   $('hintBtn').disabled = !vis.length;
@@ -1480,7 +1495,9 @@ const SECRETS = [
   ['place', ['A Place for Everything', '適材適所', '各得其所'],
     ['Finished a game with no tiles left.', '牌を1枚も残さずに終局した。', '一张牌不剩地结束了一局。']],
   ['wait', ['Wait Wait Wait', 'ちょっと待って', '等等等等'],
-    ['Sorted the hand with tiles chosen, and lost the choice.', '牌を選んだまま整列して、選択が外れた。', '选着牌时排序，选择被清掉了。']]
+    ['Sorted the hand with tiles chosen, and lost the choice.', '牌を選んだまま整列して、選択が外れた。', '选着牌时排序，选择被清掉了。']],
+  ['design', ['Intentional Game Design', '仕様です', '这是设计好的'],
+    ['Tried to grow a melded pair into a pung. Only a pung grows.', '副露した対子を刻子に伸ばそうとした。伸ばせるのは刻子だけ。', '想把副露的对子变成刻子。只有刻子能变大。']]
 ];
 function secretAward(id) {
   if (replaying || secrets.has(id)) return null;
