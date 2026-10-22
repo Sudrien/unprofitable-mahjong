@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include "i18n.h"
 
-const unsigned i18n_count = 248;
+const unsigned i18n_count = 250;
 const char *const i18n_keys[] = {
     " Undo to fix it.",
     " and a lone ",
@@ -76,6 +76,7 @@ const char *const i18n_keys[] = {
     "Classic hands",
     "Clear",
     "Clear every set at least once. The river rises with each one.",
+    "Cleared a limit hand holding four of a kind, where three would do.",
     "Clears and penalties go here.",
     "Dark",
     "Discard 6",
@@ -162,6 +163,7 @@ const char *const i18n_keys[] = {
     "One of every 1, 9, wind and dragon, plus one duplicate.",
     "Orientation",
     "Outside Hand",
+    "Overcompensating",
     "Pair",
     "Penalty %s",
     "Pick more tiles.",
@@ -512,6 +514,8 @@ const char *const i18n_vals[] = {
     NULL,
     NULL,
     NULL,
+    NULL,
+    NULL,
     /* zh-CN */
     "撤销来补救。",
     "和",
@@ -578,6 +582,7 @@ const char *const i18n_vals[] = {
     "经典牌型",
     "消除",
     "把每种组合都至少消除一次。每消一种，河水就涨一分。",
+    "用四张相同的牌清了一手只需三张的大满贯。",
     "已消除的组合和罚分在这里。",
     "深色",
     "弃6张",
@@ -664,6 +669,7 @@ const char *const i18n_vals[] = {
     "所有幺九和字牌各一张，再多一张其中任意一种。",
     "屏幕方向",
     "全带幺",
+    "用力过猛",
     "对子",
     "罚分 %s",
     "再多选几张牌。",
@@ -827,6 +833,7 @@ const char *const i18n_vals[] = {
     "定番の役",
     "消す",
     "すべての役を一度は消そう。一つ消すごとに川の水位が上がる。",
+    "3枚で足りる役満に、同じ牌を4枚使って消した。",
     "消した組とペナルティがここに。",
     "ダーク",
     "6枚捨て",
@@ -913,6 +920,7 @@ const char *const i18n_vals[] = {
     "1・9と字牌をすべて1枚ずつ、どれか1種類を2枚に。",
     "画面の向き",
     "混全帯么九",
+    "やりすぎ",
     "対子",
     "ペナルティ %s",
     "もっと牌を選んでください。",

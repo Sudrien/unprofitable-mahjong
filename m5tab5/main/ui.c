@@ -177,11 +177,12 @@ static const char *const WIN_NOTES[UM_WIN_N] = {
     N_("All 136 cleared with two pair, a flush, a straight and a full house among the sets. A royal flush counts as the flush."),
 };
 /* The secrets, the web version's SECRETS: listed only once earned. */
-static const char *const SECRET_NAMES[UM_SECRET_N] = { N_("A Place for Everything"), N_("Wait Wait Wait"), N_("Intentional Game Design") };
+static const char *const SECRET_NAMES[UM_SECRET_N] = { N_("A Place for Everything"), N_("Wait Wait Wait"), N_("Intentional Game Design"), N_("Overcompensating") };
 static const char *const SECRET_NOTES[UM_SECRET_N] = {
     N_("Finished a game with no tiles left."),
     N_("Sorted the hand with tiles chosen, and lost the choice."),
     N_("Tried to grow a melded pair into a pung. Only a pung grows."),
+    N_("Cleared a limit hand holding four of a kind, where three would do."),
 };
 #define FLOOD_NAME N_("The Yellow River Floods Again")
 #define FLOOD_NOTE N_("Clear every set at least once. The river rises with each one.")
@@ -1320,7 +1321,7 @@ static void ach_cards(void)
     s_akind[n].kind = AK_CAPITAL; s_akind[n++].i = 0;
     for (int w = 0; w < UM_WIN_N; w++) { s_akind[n].kind = AK_WIN; s_akind[n++].i = (uint8_t)w; }
     s_akind[n].kind = AK_HIGH; s_akind[n++].i = 0;
-    for (int k = 0; k < UM_SECRET_N; k++) if (s_ach.secret[k].game) { s_akind[n].kind = AK_SECRET; s_akind[n++].i = (uint8_t)k; }
+    for (int k = 0; k < UM_SECRET_N; k++) if (um_ach_secret_crec(&s_ach, k)->game) { s_akind[n].kind = AK_SECRET; s_akind[n++].i = (uint8_t)k; }
     s_acards = n;
 }
 static const char *ach_card_name(int c)
@@ -1353,7 +1354,7 @@ static const um_rec_t *ach_card_rec(int c)
     case AK_CAPITAL: return &s_ach.capital;
     case AK_WIN:     return &s_ach.win[i];
     case AK_HIGH:    return &s_ach.high;
-    default:         return &s_ach.secret[i];
+    default:         return um_ach_secret_crec(&s_ach, i);
     }
 }
 
@@ -1724,6 +1725,14 @@ static void press(int b)
         else if (aw == UM_AWARD_FIRST) snprintf(kick, sizeof kick, _("FIRST TIME · GAME %d"), gn);
         else if (aw == UM_AWARD_PENDING) snprintf(kick, sizeof kick, "%s", _("FULL · FINISH THE GAME TO CONFIRM"));
         if (um_set_is_limit(t)) celebrate(t, k, n, v, aw != UM_AWARD_NONE ? kick : NULL, NULL);
+        /* after the hand's own celebration: Overcompensating, the first time */
+        if (um_ach_overdone(t, k, n) && um_ach_secret(&s_ach, &s_g, UM_SECRET_OVER)) {
+            ESP_LOGI(TAG, "game %u: overcompensating", (unsigned)s_g.game_no);
+            save_ach(&s_ach);
+            static char okick[64];
+            snprintf(okick, sizeof okick, _("SECRET · GAME %d"), gn);
+            celebrate(t, k, n, v, okick, SECRET_NAMES[UM_SECRET_OVER]);
+        }
         else if (aw != UM_AWARD_NONE) {
             /* a new one replaces any still showing */
             s_ban.t = t;

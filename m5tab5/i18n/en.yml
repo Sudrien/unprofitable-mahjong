@@ -138,6 +138,8 @@ en:
     # ui.c
     "Clear every set at least once. The river rises with each one.": ~
     # ui.c
+    "Cleared a limit hand holding four of a kind, where three would do.": ~
+    # ui.c
     "Clears and penalties go here.": ~
     # ui.c
     "Dark": ~
@@ -309,6 +311,8 @@ en:
     "Orientation": ~
     # guide.c, ui.c
     "Outside Hand": ~
+    # ui.c
+    "Overcompensating": ~
     # guide.c
     "Pair": ~
     # ui.c

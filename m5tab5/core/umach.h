@@ -21,7 +21,9 @@
  *   Secrets shown only once earned, and no part of the river:
  *           A Place for Everything (a game ended with no tiles left),
  *           Wait Wait Wait (a sort threw a selection away),
- *           Intentional Game Design (Meld pressed to grow a melded pair)
+ *           Intentional Game Design (Meld pressed to grow a melded pair),
+ *           Overcompensating (a limit hand with four of a kind where
+ *           three would do)
  *
  * The sets are every um_set_t, UM_PAIR to UM_FOUR_KONGS: the 40 the web
  * version counts. Each record is the game it was earned in, by the
@@ -51,7 +53,8 @@ typedef struct {
 } um_rec_t;
 
 enum { UM_WIN_NO_POKER, UM_WIN_NO_PAIRS, UM_WIN_ALL_POKER, UM_WIN_N };   /* the web version's WINS, in order */
-enum { UM_SECRET_PLACE, UM_SECRET_WAIT, UM_SECRET_DESIGN, UM_SECRET_N }; /* its SECRETS, in order */
+enum { UM_SECRET_PLACE, UM_SECRET_WAIT, UM_SECRET_DESIGN, UM_SECRET_OVER, UM_SECRET_N }; /* its SECRETS, in order, less the loading ones */
+#define UM_SECRET_FIRST3 (3)    /* the secrets kept in secret[]; the rest in secret_more[], added later at the end */
 
 typedef struct {
     uint32_t games;                                 /* games dealt on this device */
@@ -60,7 +63,7 @@ typedef struct {
     uint32_t played[UM_SET_COUNT][UM_ACH_WINDOW];   /* the games each set was cleared in, the last few; 0 is empty */
     um_rec_t win[UM_WIN_N];
     um_rec_t flood;
-    um_rec_t secret[UM_SECRET_N];
+    um_rec_t secret[UM_SECRET_FIRST3];      /* use um_ach_secret_rec() */
     /* Last, so a save from before reads as a prefix: the seed of each
      * game in played[], and which of those seeds are known (bit i for
      * played[t][i]). An entry saved before seeds were kept is unknown,
@@ -76,7 +79,16 @@ typedef struct {
     uint8_t  played_done[UM_SET_COUNT];
     uint32_t pend_game;
     uint32_t pend[2];   /* bit t of 64 */
+    um_rec_t secret_more[UM_SECRET_N - UM_SECRET_FIRST3];   /* last again */
 } um_ach_t;
+
+/* Secret s's record, wherever it is kept. */
+static inline um_rec_t *um_ach_secret_rec(um_ach_t *a, int s) { return s < UM_SECRET_FIRST3 ? &a->secret[s] : &a->secret_more[s - UM_SECRET_FIRST3]; }
+static inline const um_rec_t *um_ach_secret_crec(const um_ach_t *a, int s) { return s < UM_SECRET_FIRST3 ? &a->secret[s] : &a->secret_more[s - UM_SECRET_FIRST3]; }
+
+/* overdone: a limit hand with four of one tile, where three would do --
+ * any but Four Kongs and Seven Pairs. Overcompensating, the first time. */
+bool um_ach_overdone(um_set_t t, const uint8_t *kinds, int n);
 
 typedef enum { UM_AWARD_NONE, UM_AWARD_FIRST, UM_AWARD_FULL, UM_AWARD_PENDING } um_award_t;
 

@@ -105,11 +105,13 @@ and a patch that changes either side runs it.
   to confirm"; the Full, and the Capital, come at the game's end.
   Loaded deals' points count toward best scores, not High Score.
 
+- **Overcompensating** (secret, both sides): a limit hand cleared with
+  four of one tile, where three would do -- any limit hand but Four
+  Kongs and Seven Pairs. Counted by tiles, so All Green's 2222 split
+  into chows and a pair earns it too.
+
 ## Not yet built
 
-- Secret achivements?
-  - Overcompensating: used 4 tiles of a kind in a limit hand that requires 3
-    (on hold)
 - For reference: the brute forced maximum score is 804 & -4; bots
   average under 300 and never reached 500.
 - tab5 : qr code reading with camera to enter seeds

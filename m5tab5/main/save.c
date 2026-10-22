@@ -42,8 +42,9 @@ typedef struct {
 
 static blob_t s_blob;   /* 3 KB: off the stack */
 
-#define ACH_VER     (6u)    /* 6: Full on completed games only; 5: The Capital is Gone and High score; 4: each played game's seed, for Full; 3: a third secret; 2: a third win and the secrets */
-/* Versions 2 to 5 are prefixes of 6: each added only at the end. */
+#define ACH_VER     (7u)    /* 7: a fourth secret, kept at the end; 6: Full on completed games only; 5: The Capital is Gone and High score; 4: each played game's seed, for Full; 3: a third secret; 2: a third win and the secrets */
+/* Versions 2 to 6 are prefixes of 7: each added only at the end. */
+#define ACH_V6_SIZE (offsetof(um_ach_t, secret_more))
 #define ACH_V5_SIZE (offsetof(um_ach_t, played_done))
 #define ACH_V4_SIZE (offsetof(um_ach_t, capital))
 #define ACH_V3_SIZE (offsetof(um_ach_t, played_seed))
@@ -170,14 +171,15 @@ void save_load_ach(um_ach_t *a)
     }
     if (((s_ach_blob.ver == 2u && s_ach_blob.size == ACH_V2_SIZE) || (s_ach_blob.ver == 3u && s_ach_blob.size == ACH_V3_SIZE)
          || (s_ach_blob.ver == 4u && s_ach_blob.size == ACH_V4_SIZE)
-         || (s_ach_blob.ver == 5u && s_ach_blob.size == ACH_V5_SIZE))
+         || (s_ach_blob.ver == 5u && s_ach_blob.size == ACH_V5_SIZE)
+         || (s_ach_blob.ver == 6u && s_ach_blob.size == ACH_V6_SIZE))
         && len == offsetof(ach_blob_t, a) + s_ach_blob.size) {
         /* what it did not have starts empty: the later secrets, the
          * Capital and High score unearned, the played games' seeds unknown,
          * no set waiting to be confirmed */
         memset((uint8_t *)&s_ach_blob.a + s_ach_blob.size, 0, sizeof s_ach_blob.a - s_ach_blob.size);
         /* games played before completion was tracked count as completed */
-        for (int t = 0; t < UM_SET_COUNT; t++)
+        for (int t = 0; s_ach_blob.ver < 6u && t < UM_SET_COUNT; t++)
             for (int i = 0; i < UM_ACH_WINDOW; i++)
                 if (s_ach_blob.a.played[t][i]) s_ach_blob.a.played_done[t] |= (uint8_t)(1u << i);
         if (!um_ach_valid(&s_ach_blob.a)) {

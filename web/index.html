@@ -834,6 +834,8 @@ function clearSet() {
   const award = typeof setAward === 'function' && !replaying ? setAward(t) : null;
   if (LIMIT.has(t) && typeof celebrate === 'function' && !replaying) celebrate(t, kinds, v, award);
   else if (award && typeof banner === 'function') banner(t, kinds, award);
+  // after the hand's own celebration: Overcompensating
+  if (typeof overdone === 'function' && overdone(t, kinds)) { const a = secretAward('over'); if (a) celebrate(t, kinds, v, a); }
   sel.clear(); hintKeys.clear(); finishCheck(); commit();
 }
 // Set a basic set aside as a meld: no points yet, and it no longer counts toward the 24-tile limit.
@@ -1578,6 +1580,8 @@ const SECRETS = [
     ['Sorted the hand with tiles chosen, and lost the choice.', '牌を選んだまま整列して、選択が外れた。', '选着牌时排序，选择被清掉了。']],
   ['design', ['Intentional Game Design', '仕様です', '这是设计好的'],
     ['Tried to grow a melded pair into a pung. Only a pung grows.', '副露した対子を刻子に伸ばそうとした。伸ばせるのは刻子だけ。', '想把副露的对子变成刻子。只有刻子能变大。']],
+  ['over', ['Overcompensating', 'やりすぎ', '用力过猛'],
+    ['Cleared a limit hand holding four of a kind, where three would do.', '3枚で足りる役満に、同じ牌を4枚使って消した。', '用四张相同的牌清了一手只需三张的大满贯。']],
   ['random', ['Guaranteed Random', '保証付きの乱数', '保证随机'],
     ['Loaded a deal and played it.', '配牌を読み込んで遊んだ。', '载入一副牌并玩了起来。']],
   ['again', ['Try Try Again', '七転び八起き', '再接再厉'],
@@ -1589,6 +1593,13 @@ const SECRETS = [
 // them. Each is recorded against the device's game count when loaded
 // and the seed that was loaded.
 const LOAD_SECRETS = new Set(['random', 'again', 'shadows']);
+// A limit hand with four of one tile in it, where three would do: any
+// but Four Kongs, which needs them, and Seven Pairs, which wants pairs.
+function overdone(t, kinds) {
+  if (!LIMIT.has(t) || t === 'four kongs' || t === 'seven pairs') return false;
+  const c = {};
+  return kinds.some(k => (c[k] = (c[k] || 0) + 1) >= 4);
+}
 function secretAward(id, seed) {
   const byLoading = LOAD_SECRETS.has(id);
   if (secrets.has(id) || (!byLoading && (replaying || S.loaded))) return null;

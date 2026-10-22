@@ -41,10 +41,10 @@ static int classify_mode(void)
         uint8_t k[64];
         int n = 0;
         for (char *p = strtok(line, " \t\r\n"); p && n < 64; p = strtok(NULL, " \t\r\n")) k[n++] = (uint8_t)atoi(p);
-        if (n > UM_MAX_SEL) { puts("|0|0|0"); continue; }
+        if (n > UM_MAX_SEL) { puts("|0|0|0|0"); continue; }
         const um_set_t t = um_classify(k, n);
-        printf("%s|%d|%d|%d", um_set_key(t), t ? um_set_value(t, k, n) : 0, t ? (int)um_set_has_bonus(t, k, n) : 0,
-               t ? (int)um_set_holds_pair(t, k, n) : 0);
+        printf("%s|%d|%d|%d|%d", um_set_key(t), t ? um_set_value(t, k, n) : 0, t ? (int)um_set_has_bonus(t, k, n) : 0,
+               t ? (int)um_set_holds_pair(t, k, n) : 0, t ? (int)um_ach_overdone(t, k, n) : 0);
         /* and a limit hand's groups, as the celebration shows them */
         if (um_set_is_limit(t)) {
             uint8_t out[UM_MAX_SEL], glen[UM_MAX_GROUPS];
@@ -295,6 +295,7 @@ static void code_mode(uint32_t seed, int games)
  *   W             the game ends with every tile cleared (its Fulls, then wins)
  *   S             a sort threw a selection away
  *   D             Meld pressed on a melded pair and its third tile
+ *   O             a limit hand cleared with four of a kind where three would do
  *   H <points>    the game ends, stuck or not, with these points (its
  *                 Fulls, then High score)
  * and after each, the award and every record, for check.js to compare
@@ -352,6 +353,8 @@ static int ach_mode(void)
             um_ach_secret(&s_ach, &s_ag, UM_SECRET_WAIT);
         } else if (line[0] == 'D') {
             um_ach_secret(&s_ach, &s_ag, UM_SECRET_DESIGN);
+        } else if (line[0] == 'O') {
+            um_ach_secret(&s_ach, &s_ag, UM_SECRET_OVER);
         } else if (line[0] == 'H') {
             s_ag.points = (int32_t)atol(line + 2);
             bool cap = false;
@@ -372,8 +375,11 @@ static int ach_mode(void)
         printf(" | high");
         if (s_ach.high.game) printf(";%u/%u", (unsigned)s_ach.high.game, (unsigned)s_ach.high.seed);
         printf(" | secret");
-        static const char *SN[UM_SECRET_N] = { "place", "wait", "design" };
-        for (int s = 0; s < UM_SECRET_N; s++) if (s_ach.secret[s].game) printf(";%s=%u/%u", SN[s], (unsigned)s_ach.secret[s].game, (unsigned)s_ach.secret[s].seed);
+        static const char *SN[UM_SECRET_N] = { "place", "wait", "design", "over" };
+        for (int s = 0; s < UM_SECRET_N; s++) {
+            const um_rec_t *r = um_ach_secret_crec(&s_ach, s);
+            if (r->game) printf(";%s=%u/%u", SN[s], (unsigned)r->game, (unsigned)r->seed);
+        }
         printf("\n");
     }
     return 0;

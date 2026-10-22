@@ -138,6 +138,8 @@ zh-CN:
     # ui.c
     "Clear every set at least once. The river rises with each one.": "把每种组合都至少消除一次。每消一种，河水就涨一分。"
     # ui.c
+    "Cleared a limit hand holding four of a kind, where three would do.": "用四张相同的牌清了一手只需三张的大满贯。"
+    # ui.c
     "Clears and penalties go here.": "已消除的组合和罚分在这里。"
     # ui.c
     "Dark": "深色"
@@ -309,6 +311,8 @@ zh-CN:
     "Orientation": "屏幕方向"
     # guide.c, ui.c
     "Outside Hand": "全带幺"
+    # ui.c
+    "Overcompensating": "用力过猛"
     # guide.c
     "Pair": "对子"
     # ui.c

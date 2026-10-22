@@ -50,7 +50,7 @@ function makeAch() {
     ${js.slice(g0, g1)}
     ${js.slice(f0, f1)}
     ${js.slice(a, b)}
-    return { setS: v => { S = v; }, get S() { return S; }, nextGame, setAward, winAwards, secretAward, highAward, endAwards, CAPITAL_NAME, HIGH_NAME, LOAD_SECRETS, holdsPair, isPoker, celebs, FIRSTS, WINS, SECRETS, FLOOD_NAME,
+    return { setS: v => { S = v; }, get S() { return S; }, nextGame, setAward, winAwards, secretAward, highAward, endAwards, overdone, CAPITAL_NAME, HIGH_NAME, LOAD_SECRETS, holdsPair, isPoker, celebs, FIRSTS, WINS, SECRETS, FLOOD_NAME,
              get firsts() { return firsts; }, get fulls() { return fulls; }, get wins() { return wins; }, get secrets() { return secrets; }, get flood() { return flood; }, get capital() { return capital; }, get high() { return high; }, gamesPlayed };`)();
 }
 const ACH = makeAch();
@@ -108,11 +108,11 @@ function classifyCheck() {
     .toString().trim().split('\n');
   cases.forEach((ks, i) => {
     const t = G.classify(ks);
-    const want = `${t || ''}|${t ? G.setValue(t, ks) : 0}|${t ? (G.hasBonus(t, ks) ? 1 : 0) : 0}|${t && ACH.holdsPair({ t, k: ks }) ? 1 : 0}` +
+    const want = `${t || ''}|${t ? G.setValue(t, ks) : 0}|${t ? (G.hasBonus(t, ks) ? 1 : 0) : 0}|${t && ACH.holdsPair({ t, k: ks }) ? 1 : 0}|${t && ACH.overdone(t, ks) ? 1 : 0}` +
       (t && G.LIMIT.has(t) ? '|' + G.limitGroups(t, ks).map(g => g.join(',')).join('/') : '');
     if (out[i] !== want) fail(`classify [${ks}] C=${out[i]} JS=${want}`);
   });
-  console.log(`classify: ${cases.length} groups compared, ${limits} of them limit hands, with their grouping, and whether each holds a pair`);
+  console.log(`classify: ${cases.length} groups compared, ${limits} of them limit hands, with their grouping, whether each holds a pair, and whether it overcompensates`);
 }
 
 /* ---------- deal ---------- */
@@ -254,12 +254,13 @@ function achCheck() {
       script.push({ op: 'C', e });
       if (rnd(60) === 0) script.push({ op: 'S' });   // a sort with tiles chosen
       if (rnd(90) === 0) script.push({ op: 'D' });   // Meld pressed on a melded pair and its third tile
+      if (rnd(120) === 0) script.push({ op: 'O' });  // a limit hand with four of a kind where three would do
     }
     if (rnd(2) === 0 || last) script.push({ op: 'W' });
     if (rnd(3) === 0) script.push({ op: 'H', points: rnd(700) });   // the game's end, at these points
   }
   const out = execFileSync(UMTEST, ['ach'], {
-    input: script.map(x => x.op === 'C' ? `C ${x.e.t}|${x.e.k.join(',')}` : x.op === 'H' ? `H ${x.points}` : x.op === 'W' || x.op === 'S' || x.op === 'D' ? x.op : `${x.op} ${x.seed}`).join('\n') + '\n',
+    input: script.map(x => x.op === 'C' ? `C ${x.e.t}|${x.e.k.join(',')}` : x.op === 'H' ? `H ${x.points}` : x.op === 'W' || x.op === 'S' || x.op === 'D' || x.op === 'O' ? x.op : `${x.op} ${x.seed}`).join('\n') + '\n',
     maxBuffer: 1 << 28 }).toString().trim().split('\n');
   const norm = line => line.split(' | ').map(p => p.split(';').sort().join(';')).join(' | ');
   const recs = (name, m) => [name, ...[...m].map(([t, r]) => `${t}=${r.g}/${r.s}`)].join(';');
@@ -275,6 +276,7 @@ function achCheck() {
       award = a ? a.kind : '-';
     } else if (x.op === 'S') A.secretAward('wait');
     else if (x.op === 'D') A.secretAward('design');
+    else if (x.op === 'O') A.secretAward('over');
     else if (x.op === 'H') { A.S.points = x.points; ended = A.endAwards(); A.highAward(); }
     else if (!legacy) { ended = A.endAwards(); A.winAwards(); }
     // a game saved before games were counted had nothing tracked on the

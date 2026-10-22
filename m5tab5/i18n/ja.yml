@@ -138,6 +138,8 @@ ja:
     # ui.c
     "Clear every set at least once. The river rises with each one.": "すべての役を一度は消そう。一つ消すごとに川の水位が上がる。"
     # ui.c
+    "Cleared a limit hand holding four of a kind, where three would do.": "3枚で足りる役満に、同じ牌を4枚使って消した。"
+    # ui.c
     "Clears and penalties go here.": "消した組とペナルティがここに。"
     # ui.c
     "Dark": "ダーク"
@@ -309,6 +311,8 @@ ja:
     "Orientation": "画面の向き"
     # guide.c, ui.c
     "Outside Hand": "混全帯么九"
+    # ui.c
+    "Overcompensating": "やりすぎ"
     # guide.c
     "Pair": "対子"
     # ui.c

@@ -143,11 +143,20 @@ bool um_ach_high(um_ach_t *a, um_game_t *g)
     return true;
 }
 
+/* overdone */
+bool um_ach_overdone(um_set_t t, const uint8_t *kinds, int n)
+{
+    if (!um_set_is_limit(t) || t == UM_FOUR_KONGS || t == UM_SEVEN_PAIRS) return false;
+    uint8_t c[UM_KINDS] = { 0 };
+    for (int i = 0; i < n; i++) if (kinds[i] < UM_KINDS && ++c[kinds[i]] >= 4) return true;
+    return false;
+}
+
 /* secretAward */
 bool um_ach_secret(um_ach_t *a, um_game_t *g, int s)
 {
-    if (s < 0 || s >= UM_SECRET_N || a->secret[s].game) return false;
-    a->secret[s] = record(a, g);
+    if (s < 0 || s >= UM_SECRET_N || um_ach_secret_rec(a, s)->game) return false;
+    *um_ach_secret_rec(a, s) = record(a, g);
     return true;
 }
 
@@ -178,7 +187,7 @@ bool um_ach_valid(const um_ach_t *a)
         }
     }
     for (int w = 0; w < UM_WIN_N; w++) if (a->win[w].game > a->games) return false;
-    for (int s = 0; s < UM_SECRET_N; s++) if (a->secret[s].game > a->games) return false;
+    for (int s = 0; s < UM_SECRET_N; s++) if (um_ach_secret_crec(a, s)->game > a->games) return false;
     if (a->high.game > a->games || a->pend_game > a->games) return false;
     if (a->capital.game > a->games || (a->capital.game && um_ach_fulls(a) != UM_ACH_SETS)) return false;
     return a->flood.game <= a->games && (!a->flood.game || um_ach_firsts(a) == UM_ACH_SETS);
