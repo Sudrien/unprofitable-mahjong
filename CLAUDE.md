@@ -78,3 +78,6 @@ and a patch that changes either side runs it.
 - loaded games cannot be played unless they are seed only, no moves. a
   loaded seed is not playable if a limit set is possible from the first
   18 tiles.
+- all poker hands achivement (opposite of no poker hands)
+- the brute forced max score is... 804 & -4 ... so is haigh score achivement of 600 valid?
+ 
