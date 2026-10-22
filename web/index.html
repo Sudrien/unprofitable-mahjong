@@ -1429,6 +1429,9 @@ function render() {
 //          or with every poker hand (a royal flush is a flush).
 //   The Yellow River Floods Again: every set's First.
 //   Secrets: not listed until earned, and no part of the river.
+// A loaded deal (S.loaded) earns Firsts, and so the river, and nothing
+// else: no Full, no win, no secret. Replaying a seed can find Firsts it
+// missed before, but cannot farm the rest.
 // Each is recorded as { g, s }: the game it was earned in, by the running
 // count, and that game's seed, kept (not shown) so the deal can be found again. A record
 // saved as a bare game number has no seed (s: null).
@@ -1467,8 +1470,9 @@ const recWhere = r => gameNo(r.g);
 function setAward(t) {
   if (t === 'triple chow') t = 'mixed triple chow';     // older saves' name for it
   const g = thisGame();
-  const gs = (played.get(t) || []).filter(x => x.g > g - FULL_IN && x.g !== g).concat({ g, s: isSeed(S.seed) ? S.seed : null });
-  played.set(t, gs); writeMap(PLAYED_KEY, played);
+  // a loaded deal is not one of the games Full counts
+  const gs = (played.get(t) || []).filter(x => x.g > g - FULL_IN && x.g !== g).concat(S.loaded ? [] : [{ g, s: isSeed(S.seed) ? S.seed : null }]);
+  if (!S.loaded) { played.set(t, gs); writeMap(PLAYED_KEY, played); }
   let award = null;
   if (!firsts.has(t)) {
     firsts.set(t, record()); writeMap(FIRSTS_KEY, firsts);
@@ -1480,7 +1484,7 @@ function setAward(t) {
       queueMicrotask(() => celebrate(t, S.log[S.log.length - 1].k, FIRSTS.length,
         { kicker: L(`Every set · ${gameNo(g)}`, `すべての役 · ${gameNo(g)}`, `所有组合 · ${gameNo(g)}`), name: FLOOD_NAME }));
     }
-  } else if (!fulls.has(t) && dealsIn(gs) >= FULL_OF) {
+  } else if (!S.loaded && !fulls.has(t) && dealsIn(gs) >= FULL_OF) {
     fulls.set(t, record()); writeMap(FULL_KEY, fulls);
     award = { kind: 'full', kicker: L(`Full · ${FULL_OF} of ${FULL_IN} games`, `フル · ${FULL_IN}局中${FULL_OF}局`, `全满 · ${FULL_IN}局中${FULL_OF}局`) + ' · ' + gameNo(g) };
   }
@@ -1517,7 +1521,7 @@ const SECRETS = [
     ['Tried to grow a melded pair into a pung. Only a pung grows.', '副露した対子を刻子に伸ばそうとした。伸ばせるのは刻子だけ。', '想把副露的对子变成刻子。只有刻子能变大。']]
 ];
 function secretAward(id) {
-  if (replaying || secrets.has(id)) return null;
+  if (replaying || S.loaded || secrets.has(id)) return null;
   const s = SECRETS.find(x => x[0] === id);
   if (!s) return null;
   const r = record();
@@ -1527,7 +1531,7 @@ function secretAward(id) {
 }
 // At the end of a game: a win, all 136 cleared, may earn these.
 function winAwards() {
-  if (visible().length || pool() || S.melds.length) return;
+  if (S.loaded || visible().length || pool() || S.melds.length) return;
   const sets = S.log.filter(e => BASE[e.t] !== undefined), last = sets[sets.length - 1];
   if (!last) return;
   const place = secretAward('place');
@@ -1917,7 +1921,9 @@ $('loadGo').onclick = () => {
   }
   const inPlay = !S.done && S.log.length > 0;
   loadArmed = r.seed;
-  $('loadMsg').innerHTML = L('A fresh deal, ready to play.', '新しい配牌です。遊べます。', '一副新牌，可以玩。') +
+  $('loadMsg').innerHTML = L('A fresh deal, ready to play. A loaded deal earns Firsts only: no Full, wins or secrets.',
+    '新しい配牌です。遊べます。読み込んだ配牌で取れるのは初めての役だけで、フル・完全消去・シークレットは取れません。',
+    '一副新牌，可以玩。载入的牌只能获得首次达成，不计全满、清完和隐藏成就。') +
     (inPlay ? ' ' + L('Playing it gives up the game in play.', '遊ぶと今の対局は終わります。', '玩这副牌会放弃当前牌局。') : '');
   $('loadGo').innerHTML = L('Play this deal', 'この配牌で遊ぶ', '玩这副牌');
 };

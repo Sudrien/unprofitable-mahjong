@@ -80,9 +80,11 @@ and a patch that changes either side runs it.
 
 - **Loading a code (web):** Load takes a pasted code or link. With moves
   it plays back; with none it is a deal, playable as a new game unless a
-  limit hand is already among its first 18 tiles. A loaded game counts
-  like any other and is marked S.loaded. Full now needs 3 different
-  deals in its window, on both sides.
+  limit hand is already among its first 18 tiles. A loaded game is
+  marked S.loaded and earns Firsts (so the river) and nothing else: not
+  Full, wins or secrets. Replaying a seed can find Firsts it missed.
+  Full also needs 3 different deals in its window, on both sides. When
+  the Tab5 loads seeds, um_game_t needs the loaded mark too.
 
 ## Not yet built
 
