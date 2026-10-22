@@ -170,7 +170,11 @@ zh-CN:
     # ui.c
     "FIRST TIME · GAME %d": "首次达成 · 第%d局"
     # ui.c
+    "FULL · %d SETS · GAME %d": "全满 · %d种 · 第%d局"
+    # ui.c
     "FULL · 3 OF 5 GAMES · GAME %d": "全满 · 5局中3局 · 第%d局"
+    # ui.c
+    "FULL · FINISH THE GAME TO CONFIRM": "全满 · 结束本局后确认"
     # ui.c
     "Finished a game with no tiles left.": "一张牌不剩地结束了一局。"
     # guide.c

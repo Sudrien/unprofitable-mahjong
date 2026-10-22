@@ -1601,6 +1601,35 @@ static void after_move(bool was_done)
         save_prefs(&s_prefs);
         /* A Place for Everything first, as the web version's winAwards */
         const bool place = um_all_cleared(&s_g) && s_g.log_n && um_ach_secret(&s_ach, &s_g, UM_SECRET_PLACE);
+        /* the game's Fulls first, as endAwards before winAwards: the
+         * last of them in the banner, the Capital celebrated */
+        um_set_t lastfull = UM_NONE;
+        bool capital = false;
+        const int nfull = um_ach_end(&s_ach, &s_g, &lastfull, &capital);
+        if (nfull) {
+            ESP_LOGI(TAG, "game %u: %d full%s", (unsigned)s_g.game_no, nfull, capital ? "; The Capital is Gone" : "");
+            save_ach(&s_ach);
+            /* the last clear of that set this game, for its tiles */
+            const um_log_t *fe = NULL;
+            const int back = s_g.log_n < UM_LOG_N ? (int)s_g.log_n : UM_LOG_N;
+            for (int j = 1; j <= back && !fe; j++) {
+                const um_log_t *e = &s_g.log[(s_g.log_n - j) % UM_LOG_N];
+                if (e->t == lastfull) fe = e;
+            }
+            s_ban.t = lastfull;
+            s_ban.name = NULL;
+            s_ban.full = true;
+            s_ban.n = fe ? fe->n : 0;
+            if (fe) memcpy(s_ban.k, fe->k, fe->n);
+            if (nfull > 1) snprintf(s_ban.kick, sizeof s_ban.kick, _("FULL · %d SETS · GAME %d"), nfull, (int)s_g.game_no);
+            else snprintf(s_ban.kick, sizeof s_ban.kick, _("FULL · 3 OF 5 GAMES · GAME %d"), (int)s_g.game_no);
+            s_ban.until = esp_timer_get_time() + BANNER_US;
+            if (capital && fe) {
+                static char ckick[96];
+                snprintf(ckick, sizeof ckick, _("EVERY SET FULL · GAME %d"), (int)s_g.game_no);
+                celebrate(lastfull, fe->k, fe->n, UM_ACH_SETS, ckick, CAPITAL_NAME);
+            }
+        }
         const uint8_t wins = um_ach_win(&s_ach, &s_g);
         const bool high = um_ach_high(&s_ach, &s_g);
         if (high) {
@@ -1684,7 +1713,7 @@ static void press(int b)
         bool flood = false, capital = false;
         const um_award_t aw = um_ach_clear(&s_ach, &s_g, t, &flood, &capital);
         if (aw != UM_AWARD_NONE) {
-            ESP_LOGI(TAG, "game %u: %s %s%s", (unsigned)s_g.game_no, aw == UM_AWARD_FIRST ? "first" : "full", um_set_key(t),
+            ESP_LOGI(TAG, "game %u: %s %s%s", (unsigned)s_g.game_no, aw == UM_AWARD_FIRST ? "first" : "full when finished", um_set_key(t),
                      flood ? "; The Yellow River Floods Again" : "");
             save_ach(&s_ach);
         }
@@ -1693,13 +1722,13 @@ static void press(int b)
         const int gn = (int)s_g.game_no;
         if (aw == UM_AWARD_FIRST && um_set_is_limit(t)) snprintf(kick, sizeof kick, _("FIRST LIMIT HAND · GAME %d"), gn);
         else if (aw == UM_AWARD_FIRST) snprintf(kick, sizeof kick, _("FIRST TIME · GAME %d"), gn);
-        else if (aw == UM_AWARD_FULL) snprintf(kick, sizeof kick, _("FULL · 3 OF 5 GAMES · GAME %d"), gn);
+        else if (aw == UM_AWARD_PENDING) snprintf(kick, sizeof kick, "%s", _("FULL · FINISH THE GAME TO CONFIRM"));
         if (um_set_is_limit(t)) celebrate(t, k, n, v, aw != UM_AWARD_NONE ? kick : NULL, NULL);
         else if (aw != UM_AWARD_NONE) {
             /* a new one replaces any still showing */
             s_ban.t = t;
             s_ban.name = NULL;
-            s_ban.full = aw == UM_AWARD_FULL;
+            s_ban.full = aw != UM_AWARD_FIRST;
             s_ban.n = (uint8_t)n;
             memcpy(s_ban.k, k, (size_t)n);
             for (int i = 1; i < n; i++) for (int j = i; j > 0 && s_ban.k[j] < s_ban.k[j - 1]; j--) { const uint8_t x = s_ban.k[j]; s_ban.k[j] = s_ban.k[j - 1]; s_ban.k[j - 1] = x; }
@@ -1709,11 +1738,6 @@ static void press(int b)
         if (flood) {
             snprintf(kick, sizeof kick, _("EVERY SET · GAME %d"), gn);
             celebrate(t, k, n, UM_ACH_SETS, kick, FLOOD_NAME);
-        }
-        if (capital) {
-            ESP_LOGI(TAG, "game %u: The Capital is Gone", (unsigned)s_g.game_no);
-            snprintf(kick, sizeof kick, _("EVERY SET FULL · GAME %d"), gn);
-            celebrate(t, k, n, UM_ACH_SETS, kick, CAPITAL_NAME);
         }
         break;
     }

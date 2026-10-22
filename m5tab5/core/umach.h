@@ -8,7 +8,10 @@
  *   First   a set cleared for the first time
  *   Full    a set cleared in UM_ACH_FULL_OF of any UM_ACH_WINDOW games in a row,
  *           UM_ACH_FULL_OF different deals among them (a seed played
- *           again is the same deal)
+ *           again is the same deal). Only completed games count --
+ *           finished or stuck, not given up for a new deal -- so a clear
+ *           that would make one is UM_AWARD_PENDING, and the Full itself
+ *           comes from um_ach_end
  *   Wins    all 136 cleared with no poker hand, with no pair in any set,
  *           or with every poker hand (a royal flush is a flush)
  *   The Yellow River Floods Again: every set's First
@@ -67,20 +70,34 @@ typedef struct {
     /* last again, for the same reason */
     um_rec_t capital;
     um_rec_t high;
+    /* last again: which of played[t]'s games were completed (bit i for
+     * played[t][i]; a save from before has them all completed), and the
+     * sets already told "finish the game to confirm" in game pend_game */
+    uint8_t  played_done[UM_SET_COUNT];
+    uint32_t pend_game;
+    uint32_t pend[2];   /* bit t of 64 */
 } um_ach_t;
 
-typedef enum { UM_AWARD_NONE, UM_AWARD_FIRST, UM_AWARD_FULL } um_award_t;
+typedef enum { UM_AWARD_NONE, UM_AWARD_FIRST, UM_AWARD_FULL, UM_AWARD_PENDING } um_award_t;
 
 /* A new deal: the device's count goes up and the game takes the number.
  * Call it after um_new, which clears the struct. */
 void um_ach_new_game(um_ach_t *a, um_game_t *g);
 
 /* Set t was just cleared in g (setAward). Returns what that earned, if
- * anything; *flood is set when it was the last set's First, which also
- * earns The Yellow River Floods Again, and *capital when it was the last
- * set's Full, which earns The Capital is Gone. Either may be NULL. A game with no number yet (saved
+ * anything: a First, or UM_AWARD_PENDING once a game for a set this game
+ * would make Full when completed. *flood is set when it was the last
+ * set's First, which also earns The Yellow River Floods Again. Fulls,
+ * and so The Capital is Gone, come only from um_ach_end; *capital is
+ * always false here, kept for callers. Either may be NULL. A game with no number yet (saved
  * before games were counted) takes the next one. */
 um_award_t um_ach_clear(um_ach_t *a, um_game_t *g, um_set_t t, bool *flood, bool *capital);
+
+/* At the end of g, finished or stuck (endAwards): its clears count as
+ * completed, and every Full they make is earned. Returns how many; *last
+ * is the last set made Full, *capital set when that felled the Capital.
+ * Idempotent: a second call for the same game earns nothing. */
+int um_ach_end(um_ach_t *a, um_game_t *g, um_set_t *last, bool *capital);
 
 /* At the end of g, finished or stuck (highAward): true if its points
  * newly earn High score. */

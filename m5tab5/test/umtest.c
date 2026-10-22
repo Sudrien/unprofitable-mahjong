@@ -292,10 +292,11 @@ static void code_mode(uint32_t seed, int games)
 /* ach: a script of games, one line each step --
  *   N <seed>      a new deal (U <seed>: one saved before games were counted)
  *   C <key>|<k,k,...>   that set cleared
- *   W             the game ends with every tile cleared
+ *   W             the game ends with every tile cleared (its Fulls, then wins)
  *   S             a sort threw a selection away
  *   D             Meld pressed on a melded pair and its third tile
- *   H <points>    the game ends, stuck or not, with these points
+ *   H <points>    the game ends, stuck or not, with these points (its
+ *                 Fulls, then High score)
  * and after each, the award and every record, for check.js to compare
  * with the web version's. */
 static um_ach_t s_ach;
@@ -314,7 +315,7 @@ static int ach_mode(void)
     while (fgets(line, sizeof line, stdin)) {
         line[strcspn(line, "\r\n")] = 0;
         const char *award = "-";
-        int flood = 0, wins = 0, capital = 0, high = 0;
+        int flood = 0, wins = 0, capital = 0, high = 0, ended = 0;
         if (line[0] == 'N' || line[0] == 'U') {
             memset(&s_ag, 0, sizeof s_ag);
             s_ag.rng = (uint32_t)strtoul(line + 2, NULL, 10);
@@ -337,11 +338,14 @@ static int ach_mode(void)
             bool f = false, cap = false;
             const um_award_t a = um_ach_clear(&s_ach, &s_ag, t, &f, &cap);
             capital = cap;
-            award = a == UM_AWARD_FIRST ? "first" : a == UM_AWARD_FULL ? "full" : "-";
+            award = a == UM_AWARD_FIRST ? "first" : a == UM_AWARD_FULL ? "full" : a == UM_AWARD_PENDING ? "pending" : "-";
             flood = f;
         } else if (line[0] == 'W') {
             /* A Place for Everything first, as winAwards; the script's
              * games are all cleared when they end */
+            bool cap = false;
+            ended = um_ach_end(&s_ach, &s_ag, NULL, &cap);
+            capital = cap;
             if (s_ag.log_n) um_ach_secret(&s_ach, &s_ag, UM_SECRET_PLACE);
             wins = um_ach_win(&s_ach, &s_ag);
         } else if (line[0] == 'S') {
@@ -350,10 +354,13 @@ static int ach_mode(void)
             um_ach_secret(&s_ach, &s_ag, UM_SECRET_DESIGN);
         } else if (line[0] == 'H') {
             s_ag.points = (int32_t)atol(line + 2);
+            bool cap = false;
+            ended = um_ach_end(&s_ach, &s_ag, NULL, &cap);
+            capital = cap;
             high = um_ach_high(&s_ach, &s_ag);
         }
         if (!um_ach_valid(&s_ach)) { fprintf(stderr, "ach: um_ach_valid refused the records\n"); return 1; }
-        printf("R %s %d %d %d %d %u | ", award, flood, capital, high, wins, (unsigned)s_ach.games);
+        printf("R %s %d %d %d %d %d %u | ", award, ended, flood, capital, high, wins, (unsigned)s_ach.games);
         ach_recs("first", s_ach.first); printf(" | ");
         ach_recs("full", s_ach.full); printf(" | win");
         static const char *WN[UM_WIN_N] = { "no poker", "no pairs", "all poker" };

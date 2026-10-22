@@ -951,6 +951,7 @@ function finishCheck() {
     const p = penalty();
     if (best === null || p > best) { best = p; try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) {} }
     if (bestPts === null || S.points > bestPts) { bestPts = S.points; try { localStorage.setItem(BEST_PTS_KEY, String(bestPts)); } catch (e) {} }
+    if (typeof endAwards === 'function') endAwards();
     if (typeof winAwards === 'function') winAwards();
     if (typeof highAward === 'function') highAward();
   }
@@ -1427,6 +1428,9 @@ function render() {
 //   First: a set cleared for the first time.
 //   Full:  a set cleared in 3 of any 5 games in a row, with 3 different
 //          deals among them: a loaded seed played again is the same deal.
+//          Only completed games count -- finished or stuck, not given up
+//          for a new deal -- so a clear that would make a Full says
+//          "finish the game to confirm", and the Full comes at the end.
 //   Wins:  all 136 cleared with no poker hand, with no pair in any set,
 //          or with every poker hand (a royal flush is a flush).
 //   The Yellow River Floods Again: every set's First.
@@ -1463,9 +1467,12 @@ try { flood = readRec(JSON.parse(localStorage.getItem(FLOOD_KEY))); } catch (e) 
 try { capital = readRec(JSON.parse(localStorage.getItem(CAPITAL_KEY))); } catch (e) {}
 try { high = readRec(JSON.parse(localStorage.getItem(HIGH_KEY))); } catch (e) {}
 // the games each set was cleared in, the last FULL_IN of them, each as
-// { g, s }: its number and its seed. Saved before seeds were kept, an
-// entry is a bare number: its seed unknown, so counted as a deal of its own.
-const readPlayed = v => isGame(v) ? { g: v, s: null } : v && isGame(v.g) && (v.s === null || isSeed(v.s)) ? { g: v.g, s: v.s } : null;
+// { g, s, d }: its number, its seed, and whether that game was completed
+// (d false until it is). Saved before seeds were kept, an entry is a bare
+// number: its seed unknown, so counted as a deal of its own. Saved before
+// completion was tracked, an entry has no d, and counts as completed.
+const readPlayed = v => isGame(v) ? { g: v, s: null } : v && isGame(v.g) && (v.s === null || isSeed(v.s)) ? (v.d === false ? { g: v.g, s: v.s, d: false } : { g: v.g, s: v.s }) : null;
+const isDone = x => x.d !== false;
 let played = readMap(PLAYED_KEY, a => Array.isArray(a) && a.every(x => readPlayed(x)) ? a.map(readPlayed) : null);
 // how many different deals a set's games were: unknown seeds each count
 const dealsIn = gs => new Set(gs.filter(x => x.s !== null).map(x => x.s)).size + gs.filter(x => x.s === null).length;
@@ -1479,8 +1486,9 @@ function setAward(t) {
   if (t === 'triple chow') t = 'mixed triple chow';     // older saves' name for it
   const g = thisGame();
   // a loaded deal is not one of the games Full counts
-  const gs = (played.get(t) || []).filter(x => x.g > g - FULL_IN && x.g !== g).concat(S.loaded ? [] : [{ g, s: isSeed(S.seed) ? S.seed : null }]);
+  const gs = (played.get(t) || []).filter(x => x.g > g - FULL_IN && x.g !== g).concat(S.loaded ? [] : [{ g, s: isSeed(S.seed) ? S.seed : null, d: false }]);
   if (!S.loaded) { played.set(t, gs); writeMap(PLAYED_KEY, played); }
+  S.pend = S.pend || [];
   let award = null;
   if (!firsts.has(t)) {
     firsts.set(t, record()); writeMap(FIRSTS_KEY, firsts);
@@ -1492,18 +1500,44 @@ function setAward(t) {
       queueMicrotask(() => celebrate(t, S.log[S.log.length - 1].k, FIRSTS.length,
         { kicker: L(`Every set · ${gameNo(g)}`, `すべての役 · ${gameNo(g)}`, `所有组合 · ${gameNo(g)}`), name: FLOOD_NAME }));
     }
-  } else if (!S.loaded && !fulls.has(t) && dealsIn(gs) >= FULL_OF) {
-    fulls.set(t, record()); writeMap(FULL_KEY, fulls);
-    if (!capital && FIRSTS.every(x => fulls.has(x))) {
-      capital = record();
-      try { localStorage.setItem(CAPITAL_KEY, JSON.stringify(capital)); } catch (e) {}
-      queueMicrotask(() => celebrate(t, S.log[S.log.length - 1].k, FIRSTS.length,
-        { kicker: L(`Every set full · ${gameNo(g)}`, `すべての役がフル · ${gameNo(g)}`, `所有组合全满 · ${gameNo(g)}`), name: CAPITAL_NAME }));
-    }
-    award = { kind: 'full', kicker: L(`Full · ${FULL_OF} of ${FULL_IN} games`, `フル · ${FULL_IN}局中${FULL_OF}局`, `全满 · ${FULL_IN}局中${FULL_OF}局`) + ' · ' + gameNo(g) };
+  } else if (!S.loaded && !fulls.has(t) && dealsIn(gs.filter(x => isDone(x) || x.g === g)) >= FULL_OF && !S.pend.includes(t)) {
+    // full once this game is completed: said once a game for each set
+    S.pend.push(t);
+    award = { kind: 'pending', kicker: L('Full · finish the game to confirm', 'フル · 対局を終えると確定', '全满 · 结束本局后确认') };
   }
   if (award) buildGuide();
   return award;
+}
+// One Full earned: recorded, and the Capital checked. Returns whether the Capital fell.
+function giveFull(t) {
+  fulls.set(t, record()); writeMap(FULL_KEY, fulls);
+  if (capital || !FIRSTS.every(x => fulls.has(x))) return false;
+  capital = record();
+  try { localStorage.setItem(CAPITAL_KEY, JSON.stringify(capital)); } catch (e) {}
+  return true;
+}
+// At the end of a game, finished or stuck: its clears count as completed,
+// and every Full they make is earned. The last set of those gets the
+// banner, and the Capital its celebration.
+function endAwards() {
+  if (S.loaded) return 0;
+  const g = thisGame();
+  let last = null, n = 0, fell = false;
+  for (const [t, gs] of played) {
+    if (!gs.some(x => x.g === g && x.d === false)) continue;
+    gs.forEach(x => { if (x.g === g) delete x.d; });
+    if (!fulls.has(t) && dealsIn(gs.filter(isDone)) >= FULL_OF) { fell = giveFull(t) || fell; last = t; n++; }
+  }
+  writeMap(PLAYED_KEY, played);
+  if (!n) return 0;
+  const e = S.log.filter(x => x.t === last || (x.t === 'triple chow' && last === 'mixed triple chow')).pop();
+  const kinds = e ? e.k : [];
+  if (typeof banner === 'function' && typeof $ === 'function') banner(last, kinds, { kind: 'full',
+    kicker: (n > 1 ? L(`Full · ${n} sets`, `フル · ${n}役`, `全满 · ${n}种`) : L(`Full · ${FULL_OF} of ${FULL_IN} games`, `フル · ${FULL_IN}局中${FULL_OF}局`, `全满 · ${FULL_IN}局中${FULL_OF}局`)) + ' · ' + gameNo(g) });
+  if (fell) celebrate(last, kinds, FIRSTS.length,
+    { kicker: L(`Every set full · ${gameNo(g)}`, `すべての役がフル · ${gameNo(g)}`, `所有组合全满 · ${gameNo(g)}`), name: CAPITAL_NAME });
+  buildGuide();
+  return n;
 }
 const FLOOD_NAME = ['The Yellow River Floods Again', '黄河、再び溢れる', '黄河又泛滥了'];
 const CAPITAL_NAME = ['The Capital is Gone', '都は消えた', '都城已逝'];
@@ -1590,7 +1624,7 @@ function banner(t, kinds, award) {
   const el = $('banner');
   clearTimeout(banTimer);
   el.classList.remove('out');
-  const full = award.kind === 'full';
+  const full = award.kind !== 'first';
   el.innerHTML = `<span class="mark${full ? ' full' : ''}" aria-hidden="true">${full ? '★' : '✓'}</span>` +
     `<span class="what"><small>${award.kicker}</small><b>${LA(setNameArr(t).map((x, i) => i ? x : t.startsWith('run of ') ? 'Run of ' + t.slice(7) : title(x)))}</b></span>` +
     `<span class="row" aria-hidden="true">${minis(kinds.slice().sort((a, b) => a - b))}</span>`;

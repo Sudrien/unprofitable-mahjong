@@ -50,7 +50,7 @@ function makeAch() {
     ${js.slice(g0, g1)}
     ${js.slice(f0, f1)}
     ${js.slice(a, b)}
-    return { setS: v => { S = v; }, get S() { return S; }, nextGame, setAward, winAwards, secretAward, highAward, CAPITAL_NAME, HIGH_NAME, LOAD_SECRETS, holdsPair, isPoker, celebs, FIRSTS, WINS, SECRETS, FLOOD_NAME,
+    return { setS: v => { S = v; }, get S() { return S; }, nextGame, setAward, winAwards, secretAward, highAward, endAwards, CAPITAL_NAME, HIGH_NAME, LOAD_SECRETS, holdsPair, isPoker, celebs, FIRSTS, WINS, SECRETS, FLOOD_NAME,
              get firsts() { return firsts; }, get fulls() { return fulls; }, get wins() { return wins; }, get secrets() { return secrets; }, get flood() { return flood; }, get capital() { return capital; }, get high() { return high; }, gamesPlayed };`)();
 }
 const ACH = makeAch();
@@ -263,33 +263,34 @@ function achCheck() {
     maxBuffer: 1 << 28 }).toString().trim().split('\n');
   const norm = line => line.split(' | ').map(p => p.split(';').sort().join(';')).join(' | ');
   const recs = (name, m) => [name, ...[...m].map(([t, r]) => `${t}=${r.g}/${r.s}`)].join(';');
-  let flooded = 0, fulls = 0, won = 0, legacy = false, legacyWins = 0, found = 0;
+  let pendings = 0, flooded = 0, fulls = 0, won = 0, legacy = false, legacyWins = 0, found = 0;
   script.forEach((x, i) => {
     A.celebs.length = 0;
-    let award = '-';
+    let award = '-', ended = 0;
     if (x.op === 'N' || x.op === 'U') legacy = x.op === 'U';
     if (x.op === 'N' || x.op === 'U') A.setS({ seed: x.seed, game: x.op === 'N' ? A.nextGame() : undefined, log: [], hand: [], wall: [], discards: [], melds: [] });
     else if (x.op === 'C') {
       A.S.log.push({ t: x.e.t, k: x.e.k.slice().sort((a, b) => a - b), v: 0 });
       const a = A.setAward(x.e.t);
-      award = !a ? '-' : a.kicker.startsWith('First') ? 'first' : a.kicker.startsWith('Full') ? 'full' : '?';
+      award = a ? a.kind : '-';
     } else if (x.op === 'S') A.secretAward('wait');
     else if (x.op === 'D') A.secretAward('design');
-    else if (x.op === 'H') { A.S.points = x.points; A.highAward(); }
-    else if (!legacy) A.winAwards();
+    else if (x.op === 'H') { A.S.points = x.points; ended = A.endAwards(); A.highAward(); }
+    else if (!legacy) { ended = A.endAwards(); A.winAwards(); }
     // a game saved before games were counted had nothing tracked on the
     // Tab5, so it earns no win there; the web version would read its log.
     // A Place for Everything asks only that the table is empty, so it is
     // earned either way.
-    else { if (A.S.log.length) A.secretAward('place'); legacyWins++; }
+    else { ended = A.endAwards(); if (A.S.log.length) A.secretAward('place'); legacyWins++; }
     const flood = A.celebs.some(c => c && c.name === A.FLOOD_NAME) ? 1 : 0;
     const wins = A.celebs.reduce((m, c) => { const w = c && A.WINS.findIndex(([, name]) => name === c.name); return w >= 0 && c ? m | (1 << w) : m; }, 0);
     const capital = A.celebs.some(c => c && c.name === A.CAPITAL_NAME) ? 1 : 0, high = A.celebs.some(c => c && c.name === A.HIGH_NAME) ? 1 : 0;
     const one = (name, r) => `${name}${r ? `;${r.g}/${r.s}` : ''}`;
-    const want = `R ${award} ${flood} ${capital} ${high} ${wins} ${A.gamesPlayed()} | ${recs('first', A.firsts)} | ${recs('full', A.fulls)} | ${recs('win', A.wins)} | ${one('flood', A.flood)} | ${one('capital', A.capital)} | ${one('high', A.high)} | ${recs('secret', A.secrets)}`;
+    const want = `R ${award} ${ended} ${flood} ${capital} ${high} ${wins} ${A.gamesPlayed()} | ${recs('first', A.firsts)} | ${recs('full', A.fulls)} | ${recs('win', A.wins)} | ${one('flood', A.flood)} | ${one('capital', A.capital)} | ${one('high', A.high)} | ${recs('secret', A.secrets)}`;
     if (norm(out[i] || '') !== norm(want)) fail(`ach step ${i + 1} (${x.op}${x.e ? ' ' + x.e.t : ''})\n   C: ${out[i]}\n  JS: ${want}`);
-    flooded |= flood; fulls += award === 'full'; won |= wins; found = A.secrets.size;
+    flooded |= flood; fulls += ended; pendings += award === 'pending'; won |= wins; found = A.secrets.size;
   });
+  if (!pendings) fail('ach: no clear was ever told to finish the game to confirm a Full');
   if (!A.capital || !A.high) fail(`ach: the script never reached The Capital is Gone (${!!A.capital}) or High score (${!!A.high})`);
   if (!flooded || !fulls || won !== (1 << A.WINS.length) - 1 || found !== A.SECRETS.length - A.LOAD_SECRETS.size)
     fail(`ach: the script never reached everything (flood ${flooded}, fulls ${fulls}, wins ${won}, secrets ${found})`);

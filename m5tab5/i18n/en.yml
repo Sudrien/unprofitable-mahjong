@@ -170,7 +170,11 @@ en:
     # ui.c
     "FIRST TIME · GAME %d": ~
     # ui.c
+    "FULL · %d SETS · GAME %d": ~
+    # ui.c
     "FULL · 3 OF 5 GAMES · GAME %d": ~
+    # ui.c
+    "FULL · FINISH THE GAME TO CONFIRM": ~
     # ui.c
     "Finished a game with no tiles left.": ~
     # guide.c

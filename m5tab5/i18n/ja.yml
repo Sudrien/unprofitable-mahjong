@@ -170,7 +170,11 @@ ja:
     # ui.c
     "FIRST TIME · GAME %d": "初めての役 · 第%d局"
     # ui.c
+    "FULL · %d SETS · GAME %d": "フル · %d役 · 第%d局"
+    # ui.c
     "FULL · 3 OF 5 GAMES · GAME %d": "フル · 5局中3局 · 第%d局"
+    # ui.c
+    "FULL · FINISH THE GAME TO CONFIRM": "フル · 対局を終えると確定"
     # ui.c
     "Finished a game with no tiles left.": "牌を1枚も残さずに終局した。"
     # guide.c

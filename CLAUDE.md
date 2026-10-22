@@ -99,11 +99,14 @@ and a patch that changes either side runs it.
   exempt from the loaded-deal rule; recorded at the device's game count
   with the loaded seed.
 
+- **Full on completed games:** Firsts need no finished game (easy to
+  hunt); Full counts only games completed, finished or stuck, not given
+  up for a new deal. A clear that would make one says "finish the game
+  to confirm"; the Full, and the Capital, come at the game's end.
+  Loaded deals' points count toward best scores, not High Score.
+
 ## Not yet built
 
-- first achivements do not require a game to be completed. author thinks
-  this is fine - this means the are easy to hunt. the 'full' achievement
-  requires completed games.
 - Secret achivements?
   - Overcompensating: used 4 tiles of a kind in a limit hand that requires 3
     (on hold)

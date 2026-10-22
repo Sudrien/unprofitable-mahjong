@@ -276,9 +276,20 @@ int main(void)
         save_load_ach(&b);
         CHECK(b.games == a.games && b.played_known[UM_PAIR] == 1 && !b.capital.game && !b.high.game,
               "achievements: a version 4 save was not read as it was");
+
+        /* version 5: version 6 without completion; its games count as completed */
+        static uint8_t v5[8 + offsetof(um_ach_t, played_done)];
+        const uint32_t ver5 = 5, size5 = (uint32_t)(sizeof v5 - 8);
+        memcpy(v5, &ver5, 4);
+        memcpy(v5 + 4, &size5, 4);
+        memcpy(v5 + 8, &a, size5);
+        put("ach", v5, sizeof v5);
+        save_load_ach(&b);
+        CHECK(b.games == a.games && b.played[UM_PAIR][0] && (b.played_done[UM_PAIR] & 1) && !b.pend_game,
+              "achievements: a version 5 save was not read as it was");
     }
 
     if (s_bad) return 1;
-    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip, and versions 1 to 4 read\n");
+    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip, and versions 1 to 5 read\n");
     return 0;
 }

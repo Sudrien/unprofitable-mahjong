@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include "i18n.h"
 
-const unsigned i18n_count = 246;
+const unsigned i18n_count = 248;
 const char *const i18n_keys[] = {
     " Undo to fix it.",
     " and a lone ",
@@ -92,7 +92,9 @@ const char *const i18n_keys[] = {
     "Every tile cleared. Try the next deal without shortcuts.",
     "FIRST LIMIT HAND · GAME %d",
     "FIRST TIME · GAME %d",
+    "FULL · %d SETS · GAME %d",
     "FULL · 3 OF 5 GAMES · GAME %d",
+    "FULL · FINISH THE GAME TO CONFIRM",
     "Finished a game with no tiles left.",
     "Five of one suit that also split into mahjong sets, here a chow and a pair: 3 + 1, plus 1 bonus.",
     "Five of one suit that don’t make mahjong sets. Clears strays, scores little.",
@@ -508,6 +510,8 @@ const char *const i18n_vals[] = {
     NULL,
     NULL,
     NULL,
+    NULL,
+    NULL,
     /* zh-CN */
     "撤销来补救。",
     "和",
@@ -590,7 +594,9 @@ const char *const i18n_vals[] = {
     "全部清除。下一局试试不走捷径。",
     "首次大满贯 · 第%d局",
     "首次达成 · 第%d局",
+    "全满 · %d种 · 第%d局",
     "全满 · 5局中3局 · 第%d局",
+    "全满 · 结束本局后确认",
     "一张牌不剩地结束了一局。",
     "同花色五张，又能拆成麻将组合（这里是顺子加对子）：3 + 1，再加1分。",
     "同花色五张，但组不成麻将组合。能清掉散牌，分很少。",
@@ -837,7 +843,9 @@ const char *const i18n_vals[] = {
     "全部消せました。次は近道なしで挑戦しよう。",
     "初めての役満 · 第%d局",
     "初めての役 · 第%d局",
+    "フル · %d役 · 第%d局",
     "フル · 5局中3局 · 第%d局",
+    "フル · 対局を終えると確定",
     "牌を1枚も残さずに終局した。",
     "同じ種類の5枚がマージャンの面子にも分けられる場合（ここでは順子と対子）：3 + 1、ボーナス+1。",
     "面子にならない同じ種類の5枚。はぐれ牌は片付くが、得点はわずか。",
