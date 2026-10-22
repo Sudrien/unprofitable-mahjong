@@ -1899,6 +1899,7 @@ static void draw_share(void)
  * -- unless a limit hand is already among its first 18 tiles. A code
  * with moves is a game to watch, which is the website's to do. */
 #define SCAN_STEP   (2)
+#define SCAN_MIRROR (1)         /* the preview as a mirror; reading is unaffected */
 #define SCAN_TURN   (1)         /* quarter turns clockwise that stand the frame up on the panel as it is mounted (portrait, GFX_ROT_0) */
 static uint8_t *s_scan_buf;             /* PSRAM, made the first time */
 static size_t s_scan_cap;
@@ -2019,11 +2020,12 @@ static void draw_scan(void)
         gfx_draw_text((gfx_w() - gfx_text_w(title, TXT)) / 2, TOP_Y + 8, title, TXT, gfx_w(), C_INK);
         /* the frame, grey, turned to stand as the camera sees it. The
          * camera is fixed to the panel, so the turn is SCAN_TURN in the
-         * panel's own portrait and one quarter less for each quarter the
-         * screen is turned. Scaled down, nearest pixel, to fit between
-         * the title and the status. */
+         * panel's own portrait and one quarter more for each quarter the
+         * screen is turned. Mirrored, as a front camera's view is: move
+         * the code left and it moves left. Scaled down, nearest pixel,
+         * to fit between the title and the status. */
         const int top = TOP_Y + GFX_GLYPH_H(TXT) + 24, avail_h = gfx_h() - 90 - top, avail_w = gfx_w() - 2 * M_X;
-        const int q = (SCAN_TURN - gfx_rotation() + 4) % 4;
+        const int q = (SCAN_TURN + gfx_rotation()) % 4;
         const int sw = q & 1 ? s_scan_h : s_scan_w, sh = q & 1 ? s_scan_w : s_scan_h;     /* the turned frame */
         int dw = sw, dh = sh;
         if (dw > avail_w) { dh = dh * avail_w / dw; dw = avail_w; }
@@ -2032,7 +2034,7 @@ static void draw_scan(void)
         for (int y = 0; y < dh; y++) {
             const int ty = y * sh / dh;
             for (int x = 0; x < dw; x++) {
-                const int tx = x * sw / dw;
+                const int tx = (SCAN_MIRROR ? dw - 1 - x : x) * sw / dw;
                 int fx, fy;     /* the camera's pixel under the turned frame's (tx, ty) */
                 switch (q) {
                 case 1:  fx = ty;                 fy = s_scan_h - 1 - tx; break;    /* clockwise */
