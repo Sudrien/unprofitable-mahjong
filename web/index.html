@@ -306,6 +306,7 @@ dialog.share .buttons { display: flex; gap: 8px; justify-content: flex-end; marg
     <button class="btn" type="button" id="rpBack" aria-label="Back one move">‹</button>
     <button class="btn" type="button" id="rpNext" aria-label="Next move">›</button>
     <button class="btn" type="button" id="rpLast" aria-label="Last move">»</button>
+    <button class="btn" type="button" id="rpPlay" hidden></button>
     <button class="btn primary" type="button" id="rpExit"><span class="t" lang="en">Back to my game</span><span class="t" lang="ja">自分の対局に戻る</span><span class="t" lang="zh-Hans">回到我的牌局</span></button>
   </div>
 
@@ -951,6 +952,7 @@ function finishCheck() {
     if (best === null || p > best) { best = p; try { localStorage.setItem(BEST_KEY, String(best)); } catch (e) {} }
     if (bestPts === null || S.points > bestPts) { bestPts = S.points; try { localStorage.setItem(BEST_PTS_KEY, String(bestPts)); } catch (e) {} }
     if (typeof winAwards === 'function') winAwards();
+    if (typeof highAward === 'function') highAward();
   }
 }
 // Auto-sort: keep the hand in tile order, and keep the drop-in animation on the tiles that just arrived.
@@ -1428,16 +1430,20 @@ function render() {
 //   Wins:  all 136 cleared with no poker hand, with no pair in any set,
 //          or with every poker hand (a royal flush is a flush).
 //   The Yellow River Floods Again: every set's First.
+//   The Capital is Gone: every set's Full.
+//   High score: HIGH_POINTS in one game. Not a hand: no part of either.
 //   Secrets: not listed until earned, and no part of the river.
 // A loaded deal (S.loaded) earns Firsts, and so the river, and nothing
-// else: no Full, no win, no secret. Replaying a seed can find Firsts it
-// missed before, but cannot farm the rest.
+// else: no Full (so no Capital), no win, no high score, no secret but
+// the ones loading itself earns (LOAD_SECRETS). Replaying a seed can
+// find Firsts it missed before, but cannot farm the rest.
 // Each is recorded as { g, s }: the game it was earned in, by the running
 // count, and that game's seed, kept (not shown) so the deal can be found again. A record
 // saved as a bare game number has no seed (s: null).
 const FIRSTS_KEY = 'unprofitable-mahjong-firsts', FULL_KEY = 'unprofitable-mahjong-full',
   PLAYED_KEY = 'unprofitable-mahjong-played', WINS_KEY = 'unprofitable-mahjong-wins', FLOOD_KEY = 'unprofitable-mahjong-flood',
-  SECRETS_KEY = 'unprofitable-mahjong-secrets';
+  SECRETS_KEY = 'unprofitable-mahjong-secrets', CAPITAL_KEY = 'unprofitable-mahjong-capital', HIGH_KEY = 'unprofitable-mahjong-high';
+const HIGH_POINTS = 500;
 const FULL_OF = 3, FULL_IN = 5;
 const readMap = (key, read) => {
   const m = new Map();
@@ -1452,8 +1458,10 @@ const isSeed = x => Number.isInteger(x) && x >= 0 && x <= 0xffffffff;
 const readRec = v => isGame(v) ? { g: v, s: null } : v && isGame(v.g) && (v.s === null || isSeed(v.s)) ? { g: v.g, s: v.s } : null;
 const writeMap = (key, m) => { try { localStorage.setItem(key, JSON.stringify(Object.fromEntries(m))); } catch (e) {} };
 let firsts = readMap(FIRSTS_KEY, readRec), fulls = readMap(FULL_KEY, readRec), wins = readMap(WINS_KEY, readRec), secrets = readMap(SECRETS_KEY, readRec);
-let flood = null;
+let flood = null, capital = null, high = null;
 try { flood = readRec(JSON.parse(localStorage.getItem(FLOOD_KEY))); } catch (e) {}
+try { capital = readRec(JSON.parse(localStorage.getItem(CAPITAL_KEY))); } catch (e) {}
+try { high = readRec(JSON.parse(localStorage.getItem(HIGH_KEY))); } catch (e) {}
 // the games each set was cleared in, the last FULL_IN of them, each as
 // { g, s }: its number and its seed. Saved before seeds were kept, an
 // entry is a bare number: its seed unknown, so counted as a deal of its own.
@@ -1486,12 +1494,29 @@ function setAward(t) {
     }
   } else if (!S.loaded && !fulls.has(t) && dealsIn(gs) >= FULL_OF) {
     fulls.set(t, record()); writeMap(FULL_KEY, fulls);
+    if (!capital && FIRSTS.every(x => fulls.has(x))) {
+      capital = record();
+      try { localStorage.setItem(CAPITAL_KEY, JSON.stringify(capital)); } catch (e) {}
+      queueMicrotask(() => celebrate(t, S.log[S.log.length - 1].k, FIRSTS.length,
+        { kicker: L(`Every set full · ${gameNo(g)}`, `すべての役がフル · ${gameNo(g)}`, `所有组合全满 · ${gameNo(g)}`), name: CAPITAL_NAME }));
+    }
     award = { kind: 'full', kicker: L(`Full · ${FULL_OF} of ${FULL_IN} games`, `フル · ${FULL_IN}局中${FULL_OF}局`, `全满 · ${FULL_IN}局中${FULL_OF}局`) + ' · ' + gameNo(g) };
   }
   if (award) buildGuide();
   return award;
 }
 const FLOOD_NAME = ['The Yellow River Floods Again', '黄河、再び溢れる', '黄河又泛滥了'];
+const CAPITAL_NAME = ['The Capital is Gone', '都は消えた', '都城已逝'];
+const HIGH_NAME = ['High Score', 'ハイスコア', '高分'];
+// At the end of a game, finished or stuck: HIGH_POINTS earns High Score.
+function highAward() {
+  if (high || S.loaded || replaying || S.points < HIGH_POINTS) return;
+  high = record();
+  try { localStorage.setItem(HIGH_KEY, JSON.stringify(high)); } catch (e) {}
+  const last = S.log.filter(e => BASE[e.t] !== undefined).pop();
+  if (last) celebrate(last.t, last.k, S.points, { kicker: L(`${HIGH_POINTS} points · ${gameNo(high.g)}`, `${HIGH_POINTS}点 · ${gameNo(high.g)}`, `${HIGH_POINTS}分 · ${gameNo(high.g)}`), name: HIGH_NAME });
+  buildGuide();
+}
 // A set holds a pair if it is one, or splits into sets with one: two pair,
 // full house, Seven Pairs, any four sets and a pair. Thirteen Orphans and
 // Nine Gates hold theirs in one run.
@@ -1518,13 +1543,24 @@ const SECRETS = [
   ['wait', ['Wait Wait Wait', 'ちょっと待って', '等等等等'],
     ['Sorted the hand with tiles chosen, and lost the choice.', '牌を選んだまま整列して、選択が外れた。', '选着牌时排序，选择被清掉了。']],
   ['design', ['Intentional Game Design', '仕様です', '这是设计好的'],
-    ['Tried to grow a melded pair into a pung. Only a pung grows.', '副露した対子を刻子に伸ばそうとした。伸ばせるのは刻子だけ。', '想把副露的对子变成刻子。只有刻子能变大。']]
+    ['Tried to grow a melded pair into a pung. Only a pung grows.', '副露した対子を刻子に伸ばそうとした。伸ばせるのは刻子だけ。', '想把副露的对子变成刻子。只有刻子能变大。']],
+  ['random', ['Guaranteed Random', '保証付きの乱数', '保证随机'],
+    ['Loaded a deal and played it.', '配牌を読み込んで遊んだ。', '载入一副牌并玩了起来。']],
+  ['again', ['Try Try Again', '七転び八起き', '再接再厉'],
+    ['Loaded a deal one of your achievements was earned in.', '実績を取った対局の配牌を読み込んだ。', '载入了曾获得成就的那副牌。']],
+  ['shadows', ['Shadows of the Past', '過去の影', '往昔之影'],
+    ['Loaded a finished game to watch.', '終わった対局を読み込んで観た。', '载入一局已结束的牌局来观看。']]
 ];
-function secretAward(id) {
-  if (replaying || S.loaded || secrets.has(id)) return null;
+// Earned by loading itself, so a loaded deal or a replay does not stop
+// them. Each is recorded against the device's game count when loaded
+// and the seed that was loaded.
+const LOAD_SECRETS = new Set(['random', 'again', 'shadows']);
+function secretAward(id, seed) {
+  const byLoading = LOAD_SECRETS.has(id);
+  if (secrets.has(id) || (!byLoading && (replaying || S.loaded))) return null;
   const s = SECRETS.find(x => x[0] === id);
   if (!s) return null;
-  const r = record();
+  const r = byLoading ? { g: gamesPlayed(), s: isSeed(seed) ? seed : null } : record();
   secrets.set(id, r); writeMap(SECRETS_KEY, secrets);
   buildGuide();
   return { kicker: L('Secret', 'シークレット', '隐藏成就') + ' · ' + gameNo(r.g), name: s[1] };
@@ -1794,6 +1830,12 @@ function buildGuide() {
       r ? `<small class="g-when">${L(`won in ${recWhere(r)}`, `${recWhere(r)}で達成`, `于${recWhere(r)}达成`)}</small>` : ''}</div>`; }).join('');
   const secretCards = SECRETS.filter(([id]) => secrets.has(id)).map(([id, name, note]) => { const r = secrets.get(id);
     return `<div class="g-item g-done"><div class="g-head"><b>${LA(name)}</b></div><p class="g-note">${LA(note)}</p><small class="g-when">${L(`found in ${recWhere(r)}`, `${recWhere(r)}で発見`, `于${recWhere(r)}发现`)}</small></div>`; }).join('');
+  const capitalCard = `<div class="g-item g-flood${capital ? ' g-done' : ''}"><div class="g-head"><b>${LA(CAPITAL_NAME)}</b><span class="g-pts">${full}/${FIRSTS.length}</span></div>
+      <div class="g-river" role="progressbar" aria-valuemin="0" aria-valuemax="${FIRSTS.length}" aria-valuenow="${full}" aria-label="${pick('Sets full', 'フルの役', '全满的组合')}"><i style="width:${full / FIRSTS.length * 100}%"></i></div>
+      <p class="g-note">${L(`Make every set full: each cleared in ${FULL_OF} of ${FULL_IN} games in a row. Loaded deals don’t count.`, `すべての役をフルに：連続${FULL_IN}局のうち${FULL_OF}局で消す。読み込んだ配牌は数えない。`, `让每种组合都全满：连续${FULL_IN}局中有${FULL_OF}局消除。载入的牌不算。`)}</p>${
+      capital ? `<small class="g-when">${L(`fallen in ${recWhere(capital)}`, `${recWhere(capital)}で陥落`, `于${recWhere(capital)}陷落`)}</small>` : ''}</div>`;
+  const highCard = `<div class="g-item${high ? ' g-done' : ''}"><div class="g-head"><b>${LA(HIGH_NAME)}</b></div><p class="g-note">${L(`Score ${HIGH_POINTS} points in one game. Loaded deals don’t count.`, `1局で${HIGH_POINTS}点取る。読み込んだ配牌は数えない。`, `一局得${HIGH_POINTS}分。载入的牌不算。`)}</p>${
+      high ? `<small class="g-when">${L(`scored in ${recWhere(high)}`, `${recWhere(high)}で達成`, `于${recWhere(high)}达成`)}</small>` : ''}</div>`;
   // the river rises with each set's First, and floods at the last
   const floodCard = `<div class="g-item g-flood${flood ? ' g-done' : ''}"><div class="g-head"><b>${LA(FLOOD_NAME)}</b><span class="g-pts">${got}/${FIRSTS.length}</span></div>
       <div class="g-river" role="progressbar" aria-valuemin="0" aria-valuemax="${FIRSTS.length}" aria-valuenow="${got}" aria-label="${pick('Sets cleared at least once', '一度は消した役', '已消除过的组合')}"><i style="width:${got / FIRSTS.length * 100}%"></i></div>
@@ -1802,7 +1844,7 @@ function buildGuide() {
   $('guideBody').innerHTML = `<p class="g-firsts">${L(`<b>${got} of ${FIRSTS.length}</b> sets cleared at least once (✓), <b>${full}</b> full (★: cleared in ${FULL_OF} of ${FULL_IN} games in a row), over ${games} game${games === 1 ? '' : 's'}.`,
       `<b>${FIRSTS.length}種類のうち${got}種類</b>を一度は消し（✓）、<b>${full}種類</b>がフル（★：連続${FULL_IN}局のうち${FULL_OF}局で消した）。${games}局中。`,
       `<b>${FIRSTS.length}种组合中已消除过${got}种</b>（✓），<b>${full}种</b>全满（★：连续${FULL_IN}局中有${FULL_OF}局消除过）。共${games}局。`)}</p>` +
-    `<section class="g-sec"><h3>${L('Achievements', '実績', '成就')}</h3><div class="g-grid">${floodCard}${winCards}${secretCards}</div></section>` + GUIDE.map(([h, items]) => `<section class="g-sec"><h3>${LA(h)}</h3><div class="g-grid">${items.map(item).join('')}</div></section>`).join('') +
+    `<section class="g-sec"><h3>${L('Achievements', '実績', '成就')}</h3><div class="g-grid">${floodCard}${capitalCard}${winCards}${highCard}${secretCards}</div></section>` + GUIDE.map(([h, items]) => `<section class="g-sec"><h3>${LA(h)}</h3><div class="g-grid">${items.map(item).join('')}</div></section>`).join('') +
     `<section class="g-sec"><h3>${L('Melds', '副露', '副露')}</h3><div class="g-grid">${meldCard}</div></section>` +
     `<section class="g-sec"><h3>${L('Penalties', 'ペナルティ', '罚分')}</h3><div class="g-grid">${pen}</div></section>`;
 }
@@ -1893,12 +1935,26 @@ function loadReset(msg) {
 $('loadBtn').onclick = () => { $('loadCode').value = ''; loadReset(); $('loadDlg').showModal(); $('loadCode').focus(); };
 $('loadClose').onclick = () => $('loadDlg').close();
 $('loadCode').oninput = () => { if (loadArmed !== null) loadReset(); };
+// Play a deal from a code: a new game, marked loaded, and the first
+// time, Guaranteed Random.
+function playDeal(seed) {
+  newGame(seed);
+  S.loaded = true; save();
+  const a = secretAward('random', seed);
+  if (a) secretBanner(a);
+}
+// A deal loaded whose seed one of the achievements was earned in: Try Try Again.
+function loadedAgain(seed) {
+  const recs = [...firsts.values(), ...fulls.values(), ...wins.values(), ...secrets.values(), flood, capital, high];
+  if (!recs.some(r => r && r.s === seed)) return;
+  const a = secretAward('again', seed);
+  if (a) secretBanner(a);
+}
 $('loadGo').onclick = () => {
   if (loadArmed !== null) {
     const seed = loadArmed;
     $('loadDlg').close();
-    newGame(seed);
-    S.loaded = true; save();    // kept for the achievements about loading
+    playDeal(seed);
     return;
   }
   const code = pastedCode($('loadCode').value);
@@ -1914,6 +1970,7 @@ $('loadGo').onclick = () => {
     return;
   }
   if (r.moves.length) { $('loadDlg').close(); startReplay(code); return; }
+  loadedAgain(r.seed);
   if (limitInDeal(r.seed)) {
     loadReset(`<span class="bad">${L('This deal cannot be played: a limit hand is already among its first 18 tiles.',
       'この配牌は遊べません：最初の18枚に役満がすでにあります。', '这副牌不能玩：前18张里已经有大满贯。')}</span>`);
@@ -1968,8 +2025,30 @@ function startReplay(code) {
   replaying = true;
   document.body.classList.add('replaying');
   $('replayBar').hidden = false;
+  // a deal with no moves can be played, as from Load
+  RP.playable = !r.moves.length && !limitInDeal(r.seed);
+  RP.armed = false;
+  rpPlayLabel();
   showReplayStep(0);
+  if (!r.moves.length) loadedAgain(r.seed);
+  // a finished game, watched: Shadows of the Past
+  else if (JSON.parse(r.snaps[r.snaps.length - 1]).done) { const a = secretAward('shadows', r.seed); if (a) secretBanner(a); }
 }
+function rpPlayLabel() {
+  $('rpPlay').hidden = !RP || !RP.playable;
+  if (!RP) return;
+  const keep = JSON.parse(RP.keep), inPlay = !keep.done && keep.log && keep.log.length > 0;
+  $('rpPlay').innerHTML = RP.armed && inPlay ? L('Give up my game and play', '今の対局をやめて遊ぶ', '放弃当前牌局并开始')
+    : L('Play this deal', 'この配牌で遊ぶ', '玩这副牌');
+  RP.inPlay = inPlay;
+}
+$('rpPlay').onclick = () => {
+  if (!RP || !RP.playable) return;
+  if (RP.inPlay && !RP.armed) { RP.armed = true; rpPlayLabel(); return; }
+  const seed = RP.seed;
+  endReplay();
+  playDeal(seed);
+};
 function endReplay() {
   if (!RP) return;
   S = JSON.parse(RP.keep); undo = RP.undo; RP = null;

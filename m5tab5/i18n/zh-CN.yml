@@ -56,6 +56,8 @@ zh-CN:
     # guide.c
     "5-6-7-8-9 in one suit. A run of 5 with a small bonus.": "同花色五六七八九。相当于五连顺，再多加一点分。"
     # ui.c
+    "500 POINTS · GAME %d": "500分 · 第%d局"
+    # ui.c
     "6 Bamboo": "六条"
     # ui.c
     "6 Characters": "六万"
@@ -156,6 +158,8 @@ zh-CN:
     # guide.c
     "Dragon set": "三元齐"
     # ui.c
+    "EVERY SET FULL · GAME %d": "所有组合全满 · 第%d局"
+    # ui.c
     "EVERY SET · GAME %d": "所有组合 · 第%d局"
     # ui.c
     "East wind": "东风"
@@ -214,6 +218,8 @@ zh-CN:
     # guide.c, ui.c
     "Half Flush": "混一色"
     # ui.c
+    "High Score": "高分"
+    # ui.c
     "Hint": "提示"
     # ui.c
     "Intentional Game Design": "这是设计好的"
@@ -243,6 +249,8 @@ zh-CN:
     "Little Three Dragons": "小三元"
     # guide.c
     "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.": "同花色连得越长分越高。4连：+6 · 5：+9 · 6：+13 · 7：+18 · 8：+24。"
+    # ui.c
+    "Make every set full: each cleared in 3 of 5 games in a row.": "让每种组合都全满：连续5局中有3局消除。"
     # ui.c
     "Make kong": "加杠"
     # ui.c
@@ -330,6 +338,8 @@ zh-CN:
     # ui.c
     "Scan to watch this game": "扫码观看这一局"
     # ui.c
+    "Score 500 points in one game.": "一局得500分。"
+    # ui.c
     "Set sets aside here to build a bigger hand.": "把组合放到这里，慢慢凑大牌。"
     # ui.c
     "Sets": "牌型"
@@ -361,6 +371,8 @@ zh-CN:
     "Tap to close": "点击关闭"
     # ui.c
     "Tap to continue": "点击继续"
+    # ui.c
+    "The Capital is Gone": "都城已逝"
     # ui.c
     "The Yellow River Floods Again": "黄河又泛滥了"
     # ui.c
@@ -432,6 +444,8 @@ zh-CN:
     # ui.c
     "dragon set": "三元齐"
     # ui.c
+    "fallen in game %d": "于第%d局陷落"
+    # ui.c
     "first in game %d": "首次于第%d局"
     # ui.c
     "flooded in game %d": "于第%d局泛滥"
@@ -475,6 +489,8 @@ zh-CN:
     "run of 7": "7连顺"
     # ui.c
     "run of 8": "8连顺"
+    # ui.c
+    "scored in game %d": "于第%d局达成"
     # ui.c
     "straight": "杂色顺"
     # ui.c

@@ -86,24 +86,27 @@ and a patch that changes either side runs it.
   Full also needs 3 different deals in its window, on both sides. When
   the Tab5 loads seeds, um_game_t needs the loaded mark too.
 
+- **The Capital is Gone:** every set Full, on both sides. Loaded deals
+  never count toward Full, so never toward it.
+- **High Score:** 500 points in one game, at the game's end, stuck or
+  not; on both sides. Not a hand: no part of either river. Loaded deals
+  do not earn it.
+- **Play from a link:** a #replay= link with no moves offers Play this
+  deal in the replay bar, as Load does.
+- **Loading secrets (web):** Guaranteed Random (played a loaded deal),
+  Try Try Again (loaded a deal an achievement's record holds), Shadows
+  of the Past (opened a finished game). Earned by loading itself, so
+  exempt from the loaded-deal rule; recorded at the device's game count
+  with the loaded seed.
+
 ## Not yet built
 
-- **The Capital is Gone:** the Full version of The Yellow River Floods
-  Again, earned once every set is Full (cleared in 3 of 5 games in a
-  row). If it is ever built, it takes this name. Rare limit hands may
-  make it out of reach without loading seeds. If seeds become loadable,
-  Full should need 3 different seeds in the window, or replaying one
-  seed three times would earn any Full.
 - first achivements do not require a game to be completed. author thinks
   this is fine - this means the are easy to hunt. the 'full' achievement
   requires completed games.
-- **High score:** an achievement for 500 points in a game (the brute
-  forced maximum is 804 & -4; bots average under 300 and never reached
-  500). It is not a hand, so it is no part of The Yellow River Floods
-  Again or The Capital is Gone.
 - Secret achivements?
   - Overcompensating: used 4 tiles of a kind in a limit hand that requires 3
-  - Try try again: load a seed already represented in achivements
-  - guaranteed random: load a playable seed
-  - shadows of the past: load a completed game
+    (on hold)
+- For reference: the brute forced maximum score is 804 & -4; bots
+  average under 300 and never reached 500.
 - tab5 : qr code reading with camera to enter seeds

@@ -185,6 +185,10 @@ static const char *const SECRET_NOTES[UM_SECRET_N] = {
 };
 #define FLOOD_NAME N_("The Yellow River Floods Again")
 #define FLOOD_NOTE N_("Clear every set at least once. The river rises with each one.")
+#define CAPITAL_NAME N_("The Capital is Gone")
+#define CAPITAL_NOTE N_("Make every set full: each cleared in 3 of 5 games in a row.")
+#define HIGH_NAME N_("High Score")
+#define HIGH_NOTE N_("Score 500 points in one game.")
 
 /* A heading in English, as the web version's title(): each word's first
  * letter up, "of" left alone -- Full House, Run of 4. Other languages
@@ -1293,47 +1297,64 @@ static int guide_item_h(const guide_item_t *g, int w)
     return G_NAME_H + 8 + guide_tiles(g, w, NULL, NULL) * G_LINE + (done ? G_WHEN_H : 0) + 12;
 }
 
-/* The achievements, above the sets: a summary, then The Yellow River
- * Floods Again, the wins and any secrets found as cards, the web
- * version's Achievements section. Card 0 is the river, 1..UM_WIN_N the
- * wins, and after them the secrets earned, in order: s_acards says how
- * many there are this time. */
-#define A_CARDS    (1 + UM_WIN_N + UM_SECRET_N)
+/* The achievements, above the sets: a summary, then the web version's
+ * Achievements section as cards: The Yellow River Floods Again and The
+ * Capital is Gone across the width, each with its river, then the wins,
+ * High score and any secrets found, in columns. s_akind says what each
+ * card is this time, s_acards how many there are. */
+enum { AK_FLOOD, AK_CAPITAL, AK_WIN, AK_HIGH, AK_SECRET };
+#define A_CARDS    (2 + UM_WIN_N + 1 + UM_SECRET_N)
+#define A_WIDE     (2)      /* the rivers' cards, first */
 #define A_BAR_H    (12)
 #define A_SUM_LINE (GFX_GLYPH_H(SMALL) + 4)
 static gpos_t s_apos[A_CARDS];
+static struct { uint8_t kind, i; } s_akind[A_CARDS];
 static int s_ahead_y, s_asum_y;
 static char s_asum[320];
-static int s_acards = 1 + UM_WIN_N;
+static int s_acards;
 static int ach_card_h(void) { return G_NAME_H + 8 + A_BAR_H + 8 + G_WHEN_H + 12; }
-/* card i past the wins: the secret it shows, or -1 */
-static int ach_card_secret(int i)
+static void ach_cards(void)
 {
-    int n = 1 + UM_WIN_N;
-    for (int s = 0; s < UM_SECRET_N; s++) if (s_ach.secret[s].game && n++ == i) return s;
-    return -1;
+    int n = 0;
+    s_akind[n].kind = AK_FLOOD; s_akind[n++].i = 0;
+    s_akind[n].kind = AK_CAPITAL; s_akind[n++].i = 0;
+    for (int w = 0; w < UM_WIN_N; w++) { s_akind[n].kind = AK_WIN; s_akind[n++].i = (uint8_t)w; }
+    s_akind[n].kind = AK_HIGH; s_akind[n++].i = 0;
+    for (int k = 0; k < UM_SECRET_N; k++) if (s_ach.secret[k].game) { s_akind[n].kind = AK_SECRET; s_akind[n++].i = (uint8_t)k; }
+    s_acards = n;
 }
-static const char *ach_card_name(int i)
+static const char *ach_card_name(int c)
 {
-    if (!i) return FLOOD_NAME;
-    if (i <= UM_WIN_N) return WIN_NAMES[i - 1];
-    const int s = ach_card_secret(i);
-    return s >= 0 ? SECRET_NAMES[s] : "";
+    const int i = s_akind[c].i;
+    switch (s_akind[c].kind) {
+    case AK_FLOOD:   return FLOOD_NAME;
+    case AK_CAPITAL: return CAPITAL_NAME;
+    case AK_WIN:     return WIN_NAMES[i];
+    case AK_HIGH:    return HIGH_NAME;
+    default:         return SECRET_NAMES[i];
+    }
 }
-static const char *ach_card_note(int i)
+static const char *ach_card_note(int c)
 {
-    if (!i) return FLOOD_NOTE;
-    if (i <= UM_WIN_N) return WIN_NOTES[i - 1];
-    const int s = ach_card_secret(i);
-    return s >= 0 ? SECRET_NOTES[s] : "";
+    const int i = s_akind[c].i;
+    switch (s_akind[c].kind) {
+    case AK_FLOOD:   return FLOOD_NOTE;
+    case AK_CAPITAL: return CAPITAL_NOTE;
+    case AK_WIN:     return WIN_NOTES[i];
+    case AK_HIGH:    return HIGH_NOTE;
+    default:         return SECRET_NOTES[i];
+    }
 }
-static const um_rec_t *ach_card_rec(int i)
+static const um_rec_t *ach_card_rec(int c)
 {
-    static const um_rec_t none = { 0, 0 };
-    if (!i) return &s_ach.flood;
-    if (i <= UM_WIN_N) return &s_ach.win[i - 1];
-    const int s = ach_card_secret(i);
-    return s >= 0 ? &s_ach.secret[s] : &none;
+    const int i = s_akind[c].i;
+    switch (s_akind[c].kind) {
+    case AK_FLOOD:   return &s_ach.flood;
+    case AK_CAPITAL: return &s_ach.capital;
+    case AK_WIN:     return &s_ach.win[i];
+    case AK_HIGH:    return &s_ach.high;
+    default:         return &s_ach.secret[i];
+    }
 }
 
 /* Each section: its heading across the width, then its sets, left to
@@ -1348,12 +1369,13 @@ static void guide_layout(void)
              um_ach_firsts(&s_ach), UM_ACH_SETS, um_ach_fulls(&s_ach), (int)s_ach.games);
     s_asum_y = y;
     y += gfx_para_rows(s_asum, SMALL, gfx_w() - 2 * M_X) * A_SUM_LINE + 12;
-    /* the river across the whole width, the wins and secrets in columns under it */
-    s_acards = 1 + UM_WIN_N;
-    for (int s = 0; s < UM_SECRET_N; s++) s_acards += s_ach.secret[s].game != 0;
-    s_apos[0] = (gpos_t){ M_X, y, ach_card_h() };
-    y += ach_card_h();
-    for (int i = 1; i < s_acards; i += cols) {
+    /* the rivers across the whole width, the rest in columns under them */
+    ach_cards();
+    for (int i = 0; i < A_WIDE; i++) {
+        s_apos[i] = (gpos_t){ M_X, y, ach_card_h() };
+        y += ach_card_h();
+    }
+    for (int i = A_WIDE; i < s_acards; i += cols) {
         for (int c = 0; c < cols && i + c < s_acards; c++) s_apos[i + c] = (gpos_t){ M_X + c * (cw + G_COL_GAP), y, ach_card_h() };
         y += ach_card_h();
     }
@@ -1403,26 +1425,29 @@ static void draw_guide(void)
         const gpos_t *p = &s_apos[i];
         const int y = p->y + dy;
         if (y + p->h < top || y > bottom) continue;
-        const int cw = i ? guide_col_w() : gfx_w() - 2 * M_X;     /* the river's card is the whole width */
+        const int cw = i >= A_WIDE ? guide_col_w() : gfx_w() - 2 * M_X;     /* the rivers' cards are the whole width */
         if (i == s_gach_sel) box(p->x - 10, y - 6, cw + 20, p->h, C_ACCENT, C_RAISED);
         const um_rec_t *r = ach_card_rec(i);
         int nx = p->x, nw = cw;
         if (r->game) { draw_mark(MARK_TICK, 6, p->x, y, C_GREEN); nx += MARK_W; nw -= MARK_W; }
         char when[96] = "";
         gfx_draw_text(nx, y, _(ach_card_name(i)), TXT, nw, C_INK);
-        /* the river, rising with each First, and how far it has come;
-         * the wins have none */
-        const int by = y + G_NAME_H + 8;
-        if (!i) {
+        /* a river, rising with each First (or Full), and how far it has
+         * come; the rest have none */
+        const int by = y + G_NAME_H + 8, kind = s_akind[i].kind;
+        if (i < A_WIDE) {
+            const int got = kind == AK_FLOOD ? um_ach_firsts(&s_ach) : um_ach_fulls(&s_ach);
             char v[24];
-            snprintf(v, sizeof v, "%d/%d", um_ach_firsts(&s_ach), UM_ACH_SETS);
+            snprintf(v, sizeof v, "%d/%d", got, UM_ACH_SETS);
             const int vw = gfx_text_w(v, SMALL), bw = cw - vw - 16;
             gfx_fill_rect(p->x, by, bw, A_BAR_H, C_LINE);
-            gfx_fill_rect(p->x, by, bw * um_ach_firsts(&s_ach) / UM_ACH_SETS, A_BAR_H, C_RIVER);
+            gfx_fill_rect(p->x, by, bw * got / UM_ACH_SETS, A_BAR_H, C_RIVER);
             gfx_draw_text(p->x + cw - vw, by + (A_BAR_H - GFX_GLYPH_H(SMALL)) / 2, v, SMALL, vw + 2, C_GREEN);
         }
-        if (r->game) snprintf(when, sizeof when, i > UM_WIN_N ? _("found in game %d") : i ? _("won in game %d") : _("flooded in game %d"), (int)r->game);
-        else if (i) snprintf(when, sizeof when, "%s", _("not yet"));
+        if (r->game) snprintf(when, sizeof when,
+                              kind == AK_FLOOD ? _("flooded in game %d") : kind == AK_CAPITAL ? _("fallen in game %d")
+                              : kind == AK_SECRET ? _("found in game %d") : kind == AK_HIGH ? _("scored in game %d") : _("won in game %d"), (int)r->game);
+        else if (i >= A_WIDE) snprintf(when, sizeof when, "%s", _("not yet"));
         gfx_draw_text(p->x, by + A_BAR_H + 8, when, SMALL, cw, r->game ? C_GREEN : C_MUTED);
     }
     int tx[GUIDE_MAX_TILES], ty[GUIDE_MAX_TILES];
@@ -1511,7 +1536,7 @@ static void guide_tap(int x, int y)
     const int cw = guide_col_w(), ly = y - guide_top() + s_gscroll;
     for (int i = 0; i < s_acards; i++) {
         const gpos_t *p = &s_apos[i];
-        const int aw = i ? cw : gfx_w() - 2 * M_X;
+        const int aw = i >= A_WIDE ? cw : gfx_w() - 2 * M_X;
         if (x < p->x - 10 || x >= p->x + aw + 10 || ly < p->y - 6 || ly >= p->y - 6 + p->h) continue;
         s_gach_sel = i;
         s_guide_sel = -1;
@@ -1577,6 +1602,11 @@ static void after_move(bool was_done)
         /* A Place for Everything first, as the web version's winAwards */
         const bool place = um_all_cleared(&s_g) && s_g.log_n && um_ach_secret(&s_ach, &s_g, UM_SECRET_PLACE);
         const uint8_t wins = um_ach_win(&s_ach, &s_g);
+        const bool high = um_ach_high(&s_ach, &s_g);
+        if (high) {
+            ESP_LOGI(TAG, "game %u: High score, %d points", (unsigned)s_g.game_no, (int)s_g.points);
+            save_ach(&s_ach);
+        }
         if (wins || place) {
             ESP_LOGI(TAG, "game %u:%s%s%s%s", (unsigned)s_g.game_no, place ? " a place for everything" : "",
                      wins & (1u << UM_WIN_NO_POKER) ? ", won with no poker hands" : "", wins & (1u << UM_WIN_NO_PAIRS) ? ", won with no pairs" : "",
@@ -1590,6 +1620,17 @@ static void after_move(bool was_done)
             if (place && e->t < UM_SET_COUNT) celebrate((um_set_t)e->t, e->k, e->n, (int)s_g.points, skick, SECRET_NAMES[UM_SECRET_PLACE]);
             for (int w = 0; w < UM_WIN_N && e->t < UM_SET_COUNT; w++)
                 if (wins & (1u << w)) celebrate((um_set_t)e->t, e->k, e->n, (int)s_g.points, kick, WIN_NAMES[w]);
+        }
+        /* High score after the wins, as highAward after winAwards: with
+         * the last set cleared, which a stuck game may have further back */
+        if (high) {
+            static char hkick[64];
+            snprintf(hkick, sizeof hkick, _("500 POINTS · GAME %d"), (int)s_g.game_no);
+            const int back = s_g.log_n < UM_LOG_N ? (int)s_g.log_n : UM_LOG_N;
+            for (int j = 1; j <= back; j++) {
+                const um_log_t *e = &s_g.log[(s_g.log_n - j) % UM_LOG_N];
+                if (e->t > UM_NONE && e->t < UM_SET_COUNT) { celebrate((um_set_t)e->t, e->k, e->n, (int)s_g.points, hkick, HIGH_NAME); break; }
+            }
         }
     }
     s_sel.hand = 0;
@@ -1640,8 +1681,8 @@ static void press(int b)
         int v;
         undo_push();
         if (!um_clear(&s_g, s_sel, &t, &v)) { undo_pop(); return; }
-        bool flood = false;
-        const um_award_t aw = um_ach_clear(&s_ach, &s_g, t, &flood);
+        bool flood = false, capital = false;
+        const um_award_t aw = um_ach_clear(&s_ach, &s_g, t, &flood, &capital);
         if (aw != UM_AWARD_NONE) {
             ESP_LOGI(TAG, "game %u: %s %s%s", (unsigned)s_g.game_no, aw == UM_AWARD_FIRST ? "first" : "full", um_set_key(t),
                      flood ? "; The Yellow River Floods Again" : "");
@@ -1668,6 +1709,11 @@ static void press(int b)
         if (flood) {
             snprintf(kick, sizeof kick, _("EVERY SET · GAME %d"), gn);
             celebrate(t, k, n, UM_ACH_SETS, kick, FLOOD_NAME);
+        }
+        if (capital) {
+            ESP_LOGI(TAG, "game %u: The Capital is Gone", (unsigned)s_g.game_no);
+            snprintf(kick, sizeof kick, _("EVERY SET FULL · GAME %d"), gn);
+            celebrate(t, k, n, UM_ACH_SETS, kick, CAPITAL_NAME);
         }
         break;
     }

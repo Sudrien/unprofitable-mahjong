@@ -50,8 +50,8 @@ function makeAch() {
     ${js.slice(g0, g1)}
     ${js.slice(f0, f1)}
     ${js.slice(a, b)}
-    return { setS: v => { S = v; }, get S() { return S; }, nextGame, setAward, winAwards, secretAward, holdsPair, isPoker, celebs, FIRSTS, WINS, SECRETS, FLOOD_NAME,
-             get firsts() { return firsts; }, get fulls() { return fulls; }, get wins() { return wins; }, get secrets() { return secrets; }, get flood() { return flood; }, gamesPlayed };`)();
+    return { setS: v => { S = v; }, get S() { return S; }, nextGame, setAward, winAwards, secretAward, highAward, CAPITAL_NAME, HIGH_NAME, LOAD_SECRETS, holdsPair, isPoker, celebs, FIRSTS, WINS, SECRETS, FLOOD_NAME,
+             get firsts() { return firsts; }, get fulls() { return fulls; }, get wins() { return wins; }, get secrets() { return secrets; }, get flood() { return flood; }, get capital() { return capital; }, get high() { return high; }, gamesPlayed };`)();
 }
 const ACH = makeAch();
 // what a game's clears included, as core's g->had: bit 0 poker, bit 1 a pair,
@@ -241,7 +241,7 @@ function achCheck() {
   for (let gi = 0; gi < GAMES_N; gi++) {
     // now and then a seed played before, as a loaded deal: Full needs different deals
     const prev = script.filter(x => x.op === 'N' || x.op === 'U');
-    const legacy = gi > 0 && rnd(25) === 0, again = prev.length && rnd(4) === 0;
+    const legacy = gi > 0 && rnd(25) === 0, again = prev.length && rnd(4) === 0 && gi < GAMES_N - 3;
     const s = again ? prev[prev.length - 1 - rnd(Math.min(4, prev.length))].seed : (rnd(1 << 24) * 256 + rnd(256)) >>> 0;
     script.push({ op: legacy ? 'U' : 'N', seed: s });
     const mode = rnd(5);   // 0 any, 1 no pairs, 2 no poker, 3 a few favorites, 4 poker hands
@@ -256,9 +256,10 @@ function achCheck() {
       if (rnd(90) === 0) script.push({ op: 'D' });   // Meld pressed on a melded pair and its third tile
     }
     if (rnd(2) === 0 || last) script.push({ op: 'W' });
+    if (rnd(3) === 0) script.push({ op: 'H', points: rnd(700) });   // the game's end, at these points
   }
   const out = execFileSync(UMTEST, ['ach'], {
-    input: script.map(x => x.op === 'C' ? `C ${x.e.t}|${x.e.k.join(',')}` : x.op === 'W' || x.op === 'S' || x.op === 'D' ? x.op : `${x.op} ${x.seed}`).join('\n') + '\n',
+    input: script.map(x => x.op === 'C' ? `C ${x.e.t}|${x.e.k.join(',')}` : x.op === 'H' ? `H ${x.points}` : x.op === 'W' || x.op === 'S' || x.op === 'D' ? x.op : `${x.op} ${x.seed}`).join('\n') + '\n',
     maxBuffer: 1 << 28 }).toString().trim().split('\n');
   const norm = line => line.split(' | ').map(p => p.split(';').sort().join(';')).join(' | ');
   const recs = (name, m) => [name, ...[...m].map(([t, r]) => `${t}=${r.g}/${r.s}`)].join(';');
@@ -274,6 +275,7 @@ function achCheck() {
       award = !a ? '-' : a.kicker.startsWith('First') ? 'first' : a.kicker.startsWith('Full') ? 'full' : '?';
     } else if (x.op === 'S') A.secretAward('wait');
     else if (x.op === 'D') A.secretAward('design');
+    else if (x.op === 'H') { A.S.points = x.points; A.highAward(); }
     else if (!legacy) A.winAwards();
     // a game saved before games were counted had nothing tracked on the
     // Tab5, so it earns no win there; the web version would read its log.
@@ -282,14 +284,17 @@ function achCheck() {
     else { if (A.S.log.length) A.secretAward('place'); legacyWins++; }
     const flood = A.celebs.some(c => c && c.name === A.FLOOD_NAME) ? 1 : 0;
     const wins = A.celebs.reduce((m, c) => { const w = c && A.WINS.findIndex(([, name]) => name === c.name); return w >= 0 && c ? m | (1 << w) : m; }, 0);
-    const want = `R ${award} ${flood} ${wins} ${A.gamesPlayed()} | ${recs('first', A.firsts)} | ${recs('full', A.fulls)} | ${recs('win', A.wins)} | flood${A.flood ? `;${A.flood.g}/${A.flood.s}` : ''} | ${recs('secret', A.secrets)}`;
+    const capital = A.celebs.some(c => c && c.name === A.CAPITAL_NAME) ? 1 : 0, high = A.celebs.some(c => c && c.name === A.HIGH_NAME) ? 1 : 0;
+    const one = (name, r) => `${name}${r ? `;${r.g}/${r.s}` : ''}`;
+    const want = `R ${award} ${flood} ${capital} ${high} ${wins} ${A.gamesPlayed()} | ${recs('first', A.firsts)} | ${recs('full', A.fulls)} | ${recs('win', A.wins)} | ${one('flood', A.flood)} | ${one('capital', A.capital)} | ${one('high', A.high)} | ${recs('secret', A.secrets)}`;
     if (norm(out[i] || '') !== norm(want)) fail(`ach step ${i + 1} (${x.op}${x.e ? ' ' + x.e.t : ''})\n   C: ${out[i]}\n  JS: ${want}`);
     flooded |= flood; fulls += award === 'full'; won |= wins; found = A.secrets.size;
   });
-  if (!flooded || !fulls || won !== (1 << A.WINS.length) - 1 || found !== A.SECRETS.length)
+  if (!A.capital || !A.high) fail(`ach: the script never reached The Capital is Gone (${!!A.capital}) or High score (${!!A.high})`);
+  if (!flooded || !fulls || won !== (1 << A.WINS.length) - 1 || found !== A.SECRETS.length - A.LOAD_SECRETS.size)
     fail(`ach: the script never reached everything (flood ${flooded}, fulls ${fulls}, wins ${won}, secrets ${found})`);
   if (!legacyWins) fail('ach: no game saved before games were counted ended in a win');
-  console.log(`ach: ${script.length} steps over ${GAMES_N} games, ${fulls} sets full, every win, every secret and the flood, ${legacyWins} older games won; records the same`);
+  console.log(`ach: ${script.length} steps over ${GAMES_N} games, ${fulls} sets full, every win, every secret, the flood, the Capital and High score, ${legacyWins} older games won; records the same`);
 }
 
 classifyCheck();

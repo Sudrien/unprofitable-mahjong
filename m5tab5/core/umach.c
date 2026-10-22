@@ -29,9 +29,10 @@ void um_ach_new_game(um_ach_t *a, um_game_t *g)
 }
 
 /* setAward */
-um_award_t um_ach_clear(um_ach_t *a, um_game_t *g, um_set_t t, bool *flood)
+um_award_t um_ach_clear(um_ach_t *a, um_game_t *g, um_set_t t, bool *flood, bool *capital)
 {
     if (flood) *flood = false;
+    if (capital) *capital = false;
     if (t <= UM_NONE || t >= UM_SET_COUNT) return UM_AWARD_NONE;
     const uint32_t gn = this_game(a, g);
 
@@ -75,6 +76,10 @@ um_award_t um_ach_clear(um_ach_t *a, um_game_t *g, um_set_t t, bool *flood)
     }
     if (!a->full[t].game && deals >= UM_ACH_FULL_OF) {
         a->full[t] = record(a, g);
+        if (!a->capital.game && um_ach_fulls(a) == UM_ACH_SETS) {
+            a->capital = record(a, g);
+            if (capital) *capital = true;
+        }
         return UM_AWARD_FULL;
     }
     return UM_AWARD_NONE;
@@ -93,6 +98,14 @@ uint8_t um_ach_win(um_ach_t *a, um_game_t *g)
         got |= (uint8_t)(1u << w);
     }
     return got;
+}
+
+/* highAward */
+bool um_ach_high(um_ach_t *a, um_game_t *g)
+{
+    if (a->high.game || g->points < UM_ACH_HIGH) return false;
+    a->high = record(a, g);
+    return true;
 }
 
 /* secretAward */
@@ -131,5 +144,7 @@ bool um_ach_valid(const um_ach_t *a)
     }
     for (int w = 0; w < UM_WIN_N; w++) if (a->win[w].game > a->games) return false;
     for (int s = 0; s < UM_SECRET_N; s++) if (a->secret[s].game > a->games) return false;
+    if (a->high.game > a->games) return false;
+    if (a->capital.game > a->games || (a->capital.game && um_ach_fulls(a) != UM_ACH_SETS)) return false;
     return a->flood.game <= a->games && (!a->flood.game || um_ach_firsts(a) == UM_ACH_SETS);
 }

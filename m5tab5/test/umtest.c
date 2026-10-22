@@ -295,6 +295,7 @@ static void code_mode(uint32_t seed, int games)
  *   W             the game ends with every tile cleared
  *   S             a sort threw a selection away
  *   D             Meld pressed on a melded pair and its third tile
+ *   H <points>    the game ends, stuck or not, with these points
  * and after each, the award and every record, for check.js to compare
  * with the web version's. */
 static um_ach_t s_ach;
@@ -313,7 +314,7 @@ static int ach_mode(void)
     while (fgets(line, sizeof line, stdin)) {
         line[strcspn(line, "\r\n")] = 0;
         const char *award = "-";
-        int flood = 0, wins = 0;
+        int flood = 0, wins = 0, capital = 0, high = 0;
         if (line[0] == 'N' || line[0] == 'U') {
             memset(&s_ag, 0, sizeof s_ag);
             s_ag.rng = (uint32_t)strtoul(line + 2, NULL, 10);
@@ -333,8 +334,9 @@ static int ach_mode(void)
             if (!t || um_classify(k, n) != t) { fprintf(stderr, "ach: %s is not %s\n", bar + 1, line + 2); return 2; }
             um_note_set(&s_ag, t, k, n);
             s_ag.log_n++;
-            bool f = false;
-            const um_award_t a = um_ach_clear(&s_ach, &s_ag, t, &f);
+            bool f = false, cap = false;
+            const um_award_t a = um_ach_clear(&s_ach, &s_ag, t, &f, &cap);
+            capital = cap;
             award = a == UM_AWARD_FIRST ? "first" : a == UM_AWARD_FULL ? "full" : "-";
             flood = f;
         } else if (line[0] == 'W') {
@@ -346,15 +348,22 @@ static int ach_mode(void)
             um_ach_secret(&s_ach, &s_ag, UM_SECRET_WAIT);
         } else if (line[0] == 'D') {
             um_ach_secret(&s_ach, &s_ag, UM_SECRET_DESIGN);
+        } else if (line[0] == 'H') {
+            s_ag.points = (int32_t)atol(line + 2);
+            high = um_ach_high(&s_ach, &s_ag);
         }
         if (!um_ach_valid(&s_ach)) { fprintf(stderr, "ach: um_ach_valid refused the records\n"); return 1; }
-        printf("R %s %d %d %u | ", award, flood, wins, (unsigned)s_ach.games);
+        printf("R %s %d %d %d %d %u | ", award, flood, capital, high, wins, (unsigned)s_ach.games);
         ach_recs("first", s_ach.first); printf(" | ");
         ach_recs("full", s_ach.full); printf(" | win");
         static const char *WN[UM_WIN_N] = { "no poker", "no pairs", "all poker" };
         for (int w = 0; w < UM_WIN_N; w++) if (s_ach.win[w].game) printf(";%s=%u/%u", WN[w], (unsigned)s_ach.win[w].game, (unsigned)s_ach.win[w].seed);
         printf(" | flood");
         if (s_ach.flood.game) printf(";%u/%u", (unsigned)s_ach.flood.game, (unsigned)s_ach.flood.seed);
+        printf(" | capital");
+        if (s_ach.capital.game) printf(";%u/%u", (unsigned)s_ach.capital.game, (unsigned)s_ach.capital.seed);
+        printf(" | high");
+        if (s_ach.high.game) printf(";%u/%u", (unsigned)s_ach.high.game, (unsigned)s_ach.high.seed);
         printf(" | secret");
         static const char *SN[UM_SECRET_N] = { "place", "wait", "design" };
         for (int s = 0; s < UM_SECRET_N; s++) if (s_ach.secret[s].game) printf(";%s=%u/%u", SN[s], (unsigned)s_ach.secret[s].game, (unsigned)s_ach.secret[s].seed);

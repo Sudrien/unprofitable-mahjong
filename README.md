@@ -43,6 +43,8 @@ The in-game **Sets and scores** guide shows every set with example tiles and its
 - **Win with every poker hand:** clear all 136 with two pair, a flush, a straight and a full house among your sets. A royal flush counts as the flush.
 
 - **The Yellow River Floods Again:** clear every set at least once, all 40 Firsts. Its card at the top of the guide fills like a rising river as you go.
+- **The Capital is Gone:** make every set Full. Its river fills with each Full.
+- **High Score:** 500 points in one game. It isn't a hand, so it's no part of either river.
 
 There are also a few **secret** achievements. They don't appear in the guide until you find them, and they're no part of the river.
 
@@ -52,7 +54,7 @@ When two full celebrations come at once, such as a limit hand and a win, they pl
 
 **Share**, by New deal, turns the game on the table into a link anyone can open to watch it move by move. On the published site the link is the short `sudrien.github.io/umj/#replay=…`, which forwards here from its own repository. The code is the deal's seed and the moves, about 3 characters a move (around 150 for a whole game), in URL-safe base64. Nothing in it states a score: the page replays every move under the rules and stops at the first one that breaks them, so the only way to show a score is a legal game that earns it. Making a code also takes a small proof of work (MurmurHash2 with 20 leading zero bits, under a second), and every 63 characters carry 2 check characters that put one mistyped character right. Watching a code never touches your own game or best scores. Games dealt before codes existed have none.
 
-**Load**, beside Share, takes a pasted code or link. A code with moves plays back as above. A code shared at the very start of a game, before any move, is just a deal, and you can play it as a new game. A loaded deal earns Firsts, and so fills the river, but nothing else: it doesn't count toward Full, and earns no wins or secrets. Replaying a seed can find Firsts you missed in it before. A deal whose first 18 tiles already hold a limit hand can't be played that way.
+**Load**, beside Share, takes a pasted code or link. A code with moves plays back as above. A code shared at the very start of a game, before any move, is just a deal, and you can play it as a new game. A loaded deal earns Firsts, and so fills the river, but nothing else: it doesn't count toward Full, and earns no wins or secrets. Replaying a seed can find Firsts you missed in it before. A deal whose first 18 tiles already hold a limit hand can't be played that way. A replay link with no moves offers the same: **Play this deal** in the replay bar.
 
 On the Tab5, Share in the settings shows the same link as a QR code.
 

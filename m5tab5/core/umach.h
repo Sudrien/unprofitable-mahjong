@@ -12,6 +12,9 @@
  *   Wins    all 136 cleared with no poker hand, with no pair in any set,
  *           or with every poker hand (a royal flush is a flush)
  *   The Yellow River Floods Again: every set's First
+ *   The Capital is Gone: every set's Full
+ *   High score: UM_ACH_HIGH points in one game; not a hand, so no part
+ *           of either
  *   Secrets shown only once earned, and no part of the river:
  *           A Place for Everything (a game ended with no tiles left),
  *           Wait Wait Wait (a sort threw a selection away),
@@ -37,6 +40,7 @@ extern "C" {
 #define UM_ACH_WINDOW   (5)     /* FULL_IN */
 #define UM_ACH_FULL_OF  (3)     /* FULL_OF */
 #define UM_ACH_SETS     (UM_SET_COUNT - 1)   /* the sets there is a First for: 40 */
+#define UM_ACH_HIGH     (500)                /* HIGH_POINTS */
 
 typedef struct {
     uint32_t game;      /* the game it was earned in; 0: not earned */
@@ -60,6 +64,9 @@ typedef struct {
      * and counts as a deal of its own. */
     uint32_t played_seed[UM_SET_COUNT][UM_ACH_WINDOW];
     uint8_t  played_known[UM_SET_COUNT];
+    /* last again, for the same reason */
+    um_rec_t capital;
+    um_rec_t high;
 } um_ach_t;
 
 typedef enum { UM_AWARD_NONE, UM_AWARD_FIRST, UM_AWARD_FULL } um_award_t;
@@ -70,9 +77,14 @@ void um_ach_new_game(um_ach_t *a, um_game_t *g);
 
 /* Set t was just cleared in g (setAward). Returns what that earned, if
  * anything; *flood is set when it was the last set's First, which also
- * earns The Yellow River Floods Again. A game with no number yet (saved
+ * earns The Yellow River Floods Again, and *capital when it was the last
+ * set's Full, which earns The Capital is Gone. Either may be NULL. A game with no number yet (saved
  * before games were counted) takes the next one. */
-um_award_t um_ach_clear(um_ach_t *a, um_game_t *g, um_set_t t, bool *flood);
+um_award_t um_ach_clear(um_ach_t *a, um_game_t *g, um_set_t t, bool *flood, bool *capital);
+
+/* At the end of g, finished or stuck (highAward): true if its points
+ * newly earn High score. */
+bool um_ach_high(um_ach_t *a, um_game_t *g);
 
 /* At the end of g (winAwards): if every tile was cleared, the wins it
  * newly earns, a bit each (1u << UM_WIN_...). A game whose clears were

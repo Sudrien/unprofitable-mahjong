@@ -207,7 +207,7 @@ int main(void)
         um_ach_new_game(&a, &ag);
         const uint8_t pair[2] = { 4, 4 };
         um_note_set(&ag, UM_PAIR, pair, 2);
-        CHECK(um_ach_clear(&a, &ag, UM_PAIR, NULL) == UM_AWARD_FIRST, "achievements: setup: no First");
+        CHECK(um_ach_clear(&a, &ag, UM_PAIR, NULL, NULL) == UM_AWARD_FIRST, "achievements: setup: no First");
         save_ach(&a);
         save_load_ach(&b);
         CHECK(!memcmp(&a, &b, sizeof a), "achievements: not the same after a round trip");
@@ -265,9 +265,20 @@ int main(void)
         save_load_ach(&b);
         CHECK(b.games == a.games && b.played[UM_PAIR][0] == a.played[UM_PAIR][0] && !b.played_known[UM_PAIR] && !b.played_seed[UM_PAIR][0],
               "achievements: a version 3 save was not read as it was");
+
+        /* version 4: version 5 without the Capital and High score */
+        static uint8_t v4[8 + offsetof(um_ach_t, capital)];
+        const uint32_t ver4 = 4, size4 = (uint32_t)(sizeof v4 - 8);
+        memcpy(v4, &ver4, 4);
+        memcpy(v4 + 4, &size4, 4);
+        memcpy(v4 + 8, &a, size4);
+        put("ach", v4, sizeof v4);
+        save_load_ach(&b);
+        CHECK(b.games == a.games && b.played_known[UM_PAIR] == 1 && !b.capital.game && !b.high.game,
+              "achievements: a version 4 save was not read as it was");
     }
 
     if (s_bad) return 1;
-    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip, and versions 1 to 3 read\n");
+    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip, and versions 1 to 4 read\n");
     return 0;
 }
