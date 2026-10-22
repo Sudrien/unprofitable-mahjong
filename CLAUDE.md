@@ -72,3 +72,9 @@ and a patch that changes either side runs it.
   make it out of reach without loading seeds. If seeds become loadable,
   Full should need 3 different seeds in the window, or replaying one
   seed three times would earn any Full.
+- first achivements do not require a game to be completed. author thinks
+  this is fine - this means the are easy to hunt. the 'full' achievement
+  requires completed games.
+- loaded games cannot be played unless they are seed only, no moves. a
+  loaded seed is not playable if a limit set is possible from the first
+  18 tiles.
