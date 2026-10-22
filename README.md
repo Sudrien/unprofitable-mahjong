@@ -46,7 +46,7 @@ The in-game **Sets and scores** guide shows every set with example tiles and its
 - **The Capital is Gone:** make every set Full. Its river fills with each Full.
 - **High Score:** 500 points in one game. It isn't a hand, so it's no part of either river.
 
-**Goal:** any set's card in the guide has *Make this my goal*. The goal sits above the table with how far its First and Full have come, and the next time you clear that set a banner says *Goal met* and the goal clears. A run's card means any run. One goal at a time, kept in the browser.
+**Goals:** any set's card in the guide has *Make this a goal*, for up to three at once. They sit above the table, each with how far its First and Full have come, and the next time you clear one of those sets a banner says *Goal met* and that goal clears. A run's card means any run. Kept in the browser.
 
 There are also a few **secret** achievements. They don't appear in the guide until you find them, and they're no part of the river.
 

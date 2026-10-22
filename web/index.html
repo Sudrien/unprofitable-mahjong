@@ -159,7 +159,9 @@ dialog.share h2 { margin: 0 0 8px; font-family: var(--f-display); font-size: 1.2
 dialog.share .bad { color: var(--warn); }
 dialog.share textarea { width: 100%; box-sizing: border-box; font: 13px/1.4 ui-monospace, monospace; word-break: break-all; resize: none; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
 dialog.share .buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
-.goalbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 0 0 8px; padding: 6px 10px; border: 1px dashed var(--accent); border-radius: 8px; font-size: .9rem; }
+.goalbar { display: grid; gap: 2px; margin: 0 0 8px; padding: 4px 10px; border: 1px dashed var(--accent); border-radius: 8px; font-size: .9rem; }
+.goalbar .goal { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.g-goal:disabled { opacity: .45; cursor: default; }
 .goalbar b { font-weight: 600; }
 .goalbar .what { color: var(--muted); }
 .goalbar button { margin-left: auto; font: inherit; font-size: .8rem; color: var(--muted); background: transparent; border: 0; cursor: pointer; min-height: 32px; padding: 0 6px; }
@@ -841,15 +843,8 @@ function clearSet() {
   const award = typeof setAward === 'function' && !replaying ? setAward(t) : null;
   if (LIMIT.has(t) && typeof celebrate === 'function' && !replaying) celebrate(t, kinds, v, award);
   else if (award && typeof banner === 'function') banner(t, kinds, award);
-  // the goal, met: said after whatever the clear itself earned
-  if (!replaying && goalMatches(t)) {
-    const met = { kind: 'goal', kicker: L('Goal met', '目標達成', '目标达成') + ' · ' + gameNo(thisGame()) };
-    goal = null;
-    try { localStorage.removeItem(GOAL_KEY); } catch (e) {}
-    if (LIMIT.has(t)) celebrate(t, kinds, v, met);
-    else setTimeout(() => banner(t, kinds, met), award ? 2800 : 0);
-    if (typeof buildGuide === 'function') buildGuide();
-  }
+  // goals met: said after whatever the clear itself earned
+  meetGoals(t, kinds, v, award);
   // after the hand's own celebration: Overcompensating
   if (typeof overdone === 'function' && overdone(t, kinds)) { const a = secretAward('over'); if (a) celebrate(t, kinds, v, a); }
   sel.clear(); hintKeys.clear(); finishCheck(); commit();
@@ -1323,41 +1318,57 @@ function tileBtn(key, k) {
   return `<button type="button" class="${cls}" data-key="${key}" aria-pressed="${sel.has(key)}" aria-label="${kindNameIn(k, lang)}">${face(k)}</button>`;
 }
 const minis = ks => ks.map(k => `<span class="tile mini">${face(k)}</span>`).join('');
-/* ---------- goal: a set to aim for ---------- */
-// Chosen from its card in Sets and scores, kept in this browser, shown
-// pinned above the table with how far its First and Full have come, and
-// met -- with a banner, and then cleared -- the next time the set is
-// cleared. A run card's goal is any run.
-const GOAL_KEY = 'unprofitable-mahjong-goal';
-let goal = null;
-try { goal = localStorage.getItem(GOAL_KEY) || null; } catch (e) {}
-const goalMatches = t => !!goal && (goal === 'run' ? t.startsWith('run of ') : t === goal || (goal === 'mixed triple chow' && t === 'triple chow'));
-function setGoal(t) {
-  goal = t;
-  try { if (t) localStorage.setItem(GOAL_KEY, t); else localStorage.removeItem(GOAL_KEY); } catch (e) {}
+/* ---------- goals: up to three sets to aim for ---------- */
+// Chosen from their cards in Sets and scores, kept in this browser, shown
+// pinned above the table with how far each one's First and Full have
+// come, and each met -- with a banner, and then dropped -- the next time
+// its set is cleared. A run card's goal is any run.
+const GOAL_KEY = 'unprofitable-mahjong-goal', MAX_GOALS = 3;
+let goals = [];
+try {
+  const v = localStorage.getItem(GOAL_KEY);
+  if (v) { try { const a = JSON.parse(v); goals = Array.isArray(a) ? a.filter(x => typeof x === 'string').slice(0, MAX_GOALS) : [v]; } catch (e) { goals = [v]; } }  // one goal, saved bare before
+} catch (e) {}
+const goalMatches = (g, t) => g === 'run' ? t.startsWith('run of ') : t === g || (g === 'mixed triple chow' && t === 'triple chow');
+function saveGoals() { try { if (goals.length) localStorage.setItem(GOAL_KEY, JSON.stringify(goals)); else localStorage.removeItem(GOAL_KEY); } catch (e) {} }
+function toggleGoal(g) {
+  if (goals.includes(g)) goals = goals.filter(x => x !== g);
+  else if (goals.length < MAX_GOALS) goals.push(g);
+  else return;
+  saveGoals();
   if (typeof buildGuide === 'function') buildGuide();
   renderGoal();
 }
-const goalName = () => goal === 'run' ? L('Any run', '連順（長さ自由）', '任意连顺') : setName(goal).replace(/^./, c => c.toUpperCase());
+const goalName = g => g === 'run' ? L('Any run', '連順（長さ自由）', '任意连顺') : LA(setNameArr(g).map((x, i) => i ? x : title(x)));   // as the banner names it
+// its First, and its Full's progress: different completed deals in the window
+function goalStatus(g) {
+  if (typeof firsts === 'undefined') return '';
+  const keys = g === 'run' ? RUNS.map(n => 'run of ' + n) : [g];
+  const first = keys.some(k => firsts.has(k)), full = keys.some(k => fulls.has(k));
+  const now = isGame(S.game) ? S.game : gamesPlayed();
+  const deals = Math.min(FULL_OF, Math.max(0, ...keys.map(k => dealsIn((played.get(k) || []).filter(x => isDone(x) && x.g > now - FULL_IN)))));
+  return full ? L('Full ★', 'フル ★', '全满 ★')
+    : (first ? L('First ✓', '初めて ✓', '首次 ✓') : L('not cleared yet', 'まだ消していない', '尚未消除')) +
+      ' · ' + L(`Full ${deals} of ${FULL_OF} games`, `フル ${FULL_OF}局中${deals}局`, `全满 ${FULL_OF}局中${deals}局`);
+}
 function renderGoal() {
   const el = $('goalBar');
   if (!el) return;
-  if (!goal || replaying) { el.hidden = true; return; }
-  // its First, and its Full's progress: different completed deals in the window
-  let status = '';
-  if (typeof firsts !== 'undefined') {
-    const keys = goal === 'run' ? RUNS.map(n => 'run of ' + n) : [goal];
-    const first = keys.some(k => firsts.has(k)), full = keys.some(k => fulls.has(k));
-    const g = isGame(S.game) ? S.game : gamesPlayed();
-    const deals = Math.max(0, ...keys.map(k => dealsIn((played.get(k) || []).filter(x => isDone(x) && x.g > g - FULL_IN))));
-    status = full ? L('Full ★', 'フル ★', '全满 ★')
-      : (first ? L('First ✓', '初めて ✓', '首次 ✓') : L('not cleared yet', 'まだ消していない', '尚未消除')) +
-        ' · ' + L(`Full ${Math.min(deals, FULL_OF)} of ${FULL_OF} games`, `フル ${FULL_OF}局中${Math.min(deals, FULL_OF)}局`, `全满 ${FULL_OF}局中${Math.min(deals, FULL_OF)}局`);
-  }
-  el.innerHTML = `<span>${L('Goal', '目標', '目标')}: <b>${goalName()}</b></span><span class="what">${status}</span>` +
-    `<button type="button" id="goalClear">${L('Clear goal', '目標を外す', '取消目标')}</button>`;
+  if (!goals.length || replaying) { el.hidden = true; return; }
+  el.innerHTML = goals.map((g, i) => `<div class="goal"><span>${L('Goal', '目標', '目标')}: <b>${goalName(g)}</b></span><span class="what">${goalStatus(g)}</span>` +
+    `<button type="button" data-unset="${i}" aria-label="${pick('Clear this goal', 'この目標を外す', '取消这个目标')}">${L('Clear', '外す', '取消')}</button></div>`).join('');
   el.hidden = false;
-  $('goalClear').onclick = () => setGoal(null);
+  el.querySelectorAll('[data-unset]').forEach(b => b.onclick = () => toggleGoal(goals[+b.dataset.unset]));
+}
+// A clear meets every goal it matches: each dropped, one banner for them.
+function meetGoals(t, kinds, v, award) {
+  if (replaying || !goals.some(g => goalMatches(g, t))) return;
+  goals = goals.filter(g => !goalMatches(g, t));
+  saveGoals();
+  const met = { kind: 'goal', kicker: L('Goal met', '目標達成', '目标达成') + ' · ' + gameNo(thisGame()) };
+  if (LIMIT.has(t)) celebrate(t, kinds, v, met);
+  else setTimeout(() => banner(t, kinds, met), award ? 2800 : 0);
+  if (typeof buildGuide === 'function') buildGuide();
 }
 
 function render() {
@@ -1769,7 +1780,7 @@ const preview = e => {
   if (gb) {
     if (e.type === 'keydown') return;     // a button: Enter and Space click it
     e.stopPropagation();
-    setGoal(goal === gb.dataset.goal ? null : gb.dataset.goal);
+    toggleGoal(gb.dataset.goal);
     return;
   }
   const card = e.target.closest('[data-preview]');
@@ -1903,8 +1914,9 @@ function buildGuide() {
     const tiles = groups.map(g => g.map(k => `<span class="tile mini" aria-hidden="true">${face(k)}</span>`).join('')).join('<span class="gap"></span>');
     const play = LIMIT.has(t) ? ` data-preview="${kinds.join(',')}" tabindex="0" role="button" title="${pick('Play the animation', '演出を見る', '播放动画')}"` : '';
     const label = kinds.map(k => kindNameIn(k, lang)).join(lang === 'en' ? ', ' : '、');
-    const gk = run ? 'run' : t, on = goal === gk;
-    const goalBtn = `<button type="button" class="g-goal" data-goal="${gk}" aria-pressed="${on}">${on ? L('Goal ◎', '目標 ◎', '目标 ◎') : L('Make this my goal', 'これを目標に', '设为目标')}</button>`;
+    const gk = run ? 'run' : t, on = goals.includes(gk), full3 = !on && goals.length >= MAX_GOALS;
+    const goalBtn = `<button type="button" class="g-goal" data-goal="${gk}" aria-pressed="${on}"${full3 ? ' disabled' : ''}>${on ? L('Goal ◎', '目標 ◎', '目标 ◎')
+      : full3 ? L(`${MAX_GOALS} goals set`, `目標は${MAX_GOALS}つまで`, `最多${MAX_GOALS}个目标`) : L('Make this a goal', 'これを目標に', '设为目标')}</button>`;
     return `<div class="g-item${play ? ' g-play' : ''}${full ? ' g-full' : done ? ' g-done' : ''}"${play}><div class="g-head"><b>${LA(name)}</b><span class="g-pts">${p}</span></div><div class="g-tiles" role="img" aria-label="${label}">${tiles}</div>${runs}<p class="g-note">${LA(note)}</p>${when}${goalBtn}</div>`;
   };
   const card = (name, ptsTxt, neg, chip, note) => `<div class="g-item"><div class="g-head"><b>${name}</b><span class="g-pts${neg ? ' neg' : ''}">${ptsTxt}</span></div><div class="g-tiles">${chip}</div><p class="g-note">${note}</p></div>`;
