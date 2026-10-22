@@ -26,11 +26,18 @@ guidecheck: guidecheck.c ../main/guide.c ../main/guide.h ../core/umcore.c ../cor
 dealcheck: dealcheck.c ../core/umcore.c ../core/umcore.h
 	$(CC) $(CFLAGS) -I../core -o $@ dealcheck.c
 
+# main/qrscan.c and quirc, reading qrcodegen's codes from drawn frames
+QUIRC := ../components/quirc
+scancheck: scancheck.c ../main/qrscan.c ../main/qrscan.h $(QUIRC)/*.c $(QUIRC)/*.h ../components/qrcodegen/qrcodegen.c
+	$(CC) $(CFLAGS) -Wno-sign-compare -Wno-unused-parameter -DQUIRC_FLOAT_TYPE=float -DQUIRC_USE_TGMATH -I../main -I$(QUIRC) -I../components/qrcodegen -o $@ \
+	  scancheck.c ../main/qrscan.c $(QUIRC)/decode.c $(QUIRC)/identify.c $(QUIRC)/quirc.c $(QUIRC)/version_db.c ../components/qrcodegen/qrcodegen.c -lm
+
 tilecheck: tilecheck.c ../main/tilefaces.c ../main/tilefaces.h
 	$(CC) $(CFLAGS) -I../main -o $@ tilecheck.c ../main/tilefaces.c
 
-check: umtest tilecheck dealcheck guidecheck savecheck
+check: umtest tilecheck dealcheck guidecheck savecheck scancheck
 	./tilecheck
+	./scancheck
 	./umtest valid
 	./dealcheck $(DEALS)
 	./savecheck
@@ -39,4 +46,4 @@ check: umtest tilecheck dealcheck guidecheck savecheck
 .DEFAULT_GOAL := check
 .PHONY: check clean
 clean:
-	rm -f umtest tilecheck dealcheck guidecheck savecheck
+	rm -f umtest tilecheck dealcheck guidecheck savecheck scancheck

@@ -87,6 +87,7 @@ It uses other people's work under their own licences:
 | [feckless-graphics-handler-for-m5tab5](https://github.com/Sudrien/feckless-graphics-handler-for-m5tab5), [feckless-drivers-for-m5tab5](https://github.com/Sudrien/feckless-drivers-for-m5tab5) | Tab5 firmware, fetched when it's built | MIT |
 | [ESP-IDF](https://github.com/espressif/esp-idf) and the Espressif components it pulls in (touch controllers, USB host) | Tab5 firmware, fetched when it's built | Apache 2.0 |
 | [QR Code generator library](https://github.com/nayuki/QR-Code-generator), © Project Nayuki | The replay QR code: the C version vendored in `m5tab5/components/qrcodegen` for the Tab5, the TypeScript version compiled into `web/index.html` | MIT |
+| [quirc](https://github.com/dlbeer/quirc), © Daniel Beer | Reading a replay link's QR code off the Tab5's camera, vendored in `m5tab5/components/quirc` | ISC |
 | [Noto Serif CJK](https://github.com/notofonts/noto-cjk), © 2017 Adobe | The Tab5's tile faces (`m5tab5/main/tilefaces.c`): the characters are pictures of its glyphs, rendered by `m5tab5/tools/gen_tiles.py`. The font itself is not included | SIL Open Font License 1.1 |
 | [MurmurHash2](https://github.com/aappleby/smhasher), Austin Appleby | The replay codes' proof of work, in `web/index.html` and `m5tab5/core/umreplay.c` | Public domain |
 

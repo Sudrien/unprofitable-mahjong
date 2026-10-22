@@ -14,6 +14,8 @@
 #                              commit); its licence from the licence file
 #                              in managed_components/, the copy compiled
 #   components/qrcodegen/      the commit qrcodegen was copied from
+#   components/quirc/          the commit quirc was copied from
+#   components/esp_ipa/        the commit esp_ipa was copied from
 #     README.md
 #   gen_ark12.py               the Ark Pixel commit the font was cut from,
 #                              in feckless_graphics_handler's tools/
@@ -155,6 +157,26 @@ if(EXISTS "${_qr}")
     endif()
     list(APPEND _libs "qrcodegen (Project Nayuki)|${_v}|MIT")
 endif()
+
+# quirc and esp_ipa, vendored the same way: the commit each README names.
+foreach(_vend "quirc|README.md|quirc (Daniel Beer)|ISC" "esp_ipa|VENDORED.md|esp_ipa (Espressif)|Espressif MIT")
+    string(REPLACE "|" ";" _vl "${_vend}")
+    list(GET _vl 0 _dir)
+    list(GET _vl 1 _file)
+    list(GET _vl 2 _name)
+    list(GET _vl 3 _lic)
+    set(_rd "${_root}/components/${_dir}/${_file}")
+    if(EXISTS "${_rd}")
+        _lv_depends("${_rd}")
+        file(READ "${_rd}" _t)
+        if(_t MATCHES "commit `([0-9a-f]+)`")
+            _lv_short(_v "${CMAKE_MATCH_1}")
+        else()
+            set(_v "vendored")
+        endif()
+        list(APPEND _libs "${_name}|${_v}|${_lic}")
+    endif()
+endforeach()
 
 # The Ark Pixel font, compiled in through feckless_graphics_handler: its
 # LICENSE-OFL has to travel with the firmware.
