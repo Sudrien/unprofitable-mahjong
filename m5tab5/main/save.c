@@ -42,8 +42,10 @@ typedef struct {
 
 static blob_t s_blob;   /* 3 KB: off the stack */
 
-#define ACH_VER     (3u)    /* 3: a third secret; 2: a third win, Win with every poker hand, and the secrets */
-#define ACH_V2_SECRETS (2)  /* version 2 is version 3 with two secrets, the last member: a prefix */
+#define ACH_VER     (4u)    /* 4: each played game's seed, for Full; 3: a third secret; 2: a third win and the secrets */
+/* Versions 2 and 3 are prefixes of 4: each added only at the end. */
+#define ACH_V3_SIZE (offsetof(um_ach_t, played_seed))
+#define ACH_V2_SIZE (offsetof(um_ach_t, secret) + 2 * sizeof(um_rec_t))
 typedef struct {
     uint32_t ver;
     uint32_t size;
@@ -161,15 +163,16 @@ void save_load_ach(um_ach_t *a)
         memcpy(a, &s_ach_blob.a, sizeof *a);
         return;
     }
-    if (s_ach_blob.ver == 2u && s_ach_blob.size == sizeof(um_ach_t) - (UM_SECRET_N - ACH_V2_SECRETS) * sizeof(um_rec_t)
+    if (((s_ach_blob.ver == 2u && s_ach_blob.size == ACH_V2_SIZE) || (s_ach_blob.ver == 3u && s_ach_blob.size == ACH_V3_SIZE))
         && len == offsetof(ach_blob_t, a) + s_ach_blob.size) {
-        /* the secrets it did not have start unearned */
+        /* what it did not have starts empty: the later secrets unearned,
+         * the played games' seeds unknown */
         memset((uint8_t *)&s_ach_blob.a + s_ach_blob.size, 0, sizeof s_ach_blob.a - s_ach_blob.size);
         if (!um_ach_valid(&s_ach_blob.a)) {
-            ESP_LOGW(TAG, "saved achievements (version 2) unreadable; starting over");
+            ESP_LOGW(TAG, "saved achievements (version %u) unreadable; starting over", (unsigned)s_ach_blob.ver);
             return;
         }
-        ESP_LOGI(TAG, "achievements read from version 2");
+        ESP_LOGI(TAG, "achievements read from version %u", (unsigned)s_ach_blob.ver);
         memcpy(a, &s_ach_blob.a, sizeof *a);
         return;
     }

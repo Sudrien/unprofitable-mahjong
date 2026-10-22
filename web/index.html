@@ -151,12 +151,13 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.35rem, 
 .replaybar .info { flex: 1 1 16em; }
 .replaybar .ok { color: var(--t-green); }
 .replaybar .bad { color: var(--warn); }
-body.replaying .lower .buttons, body.replaying #newBtn, body.replaying #shareBtn { display: none; }
+body.replaying .lower .buttons, body.replaying #newBtn, body.replaying #shareBtn, body.replaying #loadBtn { display: none; }
 body.replaying #hand, body.replaying #melds { pointer-events: none; }
 dialog.share { border: 1px solid var(--line); border-radius: 10px; background: var(--raised); color: var(--ink); max-width: min(92vw, 36rem); padding: 18px 20px; }
 dialog.share::backdrop { background: rgba(0, 0, 0, .35); }
 dialog.share h2 { margin: 0 0 8px; font-family: var(--f-display); font-size: 1.2rem; }
-dialog.share textarea { width: 100%; font: 13px/1.4 ui-monospace, monospace; word-break: break-all; resize: none; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
+dialog.share .bad { color: var(--warn); }
+dialog.share textarea { width: 100%; box-sizing: border-box; font: 13px/1.4 ui-monospace, monospace; word-break: break-all; resize: none; background: var(--bg); color: var(--ink); border: 1px solid var(--line); border-radius: 6px; padding: 8px; }
 dialog.share .buttons { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
 .notice { border-left: 3px solid var(--accent); background: var(--raised); padding: 12px 14px; border-radius: 0 8px 8px 0; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; }
 .notice.warn { border-left-color: var(--warn); }
@@ -295,6 +296,7 @@ dialog.share .buttons { display: flex; gap: 8px; justify-content: flex-end; marg
       </div>
       <button class="btn quiet" id="newBtn" type="button"><span class="t" lang="en">New deal</span><span class="t" lang="ja">新しく配る</span><span class="t" lang="zh-Hans">重新发牌</span></button>
       <button class="btn quiet" id="shareBtn" type="button"><span class="t" lang="en">Share</span><span class="t" lang="ja">共有</span><span class="t" lang="zh-Hans">分享</span></button>
+      <button class="btn quiet" id="loadBtn" type="button"><span class="t" lang="en">Load</span><span class="t" lang="ja">読み込む</span><span class="t" lang="zh-Hans">载入</span></button>
     </div>
   </header>
 
@@ -340,6 +342,15 @@ dialog.share .buttons { display: flex; gap: 8px; justify-content: flex-end; marg
     <div class="buttons">
       <button class="btn primary" type="button" id="shareCopy" hidden><span class="t" lang="en">Copy link</span><span class="t" lang="ja">リンクをコピー</span><span class="t" lang="zh-Hans">复制链接</span></button>
       <button class="btn" type="button" id="shareClose"><span class="t" lang="en">Close</span><span class="t" lang="ja">閉じる</span><span class="t" lang="zh-Hans">关闭</span></button>
+    </div>
+  </dialog>
+  <dialog class="share" id="loadDlg">
+    <h2><span class="t" lang="en">Load a code</span><span class="t" lang="ja">コードを読み込む</span><span class="t" lang="zh-Hans">载入代码</span></h2>
+    <p id="loadMsg"></p>
+    <textarea id="loadCode" rows="4" spellcheck="false" autocomplete="off" aria-label="Replay code or link"></textarea>
+    <div class="buttons">
+      <button class="btn primary" type="button" id="loadGo"></button>
+      <button class="btn" type="button" id="loadClose"><span class="t" lang="en">Close</span><span class="t" lang="ja">閉じる</span><span class="t" lang="zh-Hans">关闭</span></button>
     </div>
   </dialog>
 
@@ -1412,7 +1423,8 @@ function render() {
 // on its own; the guide's two pung and two kong cards are one set each,
 // as are its two flushes.
 //   First: a set cleared for the first time.
-//   Full:  a set cleared in 3 of any 5 games in a row.
+//   Full:  a set cleared in 3 of any 5 games in a row, with 3 different
+//          deals among them: a loaded seed played again is the same deal.
 //   Wins:  all 136 cleared with no poker hand, with no pair in any set,
 //          or with every poker hand (a royal flush is a flush).
 //   The Yellow River Floods Again: every set's First.
@@ -1439,8 +1451,13 @@ const writeMap = (key, m) => { try { localStorage.setItem(key, JSON.stringify(Ob
 let firsts = readMap(FIRSTS_KEY, readRec), fulls = readMap(FULL_KEY, readRec), wins = readMap(WINS_KEY, readRec), secrets = readMap(SECRETS_KEY, readRec);
 let flood = null;
 try { flood = readRec(JSON.parse(localStorage.getItem(FLOOD_KEY))); } catch (e) {}
-// the games each set was cleared in, the last FULL_IN of them
-let played = readMap(PLAYED_KEY, g => Array.isArray(g) && g.every(isGame) ? g : null);
+// the games each set was cleared in, the last FULL_IN of them, each as
+// { g, s }: its number and its seed. Saved before seeds were kept, an
+// entry is a bare number: its seed unknown, so counted as a deal of its own.
+const readPlayed = v => isGame(v) ? { g: v, s: null } : v && isGame(v.g) && (v.s === null || isSeed(v.s)) ? { g: v.g, s: v.s } : null;
+let played = readMap(PLAYED_KEY, a => Array.isArray(a) && a.every(x => readPlayed(x)) ? a.map(readPlayed) : null);
+// how many different deals a set's games were: unknown seeds each count
+const dealsIn = gs => new Set(gs.filter(x => x.s !== null).map(x => x.s)).size + gs.filter(x => x.s === null).length;
 const thisGame = () => { if (!isGame(S.game)) S.game = nextGame(); return S.game; };   // a game from before games were counted takes a number
 const record = () => ({ g: thisGame(), s: isSeed(S.seed) ? S.seed : null });
 const gameNo = n => L(`game ${n}`, `第${n}局`, `第${n}局`);
@@ -1450,7 +1467,7 @@ const recWhere = r => gameNo(r.g);
 function setAward(t) {
   if (t === 'triple chow') t = 'mixed triple chow';     // older saves' name for it
   const g = thisGame();
-  const gs = (played.get(t) || []).filter(x => x > g - FULL_IN && x !== g).concat(g);
+  const gs = (played.get(t) || []).filter(x => x.g > g - FULL_IN && x.g !== g).concat({ g, s: isSeed(S.seed) ? S.seed : null });
   played.set(t, gs); writeMap(PLAYED_KEY, played);
   let award = null;
   if (!firsts.has(t)) {
@@ -1463,7 +1480,7 @@ function setAward(t) {
       queueMicrotask(() => celebrate(t, S.log[S.log.length - 1].k, FIRSTS.length,
         { kicker: L(`Every set · ${gameNo(g)}`, `すべての役 · ${gameNo(g)}`, `所有组合 · ${gameNo(g)}`), name: FLOOD_NAME }));
     }
-  } else if (!fulls.has(t) && gs.length >= FULL_OF) {
+  } else if (!fulls.has(t) && dealsIn(gs) >= FULL_OF) {
     fulls.set(t, record()); writeMap(FULL_KEY, fulls);
     award = { kind: 'full', kicker: L(`Full · ${FULL_OF} of ${FULL_IN} games`, `フル · ${FULL_IN}局中${FULL_OF}局`, `全满 · ${FULL_IN}局中${FULL_OF}局`) + ' · ' + gameNo(g) };
   }
@@ -1843,6 +1860,66 @@ $('shareCopy').onclick = async () => {
   try { await navigator.clipboard.writeText(t.value); } catch (e) { t.select(); document.execCommand && document.execCommand('copy'); }
   $('shareCopy').innerHTML = L('Copied', 'コピーしました', '已复制');
   setTimeout(() => { $('shareCopy').innerHTML = L('Copy link', 'リンクをコピー', '复制链接'); }, 1600);
+};
+
+/* ---------- loading a code ---------- */
+// A code with moves is watched; one with none is a deal, and can be
+// played -- unless a limit hand is already among its first 18 tiles,
+// which would make it a deal to hunt for rather than play.
+function limitInDeal(seed) {
+  const h = deal(seed >>> 0).slice(0, HAND).sort((a, b) => a - b);
+  for (let m = 0; m < 1 << HAND; m++) {
+    let n = 0;
+    for (let x = m; x; x &= x - 1) n++;
+    if (n < 14) continue;
+    if (LIMIT.has(classify(h.filter((_, i) => m >> i & 1)))) return true;
+  }
+  return false;
+}
+// what was pasted: a link's code, or the code itself
+const pastedCode = text => { const m = String(text).match(/#replay=([A-Za-z0-9_-]+)/); return (m ? m[1] : String(text)).replace(/[^A-Za-z0-9_-]/g, ''); };
+let loadArmed = null;   // a playable deal's seed, waiting for the press that plays it
+function loadReset(msg) {
+  loadArmed = null;
+  $('loadMsg').innerHTML = msg || L('Paste a replay code or link. A code with moves plays back; one from the start of a game is a deal you can play.',
+    'リプレイコードかリンクを貼り付けてください。手のあるコードは再生、対局の最初のコードは配牌として遊べます。',
+    '粘贴回放码或链接。有步数的代码会回放；对局开始时的代码是一副可以玩的牌。');
+  $('loadGo').innerHTML = L('Open', '開く', '打开');
+}
+$('loadBtn').onclick = () => { $('loadCode').value = ''; loadReset(); $('loadDlg').showModal(); $('loadCode').focus(); };
+$('loadClose').onclick = () => $('loadDlg').close();
+$('loadCode').oninput = () => { if (loadArmed !== null) loadReset(); };
+$('loadGo').onclick = () => {
+  if (loadArmed !== null) {
+    const seed = loadArmed;
+    $('loadDlg').close();
+    newGame(seed);
+    S.loaded = true; save();    // kept for the achievements about loading
+    return;
+  }
+  const code = pastedCode($('loadCode').value);
+  if (!code) return;
+  const r = readCode(code);
+  if (r.error) {
+    loadReset(`<span class="bad">${{
+      unreadable: L('This code cannot be read.', 'このコードは読み取れません。', '无法读取这个代码。'),
+      version: L('This code is from a newer version of the game.', 'このコードは新しい版のものです。', '这个代码来自更新的版本。'),
+      work: L('This code is not genuine: its proof of work does not match.', 'このコードは本物ではありません：作業証明が合いません。', '这个代码不是真的：工作量证明不对。'),
+      move: L(`This code is not genuine: move ${r.at} breaks the rules.`, `このコードは本物ではありません：${r.at}手目がルールに反しています。`, `这个代码不是真的：第${r.at}步违反规则。`),
+    }[r.error]}</span>`);
+    return;
+  }
+  if (r.moves.length) { $('loadDlg').close(); startReplay(code); return; }
+  if (limitInDeal(r.seed)) {
+    loadReset(`<span class="bad">${L('This deal cannot be played: a limit hand is already among its first 18 tiles.',
+      'この配牌は遊べません：最初の18枚に役満がすでにあります。', '这副牌不能玩：前18张里已经有大满贯。')}</span>`);
+    return;
+  }
+  const inPlay = !S.done && S.log.length > 0;
+  loadArmed = r.seed;
+  $('loadMsg').innerHTML = L('A fresh deal, ready to play.', '新しい配牌です。遊べます。', '一副新牌，可以玩。') +
+    (inPlay ? ' ' + L('Playing it gives up the game in play.', '遊ぶと今の対局は終わります。', '玩这副牌会放弃当前牌局。') : '');
+  $('loadGo').innerHTML = L('Play this deal', 'この配牌で遊ぶ', '玩这副牌');
 };
 
 // Watching a code: the player's own game is put aside, untouched, and each

@@ -78,6 +78,12 @@ and a patch that changes either side runs it.
   and Intentional Game Design (Meld pressed on a melded pair and its
   third tile; Meld still looks disabled, but takes the press).
 
+- **Loading a code (web):** Load takes a pasted code or link. With moves
+  it plays back; with none it is a deal, playable as a new game unless a
+  limit hand is already among its first 18 tiles. A loaded game counts
+  like any other and is marked S.loaded. Full now needs 3 different
+  deals in its window, on both sides.
+
 ## Not yet built
 
 - **The Capital is Gone:** the Full version of The Yellow River Floods
@@ -89,9 +95,6 @@ and a patch that changes either side runs it.
 - first achivements do not require a game to be completed. author thinks
   this is fine - this means the are easy to hunt. the 'full' achievement
   requires completed games.
-- loaded games cannot be played unless they are seed only, no moves. a
-  loaded seed is not playable if a limit set is possible from the first
-  18 tiles.
 - **High score:** an achievement for 500 points in a game (the brute
   forced maximum is 804 & -4; bots average under 300 and never reached
   500). It is not a hand, so it is no part of The Yellow River Floods

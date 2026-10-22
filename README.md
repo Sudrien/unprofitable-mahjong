@@ -37,7 +37,7 @@ The in-game **Sets and scores** guide shows every set with example tiles and its
 
 **More achievements**, each earned once per device. Full shows the same banner; the wins and the flood play the full celebration:
 
-- **Full** (★ in the guide): clear a set in 3 of any 5 games in a row. Each set, and each run length, has its own.
+- **Full** (★ in the guide): clear a set in 3 of any 5 games in a row, at least 3 of them different deals. A loaded deal played again is the same deal. Each set, and each run length, has its own.
 - **Win with no poker hands:** clear all 136 without two pair, a flush, a straight, a full house or a royal flush.
 - **Win with no pairs:** clear all 136 with no pair in any set. Pairs, two pair and full houses all count against it, and so do hands with a pair inside them, like All Honors, Seven Pairs, Thirteen Orphans and Nine Gates.
 - **Win with every poker hand:** clear all 136 with two pair, a flush, a straight and a full house among your sets. A royal flush counts as the flush.
@@ -50,7 +50,11 @@ When two full celebrations come at once, such as a limit hand and a win, they pl
 
 ## Replay codes
 
-**Share**, by New deal, turns the game on the table into a link anyone can open to watch it move by move. On the published site the link is the short `sudrien.github.io/umj/#replay=…`, which forwards here from its own repository. The code is the deal's seed and the moves, about 3 characters a move (around 150 for a whole game), in URL-safe base64. Nothing in it states a score: the page replays every move under the rules and stops at the first one that breaks them, so the only way to show a score is a legal game that earns it. Making a code also takes a small proof of work (MurmurHash2 with 20 leading zero bits, under a second), and every 63 characters carry 2 check characters that put one mistyped character right. Watching a code never touches your own game or best scores. Games dealt before codes existed have none. On the Tab5, Share in the settings shows the same link as a QR code.
+**Share**, by New deal, turns the game on the table into a link anyone can open to watch it move by move. On the published site the link is the short `sudrien.github.io/umj/#replay=…`, which forwards here from its own repository. The code is the deal's seed and the moves, about 3 characters a move (around 150 for a whole game), in URL-safe base64. Nothing in it states a score: the page replays every move under the rules and stops at the first one that breaks them, so the only way to show a score is a legal game that earns it. Making a code also takes a small proof of work (MurmurHash2 with 20 leading zero bits, under a second), and every 63 characters carry 2 check characters that put one mistyped character right. Watching a code never touches your own game or best scores. Games dealt before codes existed have none.
+
+**Load**, beside Share, takes a pasted code or link. A code with moves plays back as above. A code shared at the very start of a game, before any move, is just a deal, and you can play it as a new game, which counts like any other. A deal whose first 18 tiles already hold a limit hand can't be played that way.
+
+On the Tab5, Share in the settings shows the same link as a QR code.
 
 `node test/replaycheck.js` plays random games with every kind of move, and checks that each code replays to the same end, that a typo is put right, and that changed codes are refused.
 

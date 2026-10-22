@@ -35,15 +35,35 @@ um_award_t um_ach_clear(um_ach_t *a, um_game_t *g, um_set_t t, bool *flood)
     if (t <= UM_NONE || t >= UM_SET_COUNT) return UM_AWARD_NONE;
     const uint32_t gn = this_game(a, g);
 
-    /* the games it was cleared in, within the window, this one last */
-    uint32_t *p = a->played[t];
-    uint32_t keep[UM_ACH_WINDOW];
+    /* the games it was cleared in, within the window, this one last,
+     * each with its seed */
+    uint32_t *p = a->played[t], *ps = a->played_seed[t];
+    uint32_t keep[UM_ACH_WINDOW], kseed[UM_ACH_WINDOW];
+    uint8_t known = 0;
     int n = 0;
     for (int i = 0; i < UM_ACH_WINDOW; i++)
-        if (p[i] && p[i] + UM_ACH_WINDOW > gn && p[i] != gn && n < UM_ACH_WINDOW - 1) keep[n++] = p[i];
+        if (p[i] && p[i] + UM_ACH_WINDOW > gn && p[i] != gn && n < UM_ACH_WINDOW - 1) {
+            if (a->played_known[t] >> i & 1) known |= (uint8_t)(1u << n);
+            kseed[n] = ps[i];
+            keep[n++] = p[i];
+        }
+    known |= (uint8_t)(1u << n);
+    kseed[n] = g->rng;
     keep[n++] = gn;
     memset(p, 0, sizeof a->played[t]);
+    memset(ps, 0, sizeof a->played_seed[t]);
     memcpy(p, keep, n * sizeof keep[0]);
+    memcpy(ps, kseed, n * sizeof kseed[0]);
+    a->played_known[t] = known;
+
+    /* dealsIn: the different seeds, and each unknown one */
+    int deals = 0;
+    for (int i = 0; i < n; i++) {
+        bool again = false;
+        if (known >> i & 1)
+            for (int j = 0; j < i; j++) if ((known >> j & 1) && kseed[j] == kseed[i]) again = true;
+        deals += !again;
+    }
 
     if (!a->first[t].game) {
         a->first[t] = record(a, g);
@@ -53,7 +73,7 @@ um_award_t um_ach_clear(um_ach_t *a, um_game_t *g, um_set_t t, bool *flood)
         }
         return UM_AWARD_FIRST;
     }
-    if (!a->full[t].game && n >= UM_ACH_FULL_OF) {
+    if (!a->full[t].game && deals >= UM_ACH_FULL_OF) {
         a->full[t] = record(a, g);
         return UM_AWARD_FULL;
     }
@@ -102,8 +122,10 @@ bool um_ach_valid(const um_ach_t *a)
     for (int t = 0; t < UM_SET_COUNT; t++) {
         if (a->first[t].game > a->games || a->full[t].game > a->games) return false;
         if (a->full[t].game && !a->first[t].game) return false;
+        if (a->played_known[t] >> UM_ACH_WINDOW) return false;
         for (int i = 0; i < UM_ACH_WINDOW; i++) {
             if (a->played[t][i] > a->games) return false;
+            if (!a->played[t][i] && ((a->played_known[t] >> i & 1) || a->played_seed[t][i])) return false;
             for (int j = 0; j < i; j++) if (a->played[t][i] && a->played[t][i] == a->played[t][j]) return false;
         }
     }

@@ -243,8 +243,8 @@ int main(void)
 
         /* version 2: version 3 without the last secret */
         a.secret[UM_SECRET_WAIT] = (um_rec_t){ a.games, 5 };
-        static uint8_t v2[8 + sizeof a - sizeof(um_rec_t)];
-        const uint32_t ver2 = 2, size2 = (uint32_t)(sizeof a - sizeof(um_rec_t));
+        static uint8_t v2[8 + offsetof(um_ach_t, secret) + 2 * sizeof(um_rec_t)];
+        const uint32_t ver2 = 2, size2 = (uint32_t)(sizeof v2 - 8);
         memcpy(v2, &ver2, 4);
         memcpy(v2 + 4, &size2, 4);
         memcpy(v2 + 8, &a, size2);
@@ -252,9 +252,22 @@ int main(void)
         save_load_ach(&b);
         CHECK(b.games == a.games && b.secret[UM_SECRET_WAIT].game == a.games && !b.secret[UM_SECRET_DESIGN].game,
               "achievements: a version 2 save was not read as it was");
+
+        /* version 3: version 4 without the played games' seeds */
+        a.played_seed[UM_PAIR][0] = 1234;
+        a.played_known[UM_PAIR] = 1;
+        static uint8_t v3[8 + offsetof(um_ach_t, played_seed)];
+        const uint32_t ver3 = 3, size3 = (uint32_t)(sizeof v3 - 8);
+        memcpy(v3, &ver3, 4);
+        memcpy(v3 + 4, &size3, 4);
+        memcpy(v3 + 8, &a, size3);
+        put("ach", v3, sizeof v3);
+        save_load_ach(&b);
+        CHECK(b.games == a.games && b.played[UM_PAIR][0] == a.played[UM_PAIR][0] && !b.played_known[UM_PAIR] && !b.played_seed[UM_PAIR][0],
+              "achievements: a version 3 save was not read as it was");
     }
 
     if (s_bad) return 1;
-    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip, and versions 1 and 2 read\n");
+    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip, and versions 1 to 3 read\n");
     return 0;
 }

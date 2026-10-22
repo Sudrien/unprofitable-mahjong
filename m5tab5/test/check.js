@@ -239,7 +239,10 @@ function achCheck() {
   const script = [];
   const GAMES_N = 400;
   for (let gi = 0; gi < GAMES_N; gi++) {
-    const legacy = gi > 0 && rnd(25) === 0, s = (rnd(1 << 24) * 256 + rnd(256)) >>> 0;
+    // now and then a seed played before, as a loaded deal: Full needs different deals
+    const prev = script.filter(x => x.op === 'N' || x.op === 'U');
+    const legacy = gi > 0 && rnd(25) === 0, again = prev.length && rnd(4) === 0;
+    const s = again ? prev[prev.length - 1 - rnd(Math.min(4, prev.length))].seed : (rnd(1 << 24) * 256 + rnd(256)) >>> 0;
     script.push({ op: legacy ? 'U' : 'N', seed: s });
     const mode = rnd(5);   // 0 any, 1 no pairs, 2 no poker, 3 a few favorites, 4 poker hands
     const poker = sets.filter(e => A.isPoker(e.t));

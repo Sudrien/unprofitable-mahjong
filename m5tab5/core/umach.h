@@ -6,7 +6,9 @@
  * plays the same games through both and compares every record.
  *
  *   First   a set cleared for the first time
- *   Full    a set cleared in UM_ACH_FULL_OF of any UM_ACH_WINDOW games in a row
+ *   Full    a set cleared in UM_ACH_FULL_OF of any UM_ACH_WINDOW games in a row,
+ *           UM_ACH_FULL_OF different deals among them (a seed played
+ *           again is the same deal)
  *   Wins    all 136 cleared with no poker hand, with no pair in any set,
  *           or with every poker hand (a royal flush is a flush)
  *   The Yellow River Floods Again: every set's First
@@ -52,6 +54,12 @@ typedef struct {
     um_rec_t win[UM_WIN_N];
     um_rec_t flood;
     um_rec_t secret[UM_SECRET_N];
+    /* Last, so a save from before reads as a prefix: the seed of each
+     * game in played[], and which of those seeds are known (bit i for
+     * played[t][i]). An entry saved before seeds were kept is unknown,
+     * and counts as a deal of its own. */
+    uint32_t played_seed[UM_SET_COUNT][UM_ACH_WINDOW];
+    uint8_t  played_known[UM_SET_COUNT];
 } um_ach_t;
 
 typedef enum { UM_AWARD_NONE, UM_AWARD_FIRST, UM_AWARD_FULL } um_award_t;
