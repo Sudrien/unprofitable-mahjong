@@ -32,3 +32,9 @@ CONFIG_USB_HOST_HUBS_SUPPORTED=y
 CONFIG_USB_HOST_HUB_MULTI_LEVEL=y
 CONFIG_USB_HOST_ENABLE_ENUM_FILTER_CALLBACK=y
 CONFIG_USB_HOST_DWC_DMA_CAP_MEMORY_IN_PSRAM=y
+
+# feckless_camera (components/feckless_camera/README.md): the Tab5's
+# sensor, and the ISP controller that gives it auto exposure -- without
+# it the picture is near black. Espressif's m5stack_tab5 BSP sets both.
+CONFIG_CAMERA_SC202CS=y
+CONFIG_ESP_VIDEO_ENABLE_ISP_PIPELINE_CONTROLLER=y

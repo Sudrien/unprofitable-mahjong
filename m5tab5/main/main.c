@@ -9,6 +9,7 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include "camera.h"
 #include "esp_app_desc.h"
 #include "esp_check.h"
 #include "esp_log.h"
@@ -53,6 +54,13 @@ void app_main(void)
     gfx_set_rotation(ROTATION);
     touch_set_rotation(ROTATION);
     ESP_LOGI(TAG, "screen %dx%d", gfx_w(), gfx_h());
+
+    /* After lcd_init(), which holds the PHY supply the CSI side shares.
+     * Only a probe for now, so a board's log says whether the camera
+     * answers; seeds by QR code will start it. No camera is no loss. */
+    if (camera_init(tab5io_bus()) != ESP_OK) {
+        ESP_LOGW(TAG, "no camera -- seeds cannot be read from QR codes");
+    }
 
     save_init();
     ui_run();

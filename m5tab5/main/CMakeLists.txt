@@ -7,4 +7,5 @@ idf_component_register(
              feckless_drivers            # tab5io, touch
              umcore                      # the rules and replay codes, from ../core
              qrcodegen                   # the replay link's QR code
+             feckless_camera             # probed at boot; nothing reads it yet
 )

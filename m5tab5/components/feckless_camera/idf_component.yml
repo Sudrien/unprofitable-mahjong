@@ -1,0 +1,17 @@
+# SPDX-License-Identifier: MIT
+version: "0.1.0"
+description: >-
+  M5Stack Tab5 camera (SC202CS on MIPI CSI) as luma frames, through
+  esp_video. Takes the I2C bus from feckless_drivers' tab5io.
+license: MIT
+
+dependencies:
+  idf:
+    version: ">=5.4.2"
+
+  # PINNED, as everything here is. 2.5.0 is the release of 2026-09-18;
+  # Espressif's m5stack_tab5 BSP asks for ~2.0, and the CSI config used
+  # here (dont_init_ldo, VIDIOC_S_DQBUF_TIMEOUT) is older than both.
+  # It brings esp_cam_sensor, esp_ipa and, on the P4, esp_h264 and
+  # usb_host_uvc with it, whether or not anything here uses them.
+  espressif/esp_video: "2.5.0"
