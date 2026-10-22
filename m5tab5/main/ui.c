@@ -1899,6 +1899,7 @@ static void draw_share(void)
  * -- unless a limit hand is already among its first 18 tiles. A code
  * with moves is a game to watch, which is the website's to do. */
 #define SCAN_STEP   (2)
+#define SCAN_TURN   (1)         /* quarter turns clockwise that stand the frame up, in landscape */
 static uint8_t *s_scan_buf;             /* PSRAM, made the first time */
 static size_t s_scan_cap;
 static int s_scan_w, s_scan_h, s_scan_seen;
@@ -2016,13 +2017,29 @@ static void draw_scan(void)
     if (s_scan == SC_LIVE) {
         const char *title = _("Hold a replay QR code up to the camera");
         gfx_draw_text((gfx_w() - gfx_text_w(title, TXT)) / 2, TOP_Y + 8, title, TXT, gfx_w(), C_INK);
-        /* the frame as the camera has it, grey, one pixel a pixel */
-        const int top = TOP_Y + GFX_GLYPH_H(TXT) + 24;
-        const int x0 = (gfx_w() - s_scan_w) / 2, y0 = top;
-        for (int y = 0; y < s_scan_h && y0 + y < gfx_h() - 80; y++) {
-            const uint8_t *row = s_scan_buf + (size_t)y * (size_t)s_scan_w;
-            for (int x = 0; x < s_scan_w; x++) {
-                const uint8_t v = row[x];
+        /* the frame, grey, turned to stand as the camera sees it: on this
+         * Tab5 a quarter turn clockwise in landscape (the screen's
+         * GFX_ROT_90), and so on round with the screen; scaled down,
+         * nearest pixel, to fit between the title and the status */
+        const int top = TOP_Y + GFX_GLYPH_H(TXT) + 24, avail_h = gfx_h() - 90 - top, avail_w = gfx_w() - 2 * M_X;
+        const int q = (SCAN_TURN + gfx_rotation() - GFX_ROT_90 + 4) % 4;
+        const int sw = q & 1 ? s_scan_h : s_scan_w, sh = q & 1 ? s_scan_w : s_scan_h;     /* the turned frame */
+        int dw = sw, dh = sh;
+        if (dw > avail_w) { dh = dh * avail_w / dw; dw = avail_w; }
+        if (dh > avail_h) { dw = dw * avail_h / dh; dh = avail_h; }
+        const int x0 = (gfx_w() - dw) / 2, y0 = top;
+        for (int y = 0; y < dh; y++) {
+            const int ty = y * sh / dh;
+            for (int x = 0; x < dw; x++) {
+                const int tx = x * sw / dw;
+                int fx, fy;     /* the camera's pixel under the turned frame's (tx, ty) */
+                switch (q) {
+                case 1:  fx = ty;                 fy = s_scan_h - 1 - tx; break;    /* clockwise */
+                case 2:  fx = s_scan_w - 1 - tx;  fy = s_scan_h - 1 - ty; break;
+                case 3:  fx = s_scan_w - 1 - ty;  fy = tx;                break;    /* anticlockwise */
+                default: fx = tx;                 fy = ty;                break;
+                }
+                const uint8_t v = s_scan_buf[(size_t)fy * (size_t)s_scan_w + (size_t)fx];
                 gfx_px(x0 + x, y0 + y, RGB(v, v, v));
             }
         }

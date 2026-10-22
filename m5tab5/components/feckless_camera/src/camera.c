@@ -47,6 +47,24 @@
 
 static const char *TAG = "camera";
 
+/* While streaming, the ISP's per-frame complaints are kept out of the
+ * log: if a frame's colour matrix or white balance is refused, the last
+ * good one stays, and five lines a frame (4,400 a minute) bury everything
+ * else. Each tag's level is put back on stop. */
+static const char *const QUIET[] = { "ISP_CCM", "isp_video", "ISP", "esp_video" };
+static esp_log_level_t s_quiet_was[sizeof QUIET / sizeof QUIET[0]];
+static bool s_quiet;
+
+static void quiet(bool on)
+{
+    if (on == s_quiet) return;
+    for (size_t i = 0; i < sizeof QUIET / sizeof QUIET[0]; i++) {
+        if (on) { s_quiet_was[i] = esp_log_level_get(QUIET[i]); esp_log_level_set(QUIET[i], ESP_LOG_NONE); }
+        else esp_log_level_set(QUIET[i], s_quiet_was[i]);
+    }
+    s_quiet = on;
+}
+
 #define SCCB_FREQ_HZ    (400000)
 #define NBUF            (2)         /* one filling while one is read */
 #define DQ_TIMEOUT_MS   (500)       /* 15 frame times: a stall, not a slow frame */
@@ -150,6 +168,7 @@ esp_err_t camera_start(void)
 
     int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     if (ioctl(s_fd, VIDIOC_STREAMON, &type) != 0) return start_fail("STREAMON");
+    quiet(true);
     return ESP_OK;
 }
 
@@ -197,6 +216,7 @@ esp_err_t camera_grab_luma(uint8_t *dst, int step, int *w, int *h)
 esp_err_t camera_stop(void)
 {
     if (s_fd < 0) return ESP_OK;
+    quiet(false);
     int type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     ioctl(s_fd, VIDIOC_STREAMOFF, &type);   /* fails harmlessly if never on */
     for (int i = 0; i < NBUF; i++) {
