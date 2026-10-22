@@ -68,6 +68,14 @@ melds, the discard pile, penalty. It must give the same answers as the
 web version. `m5tab5/test/` checks that against `web/index.html` with Node,
 and a patch that changes either side runs it.
 
+## Built
+
+- **Win with every poker hand:** two pair, a flush, a straight and a
+  full house among a won game's sets. A royal flush counts as the flush.
+- **Secrets**, listed only once earned, and no part of the river:
+  A Place for Everything (a game ended with no tiles left) and Wait
+  Wait Wait (Sort, or turning Auto-sort on, threw a selection away).
+
 ## Not yet built
 
 - **The Capital is Gone:** the Full version of The Yellow River Floods
@@ -82,14 +90,16 @@ and a patch that changes either side runs it.
 - loaded games cannot be played unless they are seed only, no moves. a
   loaded seed is not playable if a limit set is possible from the first
   18 tiles.
-- all poker hands achivement (opposite of no poker hands)
-- the brute forced max score is... 804 & -4 ... so is haigh score achivement of 600 valid?
+- **High score:** an achievement for 500 points in a game (the brute
+  forced maximum is 804 & -4; bots average under 300 and never reached
+  500). It is not a hand, so it is no part of The Yellow River Floods
+  Again or The Capital is Gone.
 - Secret achivements?
-  - Intentional game design: tried and failed to add to a pair in meld
+  - Intentional game design: tried and failed to add to a pair in meld.
+    Open: Meld is disabled for a melded pair plus its third tile, so
+    there is no press to catch yet.
   - Overcompensating: used 4 tiles of a kind in a limit hand that requires 3
-  - Wait wait wait: sorting deselects tiles.. Even if autosort is on.
   - Try try again: load a seed already represented in achivements
-  - A place for everthing: finish a game with no tiles remaining
   - guaranteed random: load a playable seed
   - shadows of the past: load a completed game
 - tab5 : qr code reading with camera to enter seeds

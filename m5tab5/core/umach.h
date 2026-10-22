@@ -7,8 +7,12 @@
  *
  *   First   a set cleared for the first time
  *   Full    a set cleared in UM_ACH_FULL_OF of any UM_ACH_WINDOW games in a row
- *   Wins    all 136 cleared with no poker hand, or with no pair in any set
+ *   Wins    all 136 cleared with no poker hand, with no pair in any set,
+ *           or with every poker hand (a royal flush is a flush)
  *   The Yellow River Floods Again: every set's First
+ *   Secrets shown only once earned, and no part of the river:
+ *           A Place for Everything (a game ended with no tiles left),
+ *           Wait Wait Wait (a sort threw a selection away)
  *
  * The sets are every um_set_t, UM_PAIR to UM_FOUR_KONGS: the 40 the web
  * version counts. Each record is the game it was earned in, by the
@@ -36,7 +40,8 @@ typedef struct {
     uint32_t seed;      /* that game's seed */
 } um_rec_t;
 
-enum { UM_WIN_NO_POKER, UM_WIN_NO_PAIRS, UM_WIN_N };   /* the web version's WINS, in order */
+enum { UM_WIN_NO_POKER, UM_WIN_NO_PAIRS, UM_WIN_ALL_POKER, UM_WIN_N };   /* the web version's WINS, in order */
+enum { UM_SECRET_PLACE, UM_SECRET_WAIT, UM_SECRET_N };                  /* its SECRETS, in order */
 
 typedef struct {
     uint32_t games;                                 /* games dealt on this device */
@@ -45,6 +50,7 @@ typedef struct {
     uint32_t played[UM_SET_COUNT][UM_ACH_WINDOW];   /* the games each set was cleared in, the last few; 0 is empty */
     um_rec_t win[UM_WIN_N];
     um_rec_t flood;
+    um_rec_t secret[UM_SECRET_N];
 } um_ach_t;
 
 typedef enum { UM_AWARD_NONE, UM_AWARD_FIRST, UM_AWARD_FULL } um_award_t;
@@ -64,6 +70,11 @@ um_award_t um_ach_clear(um_ach_t *a, um_game_t *g, um_set_t t, bool *flood);
  * not all tracked (g->had without UM_HAD_TRACKED: saved by an older
  * build) earns none, since what it cleared before is not known. */
 uint8_t um_ach_win(um_ach_t *a, um_game_t *g);
+
+/* Secret s earned in g (secretAward): true if it is new. The caller
+ * decides when: PLACE when a game ends with every tile cleared, WAIT
+ * when a sort throws a selection away. */
+bool um_ach_secret(um_ach_t *a, um_game_t *g, int s);
 
 int  um_ach_firsts(const um_ach_t *a);   /* sets with a First, of UM_ACH_SETS */
 int  um_ach_fulls(const um_ach_t *a);

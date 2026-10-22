@@ -50,13 +50,15 @@ function makeAch() {
     ${js.slice(g0, g1)}
     ${js.slice(f0, f1)}
     ${js.slice(a, b)}
-    return { setS: v => { S = v; }, get S() { return S; }, nextGame, setAward, winAwards, holdsPair, isPoker, celebs, FIRSTS, WINS, FLOOD_NAME,
-             get firsts() { return firsts; }, get fulls() { return fulls; }, get wins() { return wins; }, get flood() { return flood; }, gamesPlayed };`)();
+    return { setS: v => { S = v; }, get S() { return S; }, nextGame, setAward, winAwards, secretAward, holdsPair, isPoker, celebs, FIRSTS, WINS, SECRETS, FLOOD_NAME,
+             get firsts() { return firsts; }, get fulls() { return fulls; }, get wins() { return wins; }, get secrets() { return secrets; }, get flood() { return flood; }, gamesPlayed };`)();
 }
 const ACH = makeAch();
-// what a game's clears included, as core's g->had: bit 0 poker, bit 1 a pair, bit 7 tracked
+// what a game's clears included, as core's g->had: bit 0 poker, bit 1 a pair,
+// bits 2-5 two pair, flush (a royal flush too), straight, full house; bit 7 tracked
+const HAD_POKER = { 'two pair': 4, 'flush': 8, 'royal flush': 8, 'straight': 16, 'full house': 32 };
 const hadOf = log => log.filter(e => e.t !== 'add' && e.t !== 'discard')
-  .reduce((h, e) => h | (ACH.isPoker(e.t) ? 1 : 0) | (ACH.holdsPair(e) ? 2 : 0), 128);
+  .reduce((h, e) => h | (ACH.isPoker(e.t) ? 1 : 0) | (ACH.holdsPair(e) ? 2 : 0) | (HAD_POKER[e.t] || 0), 128);
 
 let failures = 0;
 const fail = msg => { failures++; if (failures <= 20) console.error('MISMATCH ' + msg); };
@@ -239,20 +241,24 @@ function achCheck() {
   for (let gi = 0; gi < GAMES_N; gi++) {
     const legacy = gi > 0 && rnd(25) === 0, s = (rnd(1 << 24) * 256 + rnd(256)) >>> 0;
     script.push({ op: legacy ? 'U' : 'N', seed: s });
-    const mode = rnd(4);   // 0 any, 1 no pairs, 2 no poker, 3 a few favorites
+    const mode = rnd(5);   // 0 any, 1 no pairs, 2 no poker, 3 a few favorites, 4 poker hands
+    const poker = sets.filter(e => A.isPoker(e.t));
     const pool = mode === 1 ? sets.filter(e => !A.holdsPair(e)) : mode === 2 ? sets.filter(e => !A.isPoker(e.t))
-      : mode === 3 ? sets.slice(gi % 7, gi % 7 + 5) : sets;
+      : mode === 3 ? sets.slice(gi % 7, gi % 7 + 5) : mode === 4 ? poker : sets;
     const last = gi >= GAMES_N - 3;
-    const clears = last ? sets.slice() : Array.from({ length: 1 + rnd(10) }, () => pool[rnd(pool.length)]);
-    for (const e of clears) script.push({ op: 'C', e });
+    const clears = last ? sets.slice() : Array.from({ length: 1 + rnd(mode === 4 ? 14 : 10) }, () => pool[rnd(pool.length)]);
+    for (const e of clears) {
+      script.push({ op: 'C', e });
+      if (rnd(60) === 0) script.push({ op: 'S' });   // a sort with tiles chosen
+    }
     if (rnd(2) === 0 || last) script.push({ op: 'W' });
   }
   const out = execFileSync(UMTEST, ['ach'], {
-    input: script.map(x => x.op === 'C' ? `C ${x.e.t}|${x.e.k.join(',')}` : x.op === 'W' ? 'W' : `${x.op} ${x.seed}`).join('\n') + '\n',
+    input: script.map(x => x.op === 'C' ? `C ${x.e.t}|${x.e.k.join(',')}` : x.op === 'W' || x.op === 'S' ? x.op : `${x.op} ${x.seed}`).join('\n') + '\n',
     maxBuffer: 1 << 28 }).toString().trim().split('\n');
   const norm = line => line.split(' | ').map(p => p.split(';').sort().join(';')).join(' | ');
   const recs = (name, m) => [name, ...[...m].map(([t, r]) => `${t}=${r.g}/${r.s}`)].join(';');
-  let flooded = 0, fulls = 0, won = 0, legacy = false, legacyWins = 0;
+  let flooded = 0, fulls = 0, won = 0, legacy = false, legacyWins = 0, found = 0;
   script.forEach((x, i) => {
     A.celebs.length = 0;
     let award = '-';
@@ -262,19 +268,23 @@ function achCheck() {
       A.S.log.push({ t: x.e.t, k: x.e.k.slice().sort((a, b) => a - b), v: 0 });
       const a = A.setAward(x.e.t);
       award = !a ? '-' : a.kicker.startsWith('First') ? 'first' : a.kicker.startsWith('Full') ? 'full' : '?';
-    } else if (!legacy) A.winAwards();
+    } else if (x.op === 'S') A.secretAward('wait');
+    else if (!legacy) A.winAwards();
     // a game saved before games were counted had nothing tracked on the
-    // Tab5, so it earns no win there; the web version would read its log
-    else legacyWins++;
+    // Tab5, so it earns no win there; the web version would read its log.
+    // A Place for Everything asks only that the table is empty, so it is
+    // earned either way.
+    else { if (A.S.log.length) A.secretAward('place'); legacyWins++; }
     const flood = A.celebs.some(c => c && c.name === A.FLOOD_NAME) ? 1 : 0;
     const wins = A.celebs.reduce((m, c) => { const w = c && A.WINS.findIndex(([, name]) => name === c.name); return w >= 0 && c ? m | (1 << w) : m; }, 0);
-    const want = `R ${award} ${flood} ${wins} ${A.gamesPlayed()} | ${recs('first', A.firsts)} | ${recs('full', A.fulls)} | ${recs('win', A.wins)} | flood${A.flood ? `;${A.flood.g}/${A.flood.s}` : ''}`;
+    const want = `R ${award} ${flood} ${wins} ${A.gamesPlayed()} | ${recs('first', A.firsts)} | ${recs('full', A.fulls)} | ${recs('win', A.wins)} | flood${A.flood ? `;${A.flood.g}/${A.flood.s}` : ''} | ${recs('secret', A.secrets)}`;
     if (norm(out[i] || '') !== norm(want)) fail(`ach step ${i + 1} (${x.op}${x.e ? ' ' + x.e.t : ''})\n   C: ${out[i]}\n  JS: ${want}`);
-    flooded |= flood; fulls += award === 'full'; won |= wins;
+    flooded |= flood; fulls += award === 'full'; won |= wins; found = A.secrets.size;
   });
-  if (!flooded || !fulls || won !== 3) fail(`ach: the script never reached everything (flood ${flooded}, fulls ${fulls}, wins ${won})`);
+  if (!flooded || !fulls || won !== (1 << A.WINS.length) - 1 || found !== A.SECRETS.length)
+    fail(`ach: the script never reached everything (flood ${flooded}, fulls ${fulls}, wins ${won}, secrets ${found})`);
   if (!legacyWins) fail('ach: no game saved before games were counted ended in a win');
-  console.log(`ach: ${script.length} steps over ${GAMES_N} games, ${fulls} sets full, both wins and the flood, ${legacyWins} older games won; records the same`);
+  console.log(`ach: ${script.length} steps over ${GAMES_N} games, ${fulls} sets full, every win, every secret and the flood, ${legacyWins} older games won; records the same`);
 }
 
 classifyCheck();

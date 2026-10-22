@@ -80,6 +80,8 @@ ja:
     # ui.c
     "9 Dots": "9筒"
     # ui.c
+    "A Place for Everything": "適材適所"
+    # ui.c
     "A clean sweep with no shortcuts.": "近道なしで全部クリア！"
     # ui.c
     "A lone %s can never be cleared now.": "%sが1枚だけ残り、もう消せません。"
@@ -97,6 +99,8 @@ ja:
     "Add 6": "6枚追加"
     # ui.c
     "All 136 cleared and no set held a pair: no pairs, two pair or full houses, and no hand with a pair in it, like All Honors or Seven Pairs.": "対子を含む組を一度も使わずに136枚すべて消す。対子・ツーペア・フルハウスも、字一色や七対子のように対子を含む役も不可。"
+    # ui.c
+    "All 136 cleared with two pair, a flush, a straight and a full house among the sets. A royal flush counts as the flush.": "ツーペア・フラッシュ・ストレート・フルハウスをすべて使って136枚すべて消す。ロイヤルフラッシュはフラッシュとして数える。"
     # ui.c
     "All 136 cleared without two pair, a flush, a straight, a full house or a royal flush.": "ツーペア・フラッシュ・ストレート・フルハウス・ロイヤルフラッシュを使わずに136枚すべて消す。"
     # ui.c
@@ -163,6 +167,8 @@ ja:
     "FIRST TIME · GAME %d": "初めての役 · 第%d局"
     # ui.c
     "FULL · 3 OF 5 GAMES · GAME %d": "フル · 5局中3局 · 第%d局"
+    # ui.c
+    "Finished a game with no tiles left.": "牌を1枚も残さずに終局した。"
     # guide.c
     "Five of one suit that also split into mahjong sets, here a chow and a pair: 3 + 1, plus 1 bonus.": "同じ種類の5枚がマージャンの面子にも分けられる場合（ここでは順子と対子）：3 + 1、ボーナス+1。"
     # guide.c
@@ -318,6 +324,8 @@ ja:
     # guide.c
     "Run of 5": "5連順"
     # ui.c
+    "SECRET · GAME %d": "シークレット · 第%d局"
+    # ui.c
     "Scan to watch this game": "スキャンしてこの対局を見る"
     # ui.c
     "Set sets aside here to build a bigger hand.": "組をここに置いて、大きな役を育てよう。"
@@ -335,6 +343,8 @@ ja:
     "Share": "共有"
     # ui.c
     "Sort": "並べ替え"
+    # ui.c
+    "Sorted the hand with tiles chosen, and lost the choice.": "牌を選んだまま整列して、選択が外れた。"
     # ui.c
     "South wind": "南"
     # guide.c
@@ -394,9 +404,13 @@ ja:
     # ui.c
     "WIN · GAME %d": "完全消去 · 第%d局"
     # ui.c
+    "Wait Wait Wait": "ちょっと待って"
+    # ui.c
     "West wind": "西"
     # ui.c
     "White dragon": "白"
+    # ui.c
+    "Win with every poker hand": "全ポーカー役で完全消去"
     # ui.c
     "Win with no pairs": "対子なしで完全消去"
     # ui.c
@@ -419,6 +433,8 @@ ja:
     "flooded in game %d": "第%d局で氾濫"
     # ui.c
     "flush": "フラッシュ"
+    # ui.c
+    "found in game %d": "第%d局で発見"
     # ui.c
     "full house": "フルハウス"
     # ui.c

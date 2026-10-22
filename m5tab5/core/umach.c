@@ -65,13 +65,22 @@ uint8_t um_ach_win(um_ach_t *a, um_game_t *g)
 {
     if (!um_all_cleared(g) || !(g->had & UM_HAD_TRACKED) || !g->log_n) return 0;
     uint8_t got = 0;
-    const bool ok[UM_WIN_N] = { !(g->had & UM_HAD_POKER), !(g->had & UM_HAD_PAIR) };
+    const bool ok[UM_WIN_N] = { !(g->had & UM_HAD_POKER), !(g->had & UM_HAD_PAIR),
+                                (g->had & UM_HAD_EVERY_POKER) == UM_HAD_EVERY_POKER };
     for (int w = 0; w < UM_WIN_N; w++) {
         if (a->win[w].game || !ok[w]) continue;
         a->win[w] = record(a, g);
         got |= (uint8_t)(1u << w);
     }
     return got;
+}
+
+/* secretAward */
+bool um_ach_secret(um_ach_t *a, um_game_t *g, int s)
+{
+    if (s < 0 || s >= UM_SECRET_N || a->secret[s].game) return false;
+    a->secret[s] = record(a, g);
+    return true;
 }
 
 int um_ach_firsts(const um_ach_t *a)
@@ -99,5 +108,6 @@ bool um_ach_valid(const um_ach_t *a)
         }
     }
     for (int w = 0; w < UM_WIN_N; w++) if (a->win[w].game > a->games) return false;
+    for (int s = 0; s < UM_SECRET_N; s++) if (a->secret[s].game > a->games) return false;
     return a->flood.game <= a->games && (!a->flood.game || um_ach_firsts(a) == UM_ACH_SETS);
 }

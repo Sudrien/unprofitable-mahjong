@@ -42,13 +42,30 @@ typedef struct {
 
 static blob_t s_blob;   /* 3 KB: off the stack */
 
-#define ACH_VER     (1u)
+#define ACH_VER     (2u)    /* 2: a third win, Win with every poker hand, and the secrets */
 typedef struct {
     uint32_t ver;
     uint32_t size;
     um_ach_t a;
 } ach_blob_t;
 static ach_blob_t s_ach_blob;   /* 1.5 KB: off the stack too */
+
+/* Version 1 is version 2 with two wins and no secrets: the same up to
+ * win[], then flood. Read field by field into the new layout; the new
+ * win and the secrets start unearned. */
+typedef struct {
+    uint32_t games;
+    um_rec_t first[UM_SET_COUNT];
+    um_rec_t full[UM_SET_COUNT];
+    uint32_t played[UM_SET_COUNT][UM_ACH_WINDOW];
+    um_rec_t win[2];
+    um_rec_t flood;
+} ach_v1_t;
+typedef struct {
+    uint32_t ver;
+    uint32_t size;
+    ach_v1_t a;
+} ach_blob_v1_t;
 static um_log_t s_v1_log[V1_LOG_N];
 
 void save_init(void)
@@ -120,9 +137,28 @@ void save_load_ach(um_ach_t *a)
     nvs_handle_t h;
     if (nvs_open(NS, NVS_READONLY, &h) != ESP_OK) return;
     size_t len = sizeof s_ach_blob;
+    _Static_assert(sizeof(ach_blob_v1_t) <= sizeof(ach_blob_t), "a version 1 blob fits the buffer");
     const esp_err_t err = nvs_get_blob(h, "ach", &s_ach_blob, &len);
     nvs_close(h);
     if (err != ESP_OK) return;
+    if (len == sizeof(ach_blob_v1_t) && s_ach_blob.ver == 1u && s_ach_blob.size == sizeof(ach_v1_t)) {
+        static ach_v1_t v1;     /* off the stack */
+        memcpy(&v1, &((const ach_blob_v1_t *)(const void *)&s_ach_blob)->a, sizeof v1);
+        memset(&s_ach_blob.a, 0, sizeof s_ach_blob.a);
+        s_ach_blob.a.games = v1.games;
+        memcpy(s_ach_blob.a.first, v1.first, sizeof v1.first);
+        memcpy(s_ach_blob.a.full, v1.full, sizeof v1.full);
+        memcpy(s_ach_blob.a.played, v1.played, sizeof v1.played);
+        memcpy(s_ach_blob.a.win, v1.win, sizeof v1.win);
+        s_ach_blob.a.flood = v1.flood;
+        if (!um_ach_valid(&s_ach_blob.a)) {
+            ESP_LOGW(TAG, "saved achievements (version 1) unreadable; starting over");
+            return;
+        }
+        ESP_LOGI(TAG, "achievements read from version 1");
+        memcpy(a, &s_ach_blob.a, sizeof *a);
+        return;
+    }
     if (len != sizeof s_ach_blob || s_ach_blob.ver != ACH_VER || s_ach_blob.size != sizeof(um_ach_t) || !um_ach_valid(&s_ach_blob.a)) {
         ESP_LOGW(TAG, "saved achievements unreadable; starting over");
         return;

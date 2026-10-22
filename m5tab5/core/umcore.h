@@ -141,6 +141,11 @@ typedef struct {
 } um_game_t;
 #define UM_HAD_POKER    (0x01)  /* a poker hand was cleared, royal flush included */
 #define UM_HAD_PAIR     (0x02)  /* a set holding a pair was cleared */
+#define UM_HAD_TWO_PAIR (0x04)  /* each poker hand, for Win with every poker hand */
+#define UM_HAD_FLUSH    (0x08)  /* a royal flush counts as the flush */
+#define UM_HAD_STRAIGHT (0x10)
+#define UM_HAD_FULL_HOUSE (0x20)
+#define UM_HAD_EVERY_POKER (UM_HAD_TWO_PAIR | UM_HAD_FLUSH | UM_HAD_STRAIGHT | UM_HAD_FULL_HOUSE)
 #define UM_HAD_TRACKED  (0x80)  /* dealt by this build: the bits above cover every clear */
 
 /* A set holds a pair (holdsPair): it is a pair, Thirteen Orphans or Nine

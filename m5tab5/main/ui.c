@@ -117,6 +117,7 @@ static struct {
     bool full;
     uint8_t n, k[UM_MAX_SEL];
     char kick[96];
+    const char *name;   /* a secret's, untranslated; NULL: the set's */
 } s_ban;
 static save_prefs_t s_prefs;
 static um_ach_t s_ach;          /* the achievements, saved whole whenever one changes */
@@ -169,10 +170,17 @@ static const char *set_name(um_set_t t) { return (t > UM_NONE && t < UM_SET_COUN
 
 /* The achievements' names and notes, the web version's WINS and
  * FLOOD_NAME, in umach.h's order. */
-static const char *const WIN_NAMES[UM_WIN_N] = { N_("Win with no poker hands"), N_("Win with no pairs") };
+static const char *const WIN_NAMES[UM_WIN_N] = { N_("Win with no poker hands"), N_("Win with no pairs"), N_("Win with every poker hand") };
 static const char *const WIN_NOTES[UM_WIN_N] = {
     N_("All 136 cleared without two pair, a flush, a straight, a full house or a royal flush."),
     N_("All 136 cleared and no set held a pair: no pairs, two pair or full houses, and no hand with a pair in it, like All Honors or Seven Pairs."),
+    N_("All 136 cleared with two pair, a flush, a straight and a full house among the sets. A royal flush counts as the flush."),
+};
+/* The secrets, the web version's SECRETS: listed only once earned. */
+static const char *const SECRET_NAMES[UM_SECRET_N] = { N_("A Place for Everything"), N_("Wait Wait Wait") };
+static const char *const SECRET_NOTES[UM_SECRET_N] = {
+    N_("Finished a game with no tiles left."),
+    N_("Sorted the hand with tiles chosen, and lost the choice."),
 };
 #define FLOOD_NAME N_("The Yellow River Floods Again")
 #define FLOOD_NOTE N_("Clear every set at least once. The river rises with each one.")
@@ -1267,7 +1275,7 @@ static void draw_banner(void)
     x += MARK_W;
     const int tw = s_ban.n * (tilefaces_S.w + 1), tx = x0 + w - 14 - tw;
     static char nmb[96];
-    const char *nm = heading(set_name(s_ban.t), nmb, sizeof nmb, i18n_lang() == I18N_EN);
+    const char *nm = s_ban.name ? _(s_ban.name) : heading(set_name(s_ban.t), nmb, sizeof nmb, i18n_lang() == I18N_EN);
     const int nw = gfx_text_w(nm, TXT);
     gfx_draw_text(x, y0 + (h - GFX_GLYPH_H(TXT)) / 2, nm, TXT, tx - 16 - x, C_INK);
     x += nw + 20;
@@ -1285,17 +1293,47 @@ static int guide_item_h(const guide_item_t *g, int w)
 }
 
 /* The achievements, above the sets: a summary, then The Yellow River
- * Floods Again and the two wins as cards, the web version's
- * Achievements section. */
-#define A_CARDS    (1 + UM_WIN_N)
+ * Floods Again, the wins and any secrets found as cards, the web
+ * version's Achievements section. Card 0 is the river, 1..UM_WIN_N the
+ * wins, and after them the secrets earned, in order: s_acards says how
+ * many there are this time. */
+#define A_CARDS    (1 + UM_WIN_N + UM_SECRET_N)
 #define A_BAR_H    (12)
 #define A_SUM_LINE (GFX_GLYPH_H(SMALL) + 4)
 static gpos_t s_apos[A_CARDS];
 static int s_ahead_y, s_asum_y;
 static char s_asum[320];
+static int s_acards = 1 + UM_WIN_N;
 static int ach_card_h(void) { return G_NAME_H + 8 + A_BAR_H + 8 + G_WHEN_H + 12; }
-static const char *ach_card_name(int i) { return i ? WIN_NAMES[i - 1] : FLOOD_NAME; }
-static const um_rec_t *ach_card_rec(int i) { return i ? &s_ach.win[i - 1] : &s_ach.flood; }
+/* card i past the wins: the secret it shows, or -1 */
+static int ach_card_secret(int i)
+{
+    int n = 1 + UM_WIN_N;
+    for (int s = 0; s < UM_SECRET_N; s++) if (s_ach.secret[s].game && n++ == i) return s;
+    return -1;
+}
+static const char *ach_card_name(int i)
+{
+    if (!i) return FLOOD_NAME;
+    if (i <= UM_WIN_N) return WIN_NAMES[i - 1];
+    const int s = ach_card_secret(i);
+    return s >= 0 ? SECRET_NAMES[s] : "";
+}
+static const char *ach_card_note(int i)
+{
+    if (!i) return FLOOD_NOTE;
+    if (i <= UM_WIN_N) return WIN_NOTES[i - 1];
+    const int s = ach_card_secret(i);
+    return s >= 0 ? SECRET_NOTES[s] : "";
+}
+static const um_rec_t *ach_card_rec(int i)
+{
+    static const um_rec_t none = { 0, 0 };
+    if (!i) return &s_ach.flood;
+    if (i <= UM_WIN_N) return &s_ach.win[i - 1];
+    const int s = ach_card_secret(i);
+    return s >= 0 ? &s_ach.secret[s] : &none;
+}
 
 /* Each section: its heading across the width, then its sets, left to
  * right and down, so the list reads in order as it scrolls. */
@@ -1309,11 +1347,13 @@ static void guide_layout(void)
              um_ach_firsts(&s_ach), UM_ACH_SETS, um_ach_fulls(&s_ach), (int)s_ach.games);
     s_asum_y = y;
     y += gfx_para_rows(s_asum, SMALL, gfx_w() - 2 * M_X) * A_SUM_LINE + 12;
-    /* the river across the whole width, the wins in columns under it */
+    /* the river across the whole width, the wins and secrets in columns under it */
+    s_acards = 1 + UM_WIN_N;
+    for (int s = 0; s < UM_SECRET_N; s++) s_acards += s_ach.secret[s].game != 0;
     s_apos[0] = (gpos_t){ M_X, y, ach_card_h() };
     y += ach_card_h();
-    for (int i = 1; i < A_CARDS; i += cols) {
-        for (int c = 0; c < cols && i + c < A_CARDS; c++) s_apos[i + c] = (gpos_t){ M_X + c * (cw + G_COL_GAP), y, ach_card_h() };
+    for (int i = 1; i < s_acards; i += cols) {
+        for (int c = 0; c < cols && i + c < s_acards; c++) s_apos[i + c] = (gpos_t){ M_X + c * (cw + G_COL_GAP), y, ach_card_h() };
         y += ach_card_h();
     }
     y += 8;
@@ -1358,7 +1398,7 @@ static void draw_guide(void)
     }
     gfx_draw_text(M_X, s_ahead_y + dy + 8, _("Achievements"), SMALL, gfx_w() - 2 * M_X, C_MUTED);
     gfx_draw_para(M_X, s_asum_y + dy, s_asum, SMALL, gfx_w() - 2 * M_X, A_SUM_LINE, 4, C_MUTED);
-    for (int i = 0; i < A_CARDS; i++) {
+    for (int i = 0; i < s_acards; i++) {
         const gpos_t *p = &s_apos[i];
         const int y = p->y + dy;
         if (y + p->h < top || y > bottom) continue;
@@ -1380,7 +1420,7 @@ static void draw_guide(void)
             gfx_fill_rect(p->x, by, bw * um_ach_firsts(&s_ach) / UM_ACH_SETS, A_BAR_H, C_RIVER);
             gfx_draw_text(p->x + cw - vw, by + (A_BAR_H - GFX_GLYPH_H(SMALL)) / 2, v, SMALL, vw + 2, C_GREEN);
         }
-        if (r->game) snprintf(when, sizeof when, i ? _("won in game %d") : _("flooded in game %d"), (int)r->game);
+        if (r->game) snprintf(when, sizeof when, i > UM_WIN_N ? _("found in game %d") : i ? _("won in game %d") : _("flooded in game %d"), (int)r->game);
         else if (i) snprintf(when, sizeof when, "%s", _("not yet"));
         gfx_draw_text(p->x, by + A_BAR_H + 8, when, SMALL, cw, r->game ? C_GREEN : C_MUTED);
     }
@@ -1447,7 +1487,7 @@ static void draw_guide(void)
 
     /* the chosen set's note, or how to get one */
     const int ny = guide_note_y();
-    if (s_gach_sel >= 0) gfx_draw_para(M_X, ny, _(s_gach_sel ? WIN_NOTES[s_gach_sel - 1] : FLOOD_NOTE), TXT, gfx_w() - 2 * M_X, LINE, guide_note_rows(), C_INK);
+    if (s_gach_sel >= 0) gfx_draw_para(M_X, ny, _(ach_card_note(s_gach_sel)), TXT, gfx_w() - 2 * M_X, LINE, guide_note_rows(), C_INK);
     else if (s_guide_sel >= 0) gfx_draw_para(M_X, ny, _(guide_items[s_guide_sel].note), TXT, gfx_w() - 2 * M_X, LINE, guide_note_rows(), C_INK);
     else gfx_draw_para(M_X, ny, _("Drag to scroll. Tap a set to read about it."), TXT, gfx_w() - 2 * M_X, LINE, guide_note_rows(), C_MUTED);
 
@@ -1468,7 +1508,7 @@ static void guide_tap(int x, int y)
     }
     if (y < guide_top() || y >= guide_bottom()) return;
     const int cw = guide_col_w(), ly = y - guide_top() + s_gscroll;
-    for (int i = 0; i < A_CARDS; i++) {
+    for (int i = 0; i < s_acards; i++) {
         const gpos_t *p = &s_apos[i];
         const int aw = i ? cw : gfx_w() - 2 * M_X;
         if (x < p->x - 10 || x >= p->x + aw + 10 || ly < p->y - 6 || ly >= p->y - 6 + p->h) continue;
@@ -1533,15 +1573,20 @@ static void after_move(bool was_done)
         if (s_prefs.best_penalty == INT32_MIN || um_penalty(&s_g) > s_prefs.best_penalty) s_prefs.best_penalty = um_penalty(&s_g);
         if (s_prefs.best_points == INT32_MIN || s_g.points > s_prefs.best_points) s_prefs.best_points = s_g.points;
         save_prefs(&s_prefs);
+        /* A Place for Everything first, as the web version's winAwards */
+        const bool place = um_all_cleared(&s_g) && s_g.log_n && um_ach_secret(&s_ach, &s_g, UM_SECRET_PLACE);
         const uint8_t wins = um_ach_win(&s_ach, &s_g);
-        if (wins) {
-            ESP_LOGI(TAG, "game %u: won%s%s", (unsigned)s_g.game_no,
-                     wins & (1u << UM_WIN_NO_POKER) ? ", no poker hands" : "", wins & (1u << UM_WIN_NO_PAIRS) ? ", no pairs" : "");
+        if (wins || place) {
+            ESP_LOGI(TAG, "game %u:%s%s%s%s", (unsigned)s_g.game_no, place ? " a place for everything" : "",
+                     wins & (1u << UM_WIN_NO_POKER) ? ", won with no poker hands" : "", wins & (1u << UM_WIN_NO_PAIRS) ? ", won with no pairs" : "",
+                     wins & (1u << UM_WIN_ALL_POKER) ? ", won with every poker hand" : "");
             save_ach(&s_ach);
-            /* each win celebrates with the last set cleared and the game's points */
+            /* each celebrates with the last set cleared and the game's points */
             const um_log_t *e = &s_g.log[(s_g.log_n - 1) % UM_LOG_N];
-            static char kick[64];
+            static char kick[64], skick[64];
             snprintf(kick, sizeof kick, _("WIN · GAME %d"), (int)s_g.game_no);
+            snprintf(skick, sizeof skick, _("SECRET · GAME %d"), (int)s_g.game_no);
+            if (place && e->t < UM_SET_COUNT) celebrate((um_set_t)e->t, e->k, e->n, (int)s_g.points, skick, SECRET_NAMES[UM_SECRET_PLACE]);
             for (int w = 0; w < UM_WIN_N && e->t < UM_SET_COUNT; w++)
                 if (wins & (1u << w)) celebrate((um_set_t)e->t, e->k, e->n, (int)s_g.points, kick, WIN_NAMES[w]);
         }
@@ -1550,6 +1595,20 @@ static void after_move(bool was_done)
     s_sel.melds = 0;
     s_hint_until = 0;
     save_game(&s_g);
+}
+
+/* A sort threw the selection away; the first time, that is a secret,
+ * shown in the banner with no tiles. */
+static void sorted_away(void)
+{
+    if (!um_ach_secret(&s_ach, &s_g, UM_SECRET_WAIT)) return;
+    ESP_LOGI(TAG, "game %u: wait wait wait", (unsigned)s_g.game_no);
+    save_ach(&s_ach);
+    s_ban.name = SECRET_NAMES[UM_SECRET_WAIT];
+    s_ban.full = true;
+    s_ban.n = 0;
+    snprintf(s_ban.kick, sizeof s_ban.kick, _("SECRET · GAME %d"), (int)s_g.game_no);
+    s_ban.until = esp_timer_get_time() + BANNER_US;
 }
 
 static void new_deal(void)
@@ -1591,6 +1650,7 @@ static void press(int b)
         else if (aw != UM_AWARD_NONE) {
             /* a new one replaces any still showing */
             s_ban.t = t;
+            s_ban.name = NULL;
             s_ban.full = aw == UM_AWARD_FULL;
             s_ban.n = (uint8_t)n;
             memcpy(s_ban.k, k, (size_t)n);
@@ -1623,10 +1683,13 @@ static void press(int b)
         s_hint_until = esp_timer_get_time() + HINT_US;
         return;
     }
-    case B_SORT:
+    case B_SORT: {
+        const bool chosen = s_sel.hand || s_sel.melds;
         undo_push();
         um_sort(&s_g);
+        if (chosen) sorted_away();
         break;
+    }
     case B_UNDO:
         if (!undo_pop()) return;
         s_sel.hand = 0; s_sel.melds = 0;
@@ -1765,7 +1828,13 @@ static void menu_tap(int x, int y)
             break;
         case G_AUTO:
             s_prefs.auto_sort = (uint8_t)c->value;
-            if (s_prefs.auto_sort) { undo_push(); um_sort(&s_g); save_game(&s_g); }
+            if (s_prefs.auto_sort) {
+                /* as the web version: the choice goes, and the first time, that is Wait Wait Wait */
+                const bool chosen = s_sel.hand || s_sel.melds;
+                s_sel.hand = 0; s_sel.melds = 0;
+                undo_push(); um_sort(&s_g); save_game(&s_g);
+                if (chosen) sorted_away();
+            }
             break;
         case G_DSET:
             s_prefs.discard_set = (uint8_t)c->value;

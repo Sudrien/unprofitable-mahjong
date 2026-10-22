@@ -80,6 +80,8 @@ en:
     # ui.c
     "9 Dots": ~
     # ui.c
+    "A Place for Everything": ~
+    # ui.c
     "A clean sweep with no shortcuts.": ~
     # ui.c
     "A lone %s can never be cleared now.": ~
@@ -97,6 +99,8 @@ en:
     "Add 6": ~
     # ui.c
     "All 136 cleared and no set held a pair: no pairs, two pair or full houses, and no hand with a pair in it, like All Honors or Seven Pairs.": ~
+    # ui.c
+    "All 136 cleared with two pair, a flush, a straight and a full house among the sets. A royal flush counts as the flush.": ~
     # ui.c
     "All 136 cleared without two pair, a flush, a straight, a full house or a royal flush.": ~
     # ui.c
@@ -163,6 +167,8 @@ en:
     "FIRST TIME · GAME %d": ~
     # ui.c
     "FULL · 3 OF 5 GAMES · GAME %d": ~
+    # ui.c
+    "Finished a game with no tiles left.": ~
     # guide.c
     "Five of one suit that also split into mahjong sets, here a chow and a pair: 3 + 1, plus 1 bonus.": ~
     # guide.c
@@ -318,6 +324,8 @@ en:
     # guide.c
     "Run of 5": ~
     # ui.c
+    "SECRET · GAME %d": ~
+    # ui.c
     "Scan to watch this game": ~
     # ui.c
     "Set sets aside here to build a bigger hand.": ~
@@ -335,6 +343,8 @@ en:
     "Share": ~
     # ui.c
     "Sort": ~
+    # ui.c
+    "Sorted the hand with tiles chosen, and lost the choice.": ~
     # ui.c
     "South wind": ~
     # guide.c
@@ -394,9 +404,13 @@ en:
     # ui.c
     "WIN · GAME %d": ~
     # ui.c
+    "Wait Wait Wait": ~
+    # ui.c
     "West wind": ~
     # ui.c
     "White dragon": ~
+    # ui.c
+    "Win with every poker hand": ~
     # ui.c
     "Win with no pairs": ~
     # ui.c
@@ -419,6 +433,8 @@ en:
     "flooded in game %d": ~
     # ui.c
     "flush": ~
+    # ui.c
+    "found in game %d": ~
     # ui.c
     "full house": ~
     # ui.c

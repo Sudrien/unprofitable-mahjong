@@ -40,8 +40,11 @@ The in-game **Sets and scores** guide shows every set with example tiles and its
 - **Full** (★ in the guide): clear a set in 3 of any 5 games in a row. Each set, and each run length, has its own.
 - **Win with no poker hands:** clear all 136 without two pair, a flush, a straight, a full house or a royal flush.
 - **Win with no pairs:** clear all 136 with no pair in any set. Pairs, two pair and full houses all count against it, and so do hands with a pair inside them, like All Honors, Seven Pairs, Thirteen Orphans and Nine Gates.
+- **Win with every poker hand:** clear all 136 with two pair, a flush, a straight and a full house among your sets. A royal flush counts as the flush.
 
 - **The Yellow River Floods Again:** clear every set at least once, all 40 Firsts. Its card at the top of the guide fills like a rising river as you go.
+
+There are also a few **secret** achievements. They don't appear in the guide until you find them, and they're no part of the river.
 
 When two full celebrations come at once, such as a limit hand and a win, they play one after the other. Each achievement records the game it was earned in and that game's seed. The guide shows the game number; the seed is kept in the browser, not shown.
 

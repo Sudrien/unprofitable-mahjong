@@ -218,9 +218,31 @@ int main(void)
         put("ach", (const uint8_t *)&a, 12);
         save_load_ach(&b);
         CHECK(!b.games, "achievements: a short save was read");
+
+        /* version 1: two wins, no secrets -- read into the new layout,
+         * with the third win and the secrets unearned */
+        a.first[UM_CHOW].game = 0;
+        a.win[UM_WIN_NO_PAIRS] = (um_rec_t){ a.games, 5 };
+        static uint8_t v1[8 + sizeof(uint32_t) + 2 * sizeof a.first + sizeof a.played + 3 * sizeof(um_rec_t)];
+        uint8_t *q = v1;
+        const uint32_t ver = 1, size = (uint32_t)(sizeof v1 - 8);
+        memcpy(q, &ver, 4); q += 4;
+        memcpy(q, &size, 4); q += 4;
+        memcpy(q, &a.games, 4); q += 4;
+        memcpy(q, a.first, sizeof a.first); q += sizeof a.first;
+        memcpy(q, a.full, sizeof a.full); q += sizeof a.full;
+        memcpy(q, a.played, sizeof a.played); q += sizeof a.played;
+        memcpy(q, a.win, 2 * sizeof(um_rec_t)); q += 2 * sizeof(um_rec_t);
+        memcpy(q, &a.flood, sizeof a.flood);
+        put("ach", v1, sizeof v1);
+        save_load_ach(&b);
+        CHECK(b.games == a.games && b.first[UM_PAIR].game == a.first[UM_PAIR].game
+              && b.win[UM_WIN_NO_PAIRS].game == a.games && !b.win[UM_WIN_ALL_POKER].game
+              && !b.secret[UM_SECRET_PLACE].game && !b.secret[UM_SECRET_WAIT].game,
+              "achievements: a version 1 save was not read as it was");
     }
 
     if (s_bad) return 1;
-    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip\n");
+    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip, and version 1's read\n");
     return 0;
 }

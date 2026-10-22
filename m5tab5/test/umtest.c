@@ -293,6 +293,7 @@ static void code_mode(uint32_t seed, int games)
  *   N <seed>      a new deal (U <seed>: one saved before games were counted)
  *   C <key>|<k,k,...>   that set cleared
  *   W             the game ends with every tile cleared
+ *   S             a sort threw a selection away
  * and after each, the award and every record, for check.js to compare
  * with the web version's. */
 static um_ach_t s_ach;
@@ -336,16 +337,24 @@ static int ach_mode(void)
             award = a == UM_AWARD_FIRST ? "first" : a == UM_AWARD_FULL ? "full" : "-";
             flood = f;
         } else if (line[0] == 'W') {
+            /* A Place for Everything first, as winAwards; the script's
+             * games are all cleared when they end */
+            if (s_ag.log_n) um_ach_secret(&s_ach, &s_ag, UM_SECRET_PLACE);
             wins = um_ach_win(&s_ach, &s_ag);
+        } else if (line[0] == 'S') {
+            um_ach_secret(&s_ach, &s_ag, UM_SECRET_WAIT);
         }
         if (!um_ach_valid(&s_ach)) { fprintf(stderr, "ach: um_ach_valid refused the records\n"); return 1; }
         printf("R %s %d %d %u | ", award, flood, wins, (unsigned)s_ach.games);
         ach_recs("first", s_ach.first); printf(" | ");
         ach_recs("full", s_ach.full); printf(" | win");
-        static const char *WN[UM_WIN_N] = { "no poker", "no pairs" };
+        static const char *WN[UM_WIN_N] = { "no poker", "no pairs", "all poker" };
         for (int w = 0; w < UM_WIN_N; w++) if (s_ach.win[w].game) printf(";%s=%u/%u", WN[w], (unsigned)s_ach.win[w].game, (unsigned)s_ach.win[w].seed);
         printf(" | flood");
         if (s_ach.flood.game) printf(";%u/%u", (unsigned)s_ach.flood.game, (unsigned)s_ach.flood.seed);
+        printf(" | secret");
+        static const char *SN[UM_SECRET_N] = { "place", "wait" };
+        for (int s = 0; s < UM_SECRET_N; s++) if (s_ach.secret[s].game) printf(";%s=%u/%u", SN[s], (unsigned)s_ach.secret[s].game, (unsigned)s_ach.secret[s].seed);
         printf("\n");
     }
     return 0;

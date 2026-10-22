@@ -526,6 +526,10 @@ void um_note_set(um_game_t *g, um_set_t t, const uint8_t *kinds, int n)
 {
     if (um_set_is_poker_win(t)) g->had |= UM_HAD_POKER;
     if (um_set_holds_pair(t, kinds, n)) g->had |= UM_HAD_PAIR;
+    if (t == UM_TWO_PAIR) g->had |= UM_HAD_TWO_PAIR;
+    if (t == UM_FLUSH || t == UM_ROYAL_FLUSH) g->had |= UM_HAD_FLUSH;
+    if (t == UM_STRAIGHT) g->had |= UM_HAD_STRAIGHT;
+    if (t == UM_FULL_HOUSE) g->had |= UM_HAD_FULL_HOUSE;
 }
 
 bool um_all_cleared(const um_game_t *g)
@@ -1104,7 +1108,8 @@ bool um_valid(const um_game_t *g)
         for (int j = 0; j < n; j++) if (g->mv[p + 2 + j] >= UM_KINDS) return false;
         p += 3 + n;
     }
-    if (g->had & ~(UM_HAD_POKER | UM_HAD_PAIR | UM_HAD_TRACKED)) return false;
+    if (g->had & ~(UM_HAD_POKER | UM_HAD_PAIR | UM_HAD_EVERY_POKER | UM_HAD_TRACKED)) return false;
+    if ((g->had & UM_HAD_EVERY_POKER) && !(g->had & UM_HAD_POKER)) return false;
     /* now safe to count */
     uint8_t rem[UM_KINDS];
     um_remaining(g, rem);

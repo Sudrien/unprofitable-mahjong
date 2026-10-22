@@ -898,10 +898,14 @@ function discardSet() {
 }
 function sortHand() {
   snap();
+  const chosen = sel.size > 0;
   const t = S.hand.filter(k => k !== null).sort((a, b) => a - b);
   S.hand = t.concat(Array(Math.max(0, HAND - t.length)).fill(null));
   sel.clear(); hintKeys.clear(); commit();
+  if (chosen) sortedAway();
 }
+// Sorting throws the selection away; the first time, that is a secret.
+function sortedAway() { const a = typeof secretAward === 'function' ? secretAward('wait') : null; if (a) secretBanner(a); }
 function doUndo() {
   if (!undo.length) return;
   S = JSON.parse(undo.pop()); sel.clear(); hintKeys.clear(); commit();
@@ -1394,13 +1398,16 @@ function render() {
 // as are its two flushes.
 //   First: a set cleared for the first time.
 //   Full:  a set cleared in 3 of any 5 games in a row.
-//   Wins:  all 136 cleared with no poker hand, or with no pair in any set.
+//   Wins:  all 136 cleared with no poker hand, with no pair in any set,
+//          or with every poker hand (a royal flush is a flush).
 //   The Yellow River Floods Again: every set's First.
+//   Secrets: not listed until earned, and no part of the river.
 // Each is recorded as { g, s }: the game it was earned in, by the running
 // count, and that game's seed, kept (not shown) so the deal can be found again. A record
 // saved as a bare game number has no seed (s: null).
 const FIRSTS_KEY = 'unprofitable-mahjong-firsts', FULL_KEY = 'unprofitable-mahjong-full',
-  PLAYED_KEY = 'unprofitable-mahjong-played', WINS_KEY = 'unprofitable-mahjong-wins', FLOOD_KEY = 'unprofitable-mahjong-flood';
+  PLAYED_KEY = 'unprofitable-mahjong-played', WINS_KEY = 'unprofitable-mahjong-wins', FLOOD_KEY = 'unprofitable-mahjong-flood',
+  SECRETS_KEY = 'unprofitable-mahjong-secrets';
 const FULL_OF = 3, FULL_IN = 5;
 const readMap = (key, read) => {
   const m = new Map();
@@ -1414,7 +1421,7 @@ const isGame = g => Number.isInteger(g) && g >= 0;
 const isSeed = x => Number.isInteger(x) && x >= 0 && x <= 0xffffffff;
 const readRec = v => isGame(v) ? { g: v, s: null } : v && isGame(v.g) && (v.s === null || isSeed(v.s)) ? { g: v.g, s: v.s } : null;
 const writeMap = (key, m) => { try { localStorage.setItem(key, JSON.stringify(Object.fromEntries(m))); } catch (e) {} };
-let firsts = readMap(FIRSTS_KEY, readRec), fulls = readMap(FULL_KEY, readRec), wins = readMap(WINS_KEY, readRec);
+let firsts = readMap(FIRSTS_KEY, readRec), fulls = readMap(FULL_KEY, readRec), wins = readMap(WINS_KEY, readRec), secrets = readMap(SECRETS_KEY, readRec);
 let flood = null;
 try { flood = readRec(JSON.parse(localStorage.getItem(FLOOD_KEY))); } catch (e) {}
 // the games each set was cleared in, the last FULL_IN of them
@@ -1460,13 +1467,37 @@ const WINS = [
     sets => !sets.some(e => isPoker(e.t))],
   ['no pairs', ['Win with no pairs', '対子なしで完全消去', '不用对子清完'],
     ['All 136 cleared and no set held a pair: no pairs, two pair or full houses, and no hand with a pair in it, like All Honors or Seven Pairs.', '対子を含む組を一度も使わずに136枚すべて消す。対子・ツーペア・フルハウスも、字一色や七対子のように対子を含む役も不可。', '清完全部136张，且没有任何一组含对子：不用对子、两对、葫芦，也不用字一色、七对这类含对子的牌型。'],
-    sets => !sets.some(holdsPair)]
+    sets => !sets.some(holdsPair)],
+  ['all poker', ['Win with every poker hand', '全ポーカー役で完全消去', '用齐所有扑克牌型清完'],
+    ['All 136 cleared with two pair, a flush, a straight and a full house among the sets. A royal flush counts as the flush.', 'ツーペア・フラッシュ・ストレート・フルハウスをすべて使って136枚すべて消す。ロイヤルフラッシュはフラッシュとして数える。', '清完全部136张，且用过两对、同花、杂色顺和葫芦。皇家同花顺算作同花。'],
+    sets => POKER_ALL.every(p => sets.some(e => e.t === p || (p === 'flush' && e.t === 'royal flush')))]
 ];
+const POKER_ALL = ['two pair', 'flush', 'straight', 'full house'];
+// Secret achievements: earned once, shown only after. Each is
+// [id, name, what earned it]; secretAward records one and returns it,
+// or null when it was already had or this is a replay.
+const SECRETS = [
+  ['place', ['A Place for Everything', '適材適所', '各得其所'],
+    ['Finished a game with no tiles left.', '牌を1枚も残さずに終局した。', '一张牌不剩地结束了一局。']],
+  ['wait', ['Wait Wait Wait', 'ちょっと待って', '等等等等'],
+    ['Sorted the hand with tiles chosen, and lost the choice.', '牌を選んだまま整列して、選択が外れた。', '选着牌时排序，选择被清掉了。']]
+];
+function secretAward(id) {
+  if (replaying || secrets.has(id)) return null;
+  const s = SECRETS.find(x => x[0] === id);
+  if (!s) return null;
+  const r = record();
+  secrets.set(id, r); writeMap(SECRETS_KEY, secrets);
+  buildGuide();
+  return { kicker: L('Secret', 'シークレット', '隐藏成就') + ' · ' + gameNo(r.g), name: s[1] };
+}
 // At the end of a game: a win, all 136 cleared, may earn these.
 function winAwards() {
   if (visible().length || pool() || S.melds.length) return;
   const sets = S.log.filter(e => BASE[e.t] !== undefined), last = sets[sets.length - 1];
   if (!last) return;
+  const place = secretAward('place');
+  if (place) celebrate(last.t, last.k, S.points, place);
   for (const [id, name, , test] of WINS) {
     if (wins.has(id) || !test(sets)) continue;
     const g = thisGame();
@@ -1491,6 +1522,17 @@ function banner(t, kinds, award) {
     `<span class="row" aria-hidden="true">${minis(kinds.slice().sort((a, b) => a - b))}</span>`;
   el.hidden = false;
   el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';   // slide in again when one replaces another
+  banTimer = setTimeout(() => { el.classList.add('out'); banTimer = setTimeout(() => { el.hidden = true; el.classList.remove('out'); }, 250); }, 2500);
+}
+
+// A secret earned away from a clear (Wait Wait Wait): the strip, with no tiles.
+function secretBanner(award) {
+  const el = $('banner');
+  clearTimeout(banTimer);
+  el.classList.remove('out');
+  el.innerHTML = `<span class="mark full" aria-hidden="true">?</span><span class="what"><small>${award.kicker}</small><b>${LA(award.name)}</b></span>`;
+  el.hidden = false;
+  el.style.animation = 'none'; void el.offsetWidth; el.style.animation = '';
   banTimer = setTimeout(() => { el.classList.add('out'); banTimer = setTimeout(() => { el.hidden = true; el.classList.remove('out'); }, 250); }, 2500);
 }
 
@@ -1595,7 +1637,9 @@ $('discardSets').onchange = e => {
 $('autoSort').onchange = e => {
   autoSort = e.target.checked;
   try { localStorage.setItem('unprofitable-mahjong-autosort', autoSort ? '1' : '0'); } catch (err) {}
+  const chosen = autoSort && sel.size > 0;
   sel.clear(); hintKeys.clear(); commit();
+  if (chosen) sortedAway();
 };
 $('newBtn').onclick = () => {
   if (armed) { armed = false; newGame(); return; }
@@ -1710,6 +1754,8 @@ function buildGuide() {
   const winCards = WINS.map(([id, name, note]) => { const r = wins.get(id);
     return `<div class="g-item${r ? ' g-done' : ''}"><div class="g-head"><b>${LA(name)}</b></div><p class="g-note">${LA(note)}</p>${
       r ? `<small class="g-when">${L(`won in ${recWhere(r)}`, `${recWhere(r)}で達成`, `于${recWhere(r)}达成`)}</small>` : ''}</div>`; }).join('');
+  const secretCards = SECRETS.filter(([id]) => secrets.has(id)).map(([id, name, note]) => { const r = secrets.get(id);
+    return `<div class="g-item g-done"><div class="g-head"><b>${LA(name)}</b></div><p class="g-note">${LA(note)}</p><small class="g-when">${L(`found in ${recWhere(r)}`, `${recWhere(r)}で発見`, `于${recWhere(r)}发现`)}</small></div>`; }).join('');
   // the river rises with each set's First, and floods at the last
   const floodCard = `<div class="g-item g-flood${flood ? ' g-done' : ''}"><div class="g-head"><b>${LA(FLOOD_NAME)}</b><span class="g-pts">${got}/${FIRSTS.length}</span></div>
       <div class="g-river" role="progressbar" aria-valuemin="0" aria-valuemax="${FIRSTS.length}" aria-valuenow="${got}" aria-label="${pick('Sets cleared at least once', '一度は消した役', '已消除过的组合')}"><i style="width:${got / FIRSTS.length * 100}%"></i></div>
@@ -1718,7 +1764,7 @@ function buildGuide() {
   $('guideBody').innerHTML = `<p class="g-firsts">${L(`<b>${got} of ${FIRSTS.length}</b> sets cleared at least once (✓), <b>${full}</b> full (★: cleared in ${FULL_OF} of ${FULL_IN} games in a row), over ${games} game${games === 1 ? '' : 's'}.`,
       `<b>${FIRSTS.length}種類のうち${got}種類</b>を一度は消し（✓）、<b>${full}種類</b>がフル（★：連続${FULL_IN}局のうち${FULL_OF}局で消した）。${games}局中。`,
       `<b>${FIRSTS.length}种组合中已消除过${got}种</b>（✓），<b>${full}种</b>全满（★：连续${FULL_IN}局中有${FULL_OF}局消除过）。共${games}局。`)}</p>` +
-    `<section class="g-sec"><h3>${L('Achievements', '実績', '成就')}</h3><div class="g-grid">${floodCard}${winCards}</div></section>` + GUIDE.map(([h, items]) => `<section class="g-sec"><h3>${LA(h)}</h3><div class="g-grid">${items.map(item).join('')}</div></section>`).join('') +
+    `<section class="g-sec"><h3>${L('Achievements', '実績', '成就')}</h3><div class="g-grid">${floodCard}${winCards}${secretCards}</div></section>` + GUIDE.map(([h, items]) => `<section class="g-sec"><h3>${LA(h)}</h3><div class="g-grid">${items.map(item).join('')}</div></section>`).join('') +
     `<section class="g-sec"><h3>${L('Melds', '副露', '副露')}</h3><div class="g-grid">${meldCard}</div></section>` +
     `<section class="g-sec"><h3>${L('Penalties', 'ペナルティ', '罚分')}</h3><div class="g-grid">${pen}</div></section>`;
 }

@@ -80,6 +80,8 @@ zh-CN:
     # ui.c
     "9 Dots": "九筒"
     # ui.c
+    "A Place for Everything": "各得其所"
+    # ui.c
     "A clean sweep with no shortcuts.": "一路无捷径，完美通关。"
     # ui.c
     "A lone %s can never be cleared now.": "%s只剩一张，已经无法清除。"
@@ -97,6 +99,8 @@ zh-CN:
     "Add 6": "加6张"
     # ui.c
     "All 136 cleared and no set held a pair: no pairs, two pair or full houses, and no hand with a pair in it, like All Honors or Seven Pairs.": "清完全部136张，且没有任何一组含对子：不用对子、两对、葫芦，也不用字一色、七对这类含对子的牌型。"
+    # ui.c
+    "All 136 cleared with two pair, a flush, a straight and a full house among the sets. A royal flush counts as the flush.": "清完全部136张，且用过两对、同花、杂色顺和葫芦。皇家同花顺算作同花。"
     # ui.c
     "All 136 cleared without two pair, a flush, a straight, a full house or a royal flush.": "不用两对、同花、杂色顺、葫芦、皇家同花顺，清完全部136张。"
     # ui.c
@@ -163,6 +167,8 @@ zh-CN:
     "FIRST TIME · GAME %d": "首次达成 · 第%d局"
     # ui.c
     "FULL · 3 OF 5 GAMES · GAME %d": "全满 · 5局中3局 · 第%d局"
+    # ui.c
+    "Finished a game with no tiles left.": "一张牌不剩地结束了一局。"
     # guide.c
     "Five of one suit that also split into mahjong sets, here a chow and a pair: 3 + 1, plus 1 bonus.": "同花色五张，又能拆成麻将组合（这里是顺子加对子）：3 + 1，再加1分。"
     # guide.c
@@ -318,6 +324,8 @@ zh-CN:
     # guide.c
     "Run of 5": "五连顺"
     # ui.c
+    "SECRET · GAME %d": "隐藏成就 · 第%d局"
+    # ui.c
     "Scan to watch this game": "扫码观看这一局"
     # ui.c
     "Set sets aside here to build a bigger hand.": "把组合放到这里，慢慢凑大牌。"
@@ -335,6 +343,8 @@ zh-CN:
     "Share": "分享"
     # ui.c
     "Sort": "排序"
+    # ui.c
+    "Sorted the hand with tiles chosen, and lost the choice.": "选着牌时排序，选择被清掉了。"
     # ui.c
     "South wind": "南风"
     # guide.c
@@ -394,9 +404,13 @@ zh-CN:
     # ui.c
     "WIN · GAME %d": "清完 · 第%d局"
     # ui.c
+    "Wait Wait Wait": "等等等等"
+    # ui.c
     "West wind": "西风"
     # ui.c
     "White dragon": "白板"
+    # ui.c
+    "Win with every poker hand": "用齐所有扑克牌型清完"
     # ui.c
     "Win with no pairs": "不用对子清完"
     # ui.c
@@ -419,6 +433,8 @@ zh-CN:
     "flooded in game %d": "于第%d局泛滥"
     # ui.c
     "flush": "同花"
+    # ui.c
+    "found in game %d": "于第%d局发现"
     # ui.c
     "full house": "葫芦"
     # ui.c
