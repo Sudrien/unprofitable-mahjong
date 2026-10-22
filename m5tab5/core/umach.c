@@ -1,6 +1,6 @@
 /*
  * umach.c -- see umach.h. Each function names the web version's that it
- * follows, in ../../index.html.
+ * follows, in ../../web/index.html.
  *
  * SPDX-License-Identifier: MIT
  */

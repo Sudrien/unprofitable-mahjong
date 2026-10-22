@@ -3,7 +3,7 @@
 gen_tiles.py -- render the 34 tile faces into main/tilefaces.c.
 
 The faces are the web version's own drawings: the tile-face code is cut
-out of ../../index.html (from `const NUM` to the deal) and run in
+out of ../../web/index.html (from `const NUM` to the deal) and run in
 headless Chromium, so the board shows the same tiles the browser does.
 Each face is rendered at each size the firmware draws, rather than
 scaled from one, so the small ones stay sharp.
@@ -43,7 +43,7 @@ FONT = 'Noto Serif CJK SC'
 
 
 def face_code():
-    html = open(os.path.join(ROOT, 'index.html'), encoding='utf-8').read()
+    html = open(os.path.join(ROOT, 'web', 'index.html'), encoding='utf-8').read()
     js = html.split('<script>')[1].split('</script>')[0]
     a = js.index('const NUM')
     b = js.index('/* ---------- solvable deal')
@@ -237,7 +237,7 @@ def main():
     try:
         # the blob id, not a commit: it names the drawings themselves, and
         # survives git am, which gives every commit a new id
-        commit = 'blob ' + subprocess.check_output(['git', '-C', ROOT, 'hash-object', 'index.html'], text=True).strip()[:12]
+        commit = 'blob ' + subprocess.check_output(['git', '-C', ROOT, 'hash-object', 'web/index.html'], text=True).strip()[:12]
     except Exception:
         commit = 'unknown'
     shots = asyncio.run(render(page_html(face_code())))

@@ -1,6 +1,6 @@
 /*
  * umreplay.c -- see umreplay.h. Each function names the web version's
- * that it follows, in ../../index.html.
+ * that it follows, in ../../web/index.html.
  *
  * SPDX-License-Identifier: MIT
  */

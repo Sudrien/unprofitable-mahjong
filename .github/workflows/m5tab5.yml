@@ -97,7 +97,7 @@ jobs:
       - name: Host tests
         run: |
           make -C test
-          node ../test/replaycheck.js ../index.html 200
+          node ../test/replaycheck.js ../web/index.html 200
           python3 tools/i18n.py check --ark12 managed_components/feckless_graphics_handler/fonts/ark12/ark12.c
           make -C test/screen
           mkdir -p test/screen/out

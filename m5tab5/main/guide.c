@@ -1,5 +1,5 @@
 /*
- * guide.c -- see guide.h. Made from GUIDE in ../../index.html; test/
+ * guide.c -- see guide.h. Made from GUIDE in ../../web/index.html; test/
  * checks the two still agree, so a change to one is a change to both.
  *
  * SPDX-License-Identifier: MIT

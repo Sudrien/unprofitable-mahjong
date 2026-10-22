@@ -2,7 +2,7 @@
 
 How to work on this repository. Read it before writing a patch.
 
-The web version, `index.html`, is the reference implementation of the
+The web version, `web/index.html`, is the reference implementation of the
 rules. The Tab5 firmware in `m5tab5/` follows it: when the two disagree
 about a rule or a score, the web version is right until a patch changes
 both.
@@ -61,7 +61,7 @@ stacks or the build.
 
 `m5tab5/core/` is the game with no board in it: dealing, sets, scoring,
 melds, the discard pile, penalty. It must give the same answers as the
-web version. `m5tab5/test/` checks that against `index.html` with Node,
+web version. `m5tab5/test/` checks that against `web/index.html` with Node,
 and a patch that changes either side runs it.
 
 ## Not yet built

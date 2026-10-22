@@ -1,6 +1,6 @@
 /*
  * umreplay.h -- a game as a replay code: the web version's packGame,
- * proveWork and hammingAdd (../../index.html), for a game the Tab5
+ * proveWork and hammingAdd (../../web/index.html), for a game the Tab5
  * played, so a QR of its link opens the replay on the web.
  *
  * The code is the web version's, character for character: test/ checks

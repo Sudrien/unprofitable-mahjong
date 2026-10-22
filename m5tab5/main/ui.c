@@ -8,7 +8,7 @@
  * an optimisation for later, if a board run says they are needed.
  *
  * The text and behaviour follow the web version's render() in
- * ../../index.html; so does the order things are checked in.
+ * ../../web/index.html; so does the order things are checked in.
  *
  * SPDX-License-Identifier: MIT
  */

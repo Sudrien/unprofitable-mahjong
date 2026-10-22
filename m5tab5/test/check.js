@@ -1,6 +1,6 @@
 // check.js -- compare m5tab5/core against the web version's own rules.
 //
-// Loads the game logic straight out of ../../index.html (everything from
+// Loads the game logic straight out of ../../web/index.html (everything from
 // `const HAND` to the first render marker, the same slice the sims in
 // ../../sim use) and checks the C build, ./umtest, against it two ways:
 //
@@ -27,7 +27,7 @@ const UMTEST = path.resolve(process.argv[2] || path.join(__dirname, 'umtest'));
 const GAMES = +process.argv[3] || 2000;
 const GUIDECHECK = process.argv[4] ? path.resolve(process.argv[4]) : null;
 const CODES = +process.env.CODES || 300;
-const html = fs.readFileSync(path.join(__dirname, '..', '..', 'index.html'), 'utf8');
+const html = fs.readFileSync(path.join(__dirname, '..', '..', 'web', 'index.html'), 'utf8');
 const js = html.split('<script>')[1].split('</script>')[0];
 const core = js.slice(js.indexOf('const HAND'), js.indexOf('/* ---------- render'));
 const make = new Function(`function render(){}; ${core};

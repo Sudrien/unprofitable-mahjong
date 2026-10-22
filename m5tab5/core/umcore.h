@@ -1,7 +1,7 @@
 /*
  * umcore.h -- the rules of Unprofitable Mahjong, with no board in them.
  *
- * A port of the game logic in ../../index.html, which is the reference:
+ * A port of the game logic in ../../web/index.html, which is the reference:
  * when the two disagree, this file is wrong. test/ checks it against the
  * web version's own code, so a change here runs `make -C test`.
  *

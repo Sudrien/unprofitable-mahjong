@@ -2,7 +2,7 @@
  * umach.h -- the achievements, as the web version keeps them: one struct
  * the board saves whole, and the rules for what a clear or a win earns.
  *
- * The web version (../../index.html, "firsts") is the reference; test/
+ * The web version (../../web/index.html, "firsts") is the reference; test/
  * plays the same games through both and compares every record.
  *
  *   First   a set cleared for the first time

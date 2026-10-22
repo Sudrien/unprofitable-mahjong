@@ -1,6 +1,6 @@
 /*
  * umcore.c -- see umcore.h. Each function names the web version's
- * function it follows, in ../../index.html, so the two can be read side
+ * function it follows, in ../../web/index.html, so the two can be read side
  * by side. Where the order of anything matters to the result (the hint's
  * tie-break, which tiles a discard sends first) it follows that file's
  * order exactly, because test/ compares the two move by move.

@@ -1,6 +1,6 @@
 # Unprofitable Mahjong for the M5Stack Tab5
 
-The same game as `../index.html`, as firmware for the M5Stack Tab5
+The same game as `../web/index.html`, as firmware for the M5Stack Tab5
 (ESP32-P4, 5″ 1280×720 touch panel), in landscape or portrait.
 
 **Status: built with ESP-IDF 6.1 and run on a board** (the panel, touch
@@ -175,7 +175,7 @@ it.
 ## Testing the rules
 
 `core/` is checked against the web version itself. `test/check.js` loads
-the rules straight out of `../index.html` and compares them with the C
+the rules straight out of `../web/index.html` and compares them with the C
 build, move by move:
 
     make -C m5tab5/test              # 2000 random games, about a minute

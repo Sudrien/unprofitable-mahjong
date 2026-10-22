@@ -1,6 +1,6 @@
 # Unprofitable Mahjong
 
-A slow, single-player mahjong for a small high-resolution screen. It was designed for the M5Stack Tab5 (5″ 1280×720) and runs in any browser as one self-contained `index.html`.
+A slow, single-player mahjong for a small high-resolution screen. It was designed for the M5Stack Tab5 (5″ 1280×720) and runs in any browser as one self-contained `web/index.html`.
 
 Work through all 136 tiles, a window of 18 at a time, clearing them in sets until none are left. Points come from the sets you make. Penalty counts every tile you haven't cleared yet and every shortcut you take. The two are kept separate: a big score and a clean finish pull against each other.
 
@@ -14,7 +14,7 @@ After one visit online it plays offline, fonts included. It can also be installe
 
 The footer names the build you're playing: the commit it was published from, linked to its code. `.github/workflows/pages.yml` publishes the site and writes that commit in, so Pages is set to deploy from GitHub Actions; anywhere else the footer says *local*.
 
-`index.html` also runs on its own, opened straight from disk; it just won't play offline or install that way. The offline copy is kept by `sw.js`, and `manifest.webmanifest` makes it installable. The icons are drawn by `tools/icons.py`.
+`web/index.html` also runs on its own, opened straight from disk; it just won't play offline or install that way. The offline copy is kept by `web/sw.js`, and `web/manifest.webmanifest` makes it installable. The icons are drawn by `tools/icons.py`.
 
 ## Rules
 
@@ -77,6 +77,6 @@ It uses other people's work under their own licences:
 | [ESP-IDF](https://github.com/espressif/esp-idf) and the Espressif components it pulls in (touch controllers, USB host) | Tab5 firmware, fetched when it's built | Apache 2.0 |
 | [QR Code generator library](https://github.com/nayuki/QR-Code-generator) (C), © Project Nayuki | The Tab5's replay QR code, vendored in `m5tab5/components/qrcodegen` | MIT |
 | [Noto Serif CJK](https://github.com/notofonts/noto-cjk), © 2017 Adobe | The Tab5's tile faces (`m5tab5/main/tilefaces.c`): the characters are pictures of its glyphs, rendered by `m5tab5/tools/gen_tiles.py`. The font itself is not included | SIL Open Font License 1.1 |
-| [MurmurHash2](https://github.com/aappleby/smhasher), Austin Appleby | The replay codes' proof of work, in `index.html` and `m5tab5/core/umreplay.c` | Public domain |
+| [MurmurHash2](https://github.com/aappleby/smhasher), Austin Appleby | The replay codes' proof of work, in `web/index.html` and `m5tab5/core/umreplay.c` | Public domain |
 
 The firmware binaries on the releases page contain the Tab5 entries in this table, so anyone redistributing them should carry those licences too. Each project's repository has its licence text.

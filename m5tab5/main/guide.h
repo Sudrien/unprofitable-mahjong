@@ -1,6 +1,6 @@
 /*
  * guide.h -- the sets and what they score: the web version's "Sets and
- * scores" guide (GUIDE in ../../index.html), as data, for ui.c's list of
+ * scores" guide (GUIDE in ../../web/index.html), as data, for ui.c's list of
  * valid hands.
  *
  * Plain C with no IDF headers, so test/ can print it and check.js can

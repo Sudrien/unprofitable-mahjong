@@ -78,7 +78,7 @@ def png(svg, px):
 
 def main():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    os.makedirs(os.path.join(root, 'icons'), exist_ok=True)
+    os.makedirs(os.path.join(root, 'web', 'icons'), exist_ok=True)
 
     # 132 of 180: the size apple-touch-icon.png has always been
     plain = square_svg(132)
@@ -93,7 +93,7 @@ def main():
         'icons/maskable-512.png': png(maskable, 512),
     }
     for name, data in out.items():
-        with open(os.path.join(root, name), 'wb') as f:
+        with open(os.path.join(root, 'web', name), 'wb') as f:
             f.write(data)
         print(f'wrote {name}')
 
@@ -101,7 +101,7 @@ def main():
     # %23 for #: a bare # would end the data URI at the first colour
     svg_uri = 'data:image/svg+xml,' + urllib.parse.quote(fav.replace('"', "'"), safe=" =:/'<>(),.-")
     png_uri = 'data:image/png;base64,' + base64.b64encode(png(fav, 32)).decode()
-    page = os.path.join(root, 'index.html')
+    page = os.path.join(root, 'web', 'index.html')
     with open(page, encoding='utf-8') as f:
         html = f.read()
     html, n1 = re.subn(r'(<link rel="icon" type="image/png" sizes="32x32" href=")[^"]*(">)',

@@ -1,4 +1,4 @@
-// Careful bot: only clears sets that leave every remaining tile groupable. Usage: node sim/careful.js index.html [games]
+// Careful bot: only clears sets that leave every remaining tile groupable. Usage: node sim/careful.js web/index.html [games]
 // SPDX-License-Identifier: MIT
 const fs = require('fs');
 const html = fs.readFileSync(process.argv[2], 'utf8');

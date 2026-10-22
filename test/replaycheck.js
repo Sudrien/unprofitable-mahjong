@@ -1,4 +1,4 @@
-// replaycheck.js -- replay codes, from index.html's own code.
+// replaycheck.js -- replay codes, from web/index.html's own code.
 //
 // Plays random games with every kind of move (clears with and without
 // melds, melds, kong upgrades, Add 6, Discard 6, Discard set), turns each
@@ -11,13 +11,13 @@
 //     was not re-signed fails the proof of work;
 //   - the full proof of work (REPLAY_WORK bits) is found and checked.
 //
-// Usage: node test/replaycheck.js [index.html] [games]
+// Usage: node test/replaycheck.js [web/index.html] [games]
 //
 // SPDX-License-Identifier: MIT
 'use strict';
 const fs = require('fs');
 const path = require('path');
-const html = fs.readFileSync(process.argv[2] || path.join(__dirname, '..', 'index.html'), 'utf8');
+const html = fs.readFileSync(process.argv[2] || path.join(__dirname, '..', 'web', 'index.html'), 'utf8');
 const js = html.split('<script>')[1].split('</script>')[0];
 const core = js.slice(js.indexOf('const HAND'), js.indexOf('/* ---------- render'));
 const G = new Function(`function render(){}; ${core};
