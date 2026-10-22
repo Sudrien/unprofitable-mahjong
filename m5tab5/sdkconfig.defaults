@@ -38,9 +38,10 @@ CONFIG_USB_HOST_DWC_DMA_CAP_MEMORY_IN_PSRAM=y
 # it the picture is near black. Espressif's m5stack_tab5 BSP sets both.
 CONFIG_CAMERA_SC202CS=y
 CONFIG_ESP_VIDEO_ENABLE_ISP_PIPELINE_CONTROLLER=y
-# ...but not its colour: the scan wants only the grey (Y), and on this
-# Tab5 the colour-correction and white-balance algorithms ask the ISP
-# for a CCM whose blue term is over 4.0, which it refuses -- five error
-# lines a frame, every frame. Exposure and gain (AGC) stay.
-CONFIG_ESP_IPA_ACC_ALGORITHM=n
-CONFIG_ESP_IPA_AWB_ALGORITHM=n
+# The sensor's tuning is esp_cam_sensor's sc202cs_default.json with one
+# number changed (camera/README.md): its 2292 K colour matrix has a blue
+# term of 4.54, past the ISP's limit of 4.0, so under warm light every
+# frame's matrix was refused with five error lines. The algorithms
+# themselves stay: the sensor's pipeline will not start without them.
+CONFIG_CAMERA_SC202CS_CUSTOMIZED_IPA_JSON_CONFIGURATION_FILE=y
+CONFIG_CAMERA_SC202CS_CUSTOMIZED_IPA_JSON_CONFIGURATION_FILE_PATH="camera/sc202cs_ipa.json"
