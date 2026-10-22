@@ -17,6 +17,10 @@ Claude must not commit to, push to, branch on, or open a pull request
 against the repository. The URL a session is given is for pulling only.
 Local commits made to run `git format-patch` stay local.
 
+**Claude does not run the tests or the bots unless asked.** That is
+`m5tab5/test/`, `test/replaycheck.js` and `sim/`: they take minutes, and
+the person decides when that time is spent.
+
 **Patches are cumulative.** Each applies on top of what is already here.
 Never hand back a rewritten copy of a file, and never reissue a corrected
 version of a patch that has been handed over: send a follow-up with the
