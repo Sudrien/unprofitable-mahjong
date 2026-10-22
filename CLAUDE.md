@@ -81,7 +81,7 @@ and a patch that changes either side runs it.
 - all poker hands achivement (opposite of no poker hands)
 - the brute forced max score is... 804 & -4 ... so is haigh score achivement of 600 valid?
 - Secret achivements?
-  - Intentional game design: tried to add to a pair in meld
+  - Intentional game design: tried and failed to add to a pair in meld
   - Overcompensating: used 4 tiles of a kind in a limit hand that requires 3
   - Wait wait wait: sorting deselects tiles.. Even if autosort is on.
   - Try try again: load a seed already represented in achivements
