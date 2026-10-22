@@ -146,6 +146,7 @@ typedef struct {
 #define UM_HAD_STRAIGHT (0x10)
 #define UM_HAD_FULL_HOUSE (0x20)
 #define UM_HAD_EVERY_POKER (UM_HAD_TWO_PAIR | UM_HAD_FLUSH | UM_HAD_STRAIGHT | UM_HAD_FULL_HOUSE)
+#define UM_HAD_LOADED   (0x40)  /* dealt from a code's seed: earns Firsts only (S.loaded) */
 #define UM_HAD_TRACKED  (0x80)  /* dealt by this build: the bits above cover every clear */
 
 /* A set holds a pair (holdsPair): it is a pair, Thirteen Orphans or Nine

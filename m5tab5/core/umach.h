@@ -18,6 +18,8 @@
  *   The Capital is Gone: every set's Full
  *   High score: UM_ACH_HIGH points in one game; not a hand, so no part
  *           of either
+ *   A loaded deal (UM_HAD_LOADED) earns Firsts, and so the river, and
+ *   nothing else, as the web version's S.loaded.
  *   Secrets shown only once earned, and no part of the river:
  *           A Place for Everything (a game ended with no tiles left),
  *           Wait Wait Wait (a sort threw a selection away),

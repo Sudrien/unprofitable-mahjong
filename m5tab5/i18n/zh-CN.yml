@@ -86,6 +86,10 @@ zh-CN:
     # ui.c
     "A clean sweep with no shortcuts.": "一路无捷径，完美通关。"
     # ui.c
+    "A code is in view: hold it steady": "看到代码了：请拿稳"
+    # ui.c
+    "A fresh deal, ready to play. A loaded deal earns Firsts only: no Full, wins or secrets.": "一副新牌，可以玩。载入的牌只能获得首次达成，不计全满、清完和隐藏成就。"
+    # ui.c
     "A lone %s can never be cleared now.": "%s只剩一张，已经无法清除。"
     # guide.c
     "A pung and a pair in one move: 4 + 1, plus 1 bonus. The pung doubles for 1s, 9s and honors.": "一次消一组刻子和一组对子：4 + 1，再加1分。幺九和字牌刻子翻倍。"
@@ -127,6 +131,8 @@ zh-CN:
     "Big Three Dragons": "大三元"
     # guide.c
     "Bigger sets": "大组合"
+    # ui.c
+    "Cancel": "取消"
     # ui.c
     "Checkout": "检出版本"
     # guide.c
@@ -228,6 +234,8 @@ zh-CN:
     # ui.c
     "Hint": "提示"
     # ui.c
+    "Hold a replay QR code up to the camera": "把回放二维码对准摄像头"
+    # ui.c
     "Intentional Game Design": "这是设计好的"
     # guide.c
     "Kong": "杠子"
@@ -255,6 +263,8 @@ zh-CN:
     "Little Three Dragons": "小三元"
     # guide.c
     "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.": "同花色连得越长分越高。4连：+6 · 5：+9 · 6：+13 · 7：+18 · 8：+24。"
+    # ui.c
+    "Looking for a code…": "正在寻找代码…"
     # ui.c
     "Make every set full: each cleared in 3 of 5 games in a row.": "让每种组合都全满：连续5局中有3局消除。"
     # ui.c
@@ -320,6 +330,10 @@ zh-CN:
     # ui.c
     "Pick more tiles.": "再多选几张牌。"
     # ui.c
+    "Play this deal": "玩这副牌"
+    # ui.c
+    "Playing it gives up the game in play.": "玩这副牌会放弃当前牌局。"
+    # ui.c
     "Points %d": "得分 %d"
     # guide.c
     "Poker hands · easy to make, cheap to score": "扑克牌型 · 容易凑，得分低"
@@ -343,6 +357,8 @@ zh-CN:
     "Run of 5": "五连顺"
     # ui.c
     "SECRET · GAME %d": "隐藏成就 · 第%d局"
+    # ui.c
+    "Scan a code": "扫描代码"
     # ui.c
     "Scan to watch this game": "扫码观看这一局"
     # ui.c
@@ -376,6 +392,8 @@ zh-CN:
     # ui.c
     "Tap tiles to make a set. Bigger sets score more. Select 6, or a set, to discard.": "点牌组成组合，组合越大得分越高。选6张或一组可以弃牌。"
     # ui.c
+    "Tap to cancel": "点按取消"
+    # ui.c
     "Tap to close": "点击关闭"
     # ui.c
     "Tap to continue": "点击继续"
@@ -383,6 +401,8 @@ zh-CN:
     "The Capital is Gone": "都城已逝"
     # ui.c
     "The Yellow River Floods Again": "黄河又泛滥了"
+    # ui.c
+    "The camera is not available.": "摄像头不可用。"
     # ui.c
     "The glowing tiles make a set.": "发光的牌可以组成一组。"
     # guide.c
@@ -395,8 +415,20 @@ zh-CN:
     "The same three-in-a-row twice in one suit.": "同花色两组相同顺子。"
     # ui.c
     "Theme": "主题"
+    # ui.c
+    "There is not enough memory to scan.": "内存不足，无法扫描。"
     # guide.c, ui.c
     "Thirteen Orphans": "十三幺"
+    # ui.c
+    "This code cannot be read.": "无法读取这个代码。"
+    # ui.c
+    "This code is a game to watch move by move. Open its link on a phone or computer to play it back.": "这是逐步观看的牌局代码。在手机或电脑上打开链接就能回放。"
+    # ui.c
+    "This code is from a newer version of the game.": "这个代码来自更新的版本。"
+    # ui.c
+    "This code is not genuine: its proof of work does not match.": "这个代码不是真的：工作量证明不对。"
+    # ui.c
+    "This deal cannot be played: a limit hand is already among its first 18 tiles.": "这副牌不能玩：前18张里已经有大满贯。"
     # ui.c
     "This game cannot be shared: it was dealt before replay codes, or ran too long. Start a new deal to get one.": "这一局无法分享：它在回放码功能之前发的牌，或者太长。重新发牌后就能用。"
     # guide.c, ui.c

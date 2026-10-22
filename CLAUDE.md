@@ -110,8 +110,17 @@ and a patch that changes either side runs it.
   Kongs and Seven Pairs. Counted by tiles, so All Green's 2222 split
   into chows and a pair earns it too.
 
+- **Scan a code (Tab5):** in the settings beside Share. The camera's
+  view (640x360, every second pixel), read by quirc through qrscan.c;
+  um_replay_read takes the code as far as its seed. A deal (no moves)
+  is offered and played as a loaded game (UM_HAD_LOADED, Firsts only)
+  unless a limit hand is in its first 18 (um_limit_in_deal).
+
 ## Not yet built
 
 - For reference: the brute forced maximum score is 804 & -4; bots
   average under 300 and never reached 500.
-- tab5 : qr code reading with camera to enter seeds
+- tab5: the loading secrets (Guaranteed Random, Try Try Again, Shadows
+  of the Past), and watching a code with moves on the Tab5 itself --
+  Scan a code reads deals and plays them, and sends games with moves to
+  the website.

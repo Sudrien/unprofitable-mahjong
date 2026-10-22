@@ -290,7 +290,8 @@ static void code_mode(uint32_t seed, int games)
 }
 
 /* ach: a script of games, one line each step --
- *   N <seed>      a new deal (U <seed>: one saved before games were counted)
+ *   N <seed>      a new deal (U <seed>: one saved before games were counted;
+ *                 L <seed>: one loaded from a code)
  *   C <key>|<k,k,...>   that set cleared
  *   W             the game ends with every tile cleared (its Fulls, then wins)
  *   S             a sort threw a selection away
@@ -317,13 +318,14 @@ static int ach_mode(void)
         line[strcspn(line, "\r\n")] = 0;
         const char *award = "-";
         int flood = 0, wins = 0, capital = 0, high = 0, ended = 0;
-        if (line[0] == 'N' || line[0] == 'U') {
+        if (line[0] == 'N' || line[0] == 'U' || line[0] == 'L') {
             memset(&s_ag, 0, sizeof s_ag);
             s_ag.rng = (uint32_t)strtoul(line + 2, NULL, 10);
             s_ag.wall_pos = UM_TOTAL;
             s_ag.hand_len = UM_HAND;
             for (int i = 0; i < UM_MAX_HAND; i++) s_ag.hand[i] = UM_EMPTY;
-            if (line[0] == 'N') { s_ag.had = UM_HAD_TRACKED; um_ach_new_game(&s_ach, &s_ag); }
+            if (line[0] == 'N' || line[0] == 'L') { s_ag.had = UM_HAD_TRACKED; um_ach_new_game(&s_ach, &s_ag); }
+            if (line[0] == 'L') s_ag.had |= UM_HAD_LOADED;
         } else if (line[0] == 'C') {
             char *bar = strchr(line, '|');
             if (!bar) return 2;

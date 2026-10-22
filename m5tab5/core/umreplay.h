@@ -39,6 +39,23 @@ int um_replay_pack(const um_game_t *g, char *head, char *rest, size_t cap);
  * characters. out is NUL-terminated; returns its length, or -1. */
 int um_replay_code(const um_game_t *g, uint32_t nonce_from, int work, char *out, size_t cap);
 
+/* Reading a code back, as far as the Tab5 needs: the web version's
+ * readCode up to the moves. A code with no moves is a deal (its seed);
+ * one with moves is a game to watch, which the Tab5 leaves to the web,
+ * so its moves are not unpacked or replayed here. */
+typedef enum {
+    UM_READ_DEAL,       /* no moves: *seed is the deal */
+    UM_READ_MOVES,      /* a game with moves: *seed is its deal */
+    UM_READ_UNREADABLE, /* not a code, or more than one character wrong in a block */
+    UM_READ_VERSION,    /* from a newer version of the game */
+    UM_READ_WORK,       /* its proof of work does not hold: not genuine */
+} um_read_t;
+um_read_t um_replay_read(const char *code, int work, uint32_t *seed, int *fixed);
+
+/* A deal's first 18 tiles already hold a limit hand (some 14 or more of
+ * them make one): such a deal is not played from a code (limitInDeal). */
+bool um_limit_in_deal(uint32_t seed);
+
 #ifdef __cplusplus
 }
 #endif

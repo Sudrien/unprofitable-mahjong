@@ -86,6 +86,10 @@ en:
     # ui.c
     "A clean sweep with no shortcuts.": ~
     # ui.c
+    "A code is in view: hold it steady": ~
+    # ui.c
+    "A fresh deal, ready to play. A loaded deal earns Firsts only: no Full, wins or secrets.": ~
+    # ui.c
     "A lone %s can never be cleared now.": ~
     # guide.c
     "A pung and a pair in one move: 4 + 1, plus 1 bonus. The pung doubles for 1s, 9s and honors.": ~
@@ -127,6 +131,8 @@ en:
     "Big Three Dragons": ~
     # guide.c
     "Bigger sets": ~
+    # ui.c
+    "Cancel": ~
     # ui.c
     "Checkout": ~
     # guide.c
@@ -228,6 +234,8 @@ en:
     # ui.c
     "Hint": ~
     # ui.c
+    "Hold a replay QR code up to the camera": ~
+    # ui.c
     "Intentional Game Design": ~
     # guide.c
     "Kong": ~
@@ -255,6 +263,8 @@ en:
     "Little Three Dragons": ~
     # guide.c
     "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.": ~
+    # ui.c
+    "Looking for a code…": ~
     # ui.c
     "Make every set full: each cleared in 3 of 5 games in a row.": ~
     # ui.c
@@ -320,6 +330,10 @@ en:
     # ui.c
     "Pick more tiles.": ~
     # ui.c
+    "Play this deal": ~
+    # ui.c
+    "Playing it gives up the game in play.": ~
+    # ui.c
     "Points %d": ~
     # guide.c
     "Poker hands · easy to make, cheap to score": ~
@@ -343,6 +357,8 @@ en:
     "Run of 5": ~
     # ui.c
     "SECRET · GAME %d": ~
+    # ui.c
+    "Scan a code": ~
     # ui.c
     "Scan to watch this game": ~
     # ui.c
@@ -376,6 +392,8 @@ en:
     # ui.c
     "Tap tiles to make a set. Bigger sets score more. Select 6, or a set, to discard.": ~
     # ui.c
+    "Tap to cancel": ~
+    # ui.c
     "Tap to close": ~
     # ui.c
     "Tap to continue": ~
@@ -383,6 +401,8 @@ en:
     "The Capital is Gone": ~
     # ui.c
     "The Yellow River Floods Again": ~
+    # ui.c
+    "The camera is not available.": ~
     # ui.c
     "The glowing tiles make a set.": ~
     # guide.c
@@ -395,8 +415,20 @@ en:
     "The same three-in-a-row twice in one suit.": ~
     # ui.c
     "Theme": ~
+    # ui.c
+    "There is not enough memory to scan.": ~
     # guide.c, ui.c
     "Thirteen Orphans": ~
+    # ui.c
+    "This code cannot be read.": ~
+    # ui.c
+    "This code is a game to watch move by move. Open its link on a phone or computer to play it back.": ~
+    # ui.c
+    "This code is from a newer version of the game.": ~
+    # ui.c
+    "This code is not genuine: its proof of work does not match.": ~
+    # ui.c
+    "This deal cannot be played: a limit hand is already among its first 18 tiles.": ~
     # ui.c
     "This game cannot be shared: it was dealt before replay codes, or ran too long. Start a new deal to get one.": ~
     # guide.c, ui.c

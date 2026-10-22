@@ -8,5 +8,5 @@ idf_component_register(
              umcore                      # the rules and replay codes, from ../core
              qrcodegen                   # the replay link's QR code
              quirc                       # reading one off the camera (qrscan.c)
-             feckless_camera             # probed at boot; nothing reads it yet
+             feckless_camera             # Scan a code (ui.c), through qrscan.c
 )

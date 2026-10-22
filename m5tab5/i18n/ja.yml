@@ -86,6 +86,10 @@ ja:
     # ui.c
     "A clean sweep with no shortcuts.": "近道なしで全部クリア！"
     # ui.c
+    "A code is in view: hold it steady": "コードが見えています。動かさずに"
+    # ui.c
+    "A fresh deal, ready to play. A loaded deal earns Firsts only: no Full, wins or secrets.": "新しい配牌です。遊べます。読み込んだ配牌で取れるのは初めての役だけで、フル・完全消去・シークレットは取れません。"
+    # ui.c
     "A lone %s can never be cleared now.": "%sが1枚だけ残り、もう消せません。"
     # guide.c
     "A pung and a pair in one move: 4 + 1, plus 1 bonus. The pung doubles for 1s, 9s and honors.": "刻子と対子を一度に：4 + 1、ボーナス+1。1・9・字牌の刻子は2倍。"
@@ -127,6 +131,8 @@ ja:
     "Big Three Dragons": "大三元"
     # guide.c
     "Bigger sets": "大きな組"
+    # ui.c
+    "Cancel": "キャンセル"
     # ui.c
     "Checkout": "チェックアウト"
     # guide.c
@@ -228,6 +234,8 @@ ja:
     # ui.c
     "Hint": "ヒント"
     # ui.c
+    "Hold a replay QR code up to the camera": "リプレイのQRコードをカメラに向けてください"
+    # ui.c
     "Intentional Game Design": "仕様です"
     # guide.c
     "Kong": "槓子"
@@ -255,6 +263,8 @@ ja:
     "Little Three Dragons": "小三元"
     # guide.c
     "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.": "同じ種類で長く続くほど高得点。4連：+6 · 5：+9 · 6：+13 · 7：+18 · 8：+24。"
+    # ui.c
+    "Looking for a code…": "コードを探しています…"
     # ui.c
     "Make every set full: each cleared in 3 of 5 games in a row.": "すべての役をフルに：連続5局のうち3局で消す。"
     # ui.c
@@ -320,6 +330,10 @@ ja:
     # ui.c
     "Pick more tiles.": "もっと牌を選んでください。"
     # ui.c
+    "Play this deal": "この配牌で遊ぶ"
+    # ui.c
+    "Playing it gives up the game in play.": "遊ぶと今の対局は終わります。"
+    # ui.c
     "Points %d": "得点 %d"
     # guide.c
     "Poker hands · easy to make, cheap to score": "ポーカー役 · 作りやすいが安い"
@@ -343,6 +357,8 @@ ja:
     "Run of 5": "5連順"
     # ui.c
     "SECRET · GAME %d": "シークレット · 第%d局"
+    # ui.c
+    "Scan a code": "コードを読む"
     # ui.c
     "Scan to watch this game": "スキャンしてこの対局を見る"
     # ui.c
@@ -376,6 +392,8 @@ ja:
     # ui.c
     "Tap tiles to make a set. Bigger sets score more. Select 6, or a set, to discard.": "牌をタップして組を作ろう。大きな組ほど高得点。6枚か組を選ぶと捨てられます。"
     # ui.c
+    "Tap to cancel": "タップでキャンセル"
+    # ui.c
     "Tap to close": "タップで閉じる"
     # ui.c
     "Tap to continue": "タップで続ける"
@@ -383,6 +401,8 @@ ja:
     "The Capital is Gone": "都は消えた"
     # ui.c
     "The Yellow River Floods Again": "黄河、再び溢れる"
+    # ui.c
+    "The camera is not available.": "カメラが使えません。"
     # ui.c
     "The glowing tiles make a set.": "光っている牌で組が作れます。"
     # guide.c
@@ -395,8 +415,20 @@ ja:
     "The same three-in-a-row twice in one suit.": "同じ種類で同じ順子を2組。"
     # ui.c
     "Theme": "テーマ"
+    # ui.c
+    "There is not enough memory to scan.": "読み取りに必要なメモリが足りません。"
     # guide.c, ui.c
     "Thirteen Orphans": "国士無双"
+    # ui.c
+    "This code cannot be read.": "このコードは読み取れません。"
+    # ui.c
+    "This code is a game to watch move by move. Open its link on a phone or computer to play it back.": "これは1手ずつ観る対局のコードです。スマートフォンかパソコンでリンクを開くと再生できます。"
+    # ui.c
+    "This code is from a newer version of the game.": "このコードは新しい版のものです。"
+    # ui.c
+    "This code is not genuine: its proof of work does not match.": "このコードは本物ではありません：作業証明が合いません。"
+    # ui.c
+    "This deal cannot be played: a limit hand is already among its first 18 tiles.": "この配牌は遊べません：最初の18枚に役満がすでにあります。"
     # ui.c
     "This game cannot be shared: it was dealt before replay codes, or ran too long. Start a new deal to get one.": "この対局は共有できません。リプレイコードの導入前に配られたか、長すぎます。新しく配ると使えます。"
     # guide.c, ui.c

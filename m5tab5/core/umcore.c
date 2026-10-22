@@ -1118,7 +1118,7 @@ bool um_valid(const um_game_t *g)
         for (int j = 0; j < n; j++) if (g->mv[p + 2 + j] >= UM_KINDS) return false;
         p += 3 + n;
     }
-    if (g->had & ~(UM_HAD_POKER | UM_HAD_PAIR | UM_HAD_EVERY_POKER | UM_HAD_TRACKED)) return false;
+    if (g->had & ~(UM_HAD_POKER | UM_HAD_PAIR | UM_HAD_EVERY_POKER | UM_HAD_LOADED | UM_HAD_TRACKED)) return false;
     if ((g->had & UM_HAD_EVERY_POKER) && !(g->had & UM_HAD_POKER)) return false;
     /* now safe to count */
     uint8_t rem[UM_KINDS];

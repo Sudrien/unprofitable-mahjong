@@ -52,6 +52,17 @@ um_award_t um_ach_clear(um_ach_t *a, um_game_t *g, um_set_t t, bool *flood, bool
     if (capital) *capital = false;
     if (t <= UM_NONE || t >= UM_SET_COUNT) return UM_AWARD_NONE;
     const uint32_t gn = this_game(a, g);
+    /* a loaded deal earns Firsts, and so the river, and nothing else:
+     * it is not one of the games Full counts */
+    if (g->had & UM_HAD_LOADED) {
+        if (a->first[t].game) return UM_AWARD_NONE;
+        a->first[t] = record(a, g);
+        if (!a->flood.game && um_ach_firsts(a) == UM_ACH_SETS) {
+            a->flood = record(a, g);
+            if (flood) *flood = true;
+        }
+        return UM_AWARD_FIRST;
+    }
 
     /* the games it was cleared in, within the window, this one last,
      * each with its seed */
@@ -102,6 +113,7 @@ int um_ach_end(um_ach_t *a, um_game_t *g, um_set_t *last, bool *capital)
 {
     if (last) *last = UM_NONE;
     if (capital) *capital = false;
+    if (g->had & UM_HAD_LOADED) return 0;
     const uint32_t gn = this_game(a, g);
     int got = 0;
     for (int t = UM_NONE + 1; t < UM_SET_COUNT; t++) {
@@ -123,7 +135,7 @@ int um_ach_end(um_ach_t *a, um_game_t *g, um_set_t *last, bool *capital)
 /* winAwards */
 uint8_t um_ach_win(um_ach_t *a, um_game_t *g)
 {
-    if (!um_all_cleared(g) || !(g->had & UM_HAD_TRACKED) || !g->log_n) return 0;
+    if (!um_all_cleared(g) || !(g->had & UM_HAD_TRACKED) || (g->had & UM_HAD_LOADED) || !g->log_n) return 0;
     uint8_t got = 0;
     const bool ok[UM_WIN_N] = { !(g->had & UM_HAD_POKER), !(g->had & UM_HAD_PAIR),
                                 (g->had & UM_HAD_EVERY_POKER) == UM_HAD_EVERY_POKER };
@@ -138,7 +150,7 @@ uint8_t um_ach_win(um_ach_t *a, um_game_t *g)
 /* highAward */
 bool um_ach_high(um_ach_t *a, um_game_t *g)
 {
-    if (a->high.game || g->points < UM_ACH_HIGH) return false;
+    if (a->high.game || (g->had & UM_HAD_LOADED) || g->points < UM_ACH_HIGH) return false;
     a->high = record(a, g);
     return true;
 }
@@ -155,7 +167,7 @@ bool um_ach_overdone(um_set_t t, const uint8_t *kinds, int n)
 /* secretAward */
 bool um_ach_secret(um_ach_t *a, um_game_t *g, int s)
 {
-    if (s < 0 || s >= UM_SECRET_N || um_ach_secret_rec(a, s)->game) return false;
+    if (s < 0 || s >= UM_SECRET_N || (g->had & UM_HAD_LOADED) || um_ach_secret_rec(a, s)->game) return false;
     *um_ach_secret_rec(a, s) = record(a, g);
     return true;
 }

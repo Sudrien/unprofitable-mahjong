@@ -27,7 +27,9 @@
 #include "gfx.h"
 #include "touch.h"
 
+#include "camera.h"
 #include "i18n.h"
+#include "qrscan.h"
 #include "save.h"
 #include "guide.h"
 #include "qrcodegen.h"
@@ -791,7 +793,7 @@ static void draw_buttons(void)
  * only closes it. New deal asks for a second tap, as it did as a button.
  * In landscape the choices sit in two columns, since 720 px does not
  * hold them stacked at 36 px text. */
-enum { G_ROT, G_THEME, G_LANG, G_AUTO, G_DSET, G_NEW, G_SHARE, G_DONE };
+enum { G_ROT, G_THEME, G_LANG, G_AUTO, G_DSET, G_NEW, G_SHARE, G_SCAN, G_DONE };
 #define G_SECTIONS (5)
 #define CHIP_H     (72)
 #define CHIP_MAX   (16)
@@ -859,6 +861,9 @@ static void layout_menu(void)
     nd->x = M_PAD; nd->y = y;
     chip_t *sh = add_chip(G_SHARE, 0, _("Share"), 150);
     sh->x = nd->x + nd->w + M_GAP; sh->y = y;
+    chip_t *sc = add_chip(G_SCAN, 0, _("Scan a code"), 150);
+    sc->x = sh->x + sh->w + M_GAP; sc->y = y;
+    if (sc->x + sc->w > pw - M_PAD) { sc->x = M_PAD; sc->y = y += CHIP_H + M_GAP; }   /* portrait: its own row */
     y += CHIP_H + 28;
 
     /* the settings, under their heading */
@@ -981,6 +986,10 @@ static void draw_menu(void)
 static void draw_guide(void);
 static void draw_share(void);
 static bool s_share;
+static void draw_scan(void);
+/* Scan a code: the camera's view until a replay QR code is read, then
+ * what it was -- a deal to play, or why not */
+static enum { SC_OFF, SC_LIVE, SC_MSG, SC_DEAL } s_scan;
 
 static void draw_banner(void);
 
@@ -988,6 +997,7 @@ static void redraw(void)
 {
     if (s_guide) { draw_guide(); gfx_blit(0, gfx_h()); return; }
     if (s_share) { draw_share(); gfx_blit(0, gfx_h()); return; }
+    if (s_scan) { draw_scan(); gfx_blit(0, gfx_h()); return; }
     gfx_fill_rect(0, 0, gfx_w(), gfx_h(), C_BG);
     gfx_fill_rect(M_X / 2, L.table_y, gfx_w() - M_X, L.btn_y - L.table_y - 12, C_SURFACE);
     draw_top();
@@ -1880,6 +1890,175 @@ static void draw_share(void)
     gfx_draw_text((gfx_w() - gfx_text_w(tap, SMALL)) / 2, sy + GFX_GLYPH_H(ss) + 16, tap, SMALL, gfx_w(), C_MUTED);
 }
 
+/* ------------------------------------------------------------------ */
+/* Scan a code: a replay link's QR code, read off the camera           */
+
+/* The camera's frame at every second pixel (640x360 of its 1280x720),
+ * shown as it is and handed to qrscan. A code with no moves is a deal:
+ * played, after a second tap, as a loaded game, which earns Firsts only
+ * -- unless a limit hand is already among its first 18 tiles. A code
+ * with moves is a game to watch, which is the website's to do. */
+#define SCAN_STEP   (2)
+static uint8_t *s_scan_buf;             /* PSRAM, made the first time */
+static size_t s_scan_cap;
+static int s_scan_w, s_scan_h, s_scan_seen;
+static uint32_t s_scan_seed;
+static const char *s_scan_msg;          /* untranslated: SC_MSG's text */
+static char s_scan_code[QRSCAN_CODE_MAX];
+static struct { int x, y, w; } s_scan_play, s_scan_cancel;
+
+static void scan_stop(void)
+{
+    camera_stop();
+    qrscan_free();
+}
+
+static void scan_open(void)
+{
+    s_scan_msg = NULL;
+    s_scan_seen = 0;
+    if (!camera_present() || camera_start() != ESP_OK) {
+        s_scan_msg = N_("The camera is not available.");
+        s_scan = SC_MSG;
+    } else {
+        int w, h;
+        camera_luma_size(SCAN_STEP, &w, &h);
+        const size_t need = (size_t)w * (size_t)h;
+        if (need > s_scan_cap) {
+            heap_caps_free(s_scan_buf);
+            s_scan_buf = heap_caps_malloc(need, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
+            s_scan_cap = s_scan_buf ? need : 0;
+        }
+        if (!s_scan_buf) {
+            scan_stop();
+            s_scan_msg = N_("There is not enough memory to scan.");
+            s_scan = SC_MSG;
+        } else {
+            s_scan_w = w;
+            s_scan_h = h;
+            s_scan = SC_LIVE;
+        }
+    }
+    touch_swallow();
+}
+
+static void scan_close(void)
+{
+    if (s_scan == SC_LIVE) scan_stop();
+    s_scan = SC_OFF;
+}
+
+/* What a read code is: a deal to offer, or a message. */
+static void scan_found(const char *code)
+{
+    scan_stop();
+    uint32_t seed = 0;
+    int fixed = 0;
+    const um_read_t r = um_replay_read(code, UM_REPLAY_WORK, &seed, &fixed);
+    ESP_LOGI(TAG, "scanned a code: %d chars, read %d, %d put right", (int)strlen(code), (int)r, fixed);
+    s_scan = SC_MSG;
+    switch (r) {
+    case UM_READ_DEAL:
+        if (um_limit_in_deal(seed)) { s_scan_msg = N_("This deal cannot be played: a limit hand is already among its first 18 tiles."); break; }
+        s_scan_seed = seed;
+        s_scan = SC_DEAL;
+        break;
+    case UM_READ_MOVES:
+        s_scan_msg = N_("This code is a game to watch move by move. Open its link on a phone or computer to play it back.");
+        break;
+    case UM_READ_VERSION:
+        s_scan_msg = N_("This code is from a newer version of the game.");
+        break;
+    case UM_READ_WORK:
+        s_scan_msg = N_("This code is not genuine: its proof of work does not match.");
+        break;
+    default:
+        s_scan_msg = N_("This code cannot be read.");
+        break;
+    }
+}
+
+/* Every pass of the loop while the camera is live: a frame, shown and
+ * read. Returns whether to draw. */
+static bool scan_step(void)
+{
+    if (s_scan != SC_LIVE) return false;
+    int w, h;
+    if (camera_grab_luma(s_scan_buf, SCAN_STEP, &w, &h) != ESP_OK) return false;
+    if (w != s_scan_w || h != s_scan_h) return false;
+    if (qrscan_frame(s_scan_buf, w, h, s_scan_code, sizeof s_scan_code, &s_scan_seen)) scan_found(s_scan_code);
+    return true;
+}
+
+/* A loaded deal: a new game from its seed, earning Firsts only. */
+static void play_loaded(uint32_t seed)
+{
+    um_new(&s_g, seed);
+    s_g.had |= UM_HAD_LOADED;
+    um_ach_new_game(&s_ach, &s_g);
+    s_ban.until = 0;
+    save_ach(&s_ach);
+    s_undo_n = 0;
+    ESP_LOGI(TAG, "game %u: loaded deal %u", (unsigned)s_g.game_no, (unsigned)seed);
+    after_move(false);
+}
+
+static void scan_button(int x, int y, int w, const char *label, bool primary)
+{
+    box(x, y, w, BTN_H, C_ACCENT, primary ? C_ACCENT : C_RAISED);
+    gfx_draw_text(x + (w - gfx_text_w(label, TXT)) / 2, y + (BTN_H - GFX_GLYPH_H(TXT)) / 2, label, TXT, w, primary ? C_ON_ACC : C_INK);
+}
+
+static void draw_scan(void)
+{
+    gfx_fill_rect(0, 0, gfx_w(), gfx_h(), C_BG);
+    const char *tap = s_scan == SC_LIVE ? _("Tap to cancel") : _("Tap to close");
+    if (s_scan == SC_LIVE) {
+        const char *title = _("Hold a replay QR code up to the camera");
+        gfx_draw_text((gfx_w() - gfx_text_w(title, TXT)) / 2, TOP_Y + 8, title, TXT, gfx_w(), C_INK);
+        /* the frame as the camera has it, grey, one pixel a pixel */
+        const int top = TOP_Y + GFX_GLYPH_H(TXT) + 24;
+        const int x0 = (gfx_w() - s_scan_w) / 2, y0 = top;
+        for (int y = 0; y < s_scan_h && y0 + y < gfx_h() - 80; y++) {
+            const uint8_t *row = s_scan_buf + (size_t)y * (size_t)s_scan_w;
+            for (int x = 0; x < s_scan_w; x++) {
+                const uint8_t v = row[x];
+                gfx_px(x0 + x, y0 + y, RGB(v, v, v));
+            }
+        }
+        const char *st = s_scan_seen ? _("A code is in view: hold it steady") : _("Looking for a code…");
+        gfx_draw_text((gfx_w() - gfx_text_w(st, TXT)) / 2, gfx_h() - 70, st, TXT, gfx_w(), s_scan_seen ? C_GREEN : C_MUTED);
+        gfx_draw_text((gfx_w() - gfx_text_w(tap, SMALL)) / 2, gfx_h() - 30, tap, SMALL, gfx_w(), C_MUTED);
+        return;
+    }
+    if (s_scan == SC_DEAL) {
+        const bool in_play = !s_g.done && s_g.log_n > 0;
+        static char msg[320];
+        snprintf(msg, sizeof msg, "%s%s%s", _("A fresh deal, ready to play. A loaded deal earns Firsts only: no Full, wins or secrets."),
+                 in_play ? " " : "", in_play ? _("Playing it gives up the game in play.") : "");
+        const int y = gfx_h() / 2 - LINE * 3;
+        gfx_draw_para(M_X * 2, y, msg, TXT, gfx_w() - 4 * M_X, LINE, 5, C_INK);
+        const int bw = 300, by = y + LINE * 5 + 20, gap = 24, bx = (gfx_w() - 2 * bw - gap) / 2;
+        s_scan_play.x = bx; s_scan_play.y = by; s_scan_play.w = bw;
+        s_scan_cancel.x = bx + bw + gap; s_scan_cancel.y = by; s_scan_cancel.w = bw;
+        scan_button(s_scan_play.x, by, bw, _("Play this deal"), true);
+        scan_button(s_scan_cancel.x, by, bw, _("Cancel"), false);
+        return;
+    }
+    gfx_draw_para(M_X * 2, gfx_h() / 2 - LINE * 2, _(s_scan_msg ? s_scan_msg : ""), TXT, gfx_w() - 4 * M_X, LINE, 4, C_INK);
+    gfx_draw_text((gfx_w() - gfx_text_w(tap, SMALL)) / 2, gfx_h() - 60, tap, SMALL, gfx_w(), C_MUTED);
+}
+
+static void scan_tap(int x, int y)
+{
+    if (s_scan == SC_DEAL && x >= s_scan_play.x && x < s_scan_play.x + s_scan_play.w && y >= s_scan_play.y && y < s_scan_play.y + BTN_H) {
+        s_scan = SC_OFF;
+        play_loaded(s_scan_seed);
+        return;
+    }
+    scan_close();
+}
+
 /* The picture and the touch coordinates turn together, or every tap
  * lands somewhere other than where it was drawn. */
 static void apply_rotation(int r)
@@ -1928,6 +2107,10 @@ static void menu_tap(int x, int y)
         case G_SHARE:
             s_menu = false;
             share_open();
+            return;
+        case G_SCAN:
+            s_menu = false;
+            scan_open();
             return;
         case G_NEW:
             if (esp_timer_get_time() < s_armed_until) { s_armed_until = 0; s_menu = false; new_deal(); }
@@ -1980,6 +2163,7 @@ static bool menu_touch(bool down, int x, int y)
 static void tap(int x, int y)
 {
     if (s_share) { s_share = false; return; }   /* any tap closes the QR */
+    if (s_scan) { scan_tap(x, y); return; }
     {
         int sx0, sy0, sw, sh;
         sets_rect(&sx0, &sy0, &sw, &sh);
@@ -2045,7 +2229,9 @@ void ui_run(void)
     for (;;) {
         int x = 0, y = 0;
         const bool down = touch_get(&x, &y);
-        if (s_rdrag.active) {
+        if (s_scan) {
+            if (down && !was_down) { scan_tap(x, y); dirty = true; }
+        } else if (s_rdrag.active) {
             if (rail_touch(down, x)) dirty = true;
         } else if (s_guide) {
             if (guide_touch(down, x, y)) dirty = true;
@@ -2065,7 +2251,9 @@ void ui_run(void)
         const bool hint_on = now < s_hint_until, armed_on = now < s_armed_until, ban_on = now < s_ban.until;
         if (hint_on != (hint_seen != 0) || armed_on != (armed_seen != 0) || ban_on != (ban_seen != 0)) dirty = true;
         hint_seen = hint_on; armed_seen = armed_on; ban_seen = ban_on;
+        /* the camera, while it is live: a frame each pass, which waits for it */
+        if (scan_step()) dirty = true;
         if (dirty) { redraw(); dirty = false; }
-        vTaskDelay(pdMS_TO_TICKS(15));
+        if (s_scan != SC_LIVE) vTaskDelay(pdMS_TO_TICKS(15));
     }
 }

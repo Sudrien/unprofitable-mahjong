@@ -215,9 +215,78 @@ static int b64_val(char c)
     return c && p ? (int)(p - B64) : -1;
 }
 
-/* ------------------------------------------------------------------ */
-
 static char s_pay[UM_CODE_MAX];
+
+/* ------------------------------------------------------------------ */
+/* readCode, as far as the seed; and limitInDeal                       */
+
+/* hammingFix: each block of up to 63 characters and its 2 checks; one
+ * wrong character in a block is put right. The payload into out. */
+static int hamming_fix(const char *code, int len, char *out, int cap, int *fixed)
+{
+    gf_init();
+    int o = 0;
+    *fixed = 0;
+    for (int b = 0; b < len; b += 65) {
+        const int bl = len - b < 65 ? len - b : 65;
+        if (bl < 3) return -1;
+        int v[65];
+        for (int i = 0; i < bl; i++) if ((v[i] = b64_val(code[b + i])) < 0) return -1;
+        const int n = bl - 2;
+        int s1 = v[n], s2 = v[n + 1];
+        for (int i = 0; i < n; i++) { s1 ^= v[i]; s2 ^= gf_mul(v[i], s_exp[i]); }
+        if (s1 && s2) {
+            const int i = (s_log[s2] - s_log[s1] + 63) % 63;
+            if (i >= n) return -1;
+            v[i] ^= s1;
+            (*fixed)++;
+        } else if (s1 || s2) (*fixed)++;       /* a check character itself was wrong */
+        if (o + n > cap) return -1;
+        for (int i = 0; i < n; i++) out[o++] = B64[v[i]];
+    }
+    return o;
+}
+
+/* fixedValue */
+static uint64_t fixed_value(const char *s, int n)
+{
+    uint64_t v = 0;
+    for (int i = n - 1; i >= 0; i--) v = v * 64 + (uint64_t)b64_val(s[i]);
+    return v;
+}
+
+um_read_t um_replay_read(const char *code, int work, uint32_t *seed, int *fixed)
+{
+    int fx = 0;
+    const int len = (int)strlen(code);
+    const int pl = hamming_fix(code, len, s_pay, sizeof s_pay, &fx);
+    if (fixed) *fixed = fx;
+    if (pl < 1 + 6 + 2 + 6) return UM_READ_UNREADABLE;
+    if (b64_val(s_pay[0]) != UM_REPLAY_VER) return UM_READ_VERSION;
+    if (work > 0 && um_murmur2(s_pay, (size_t)pl) >> (32 - work) != 0) return UM_READ_WORK;
+    const int ml = (int)fixed_value(s_pay + 7, 2);
+    if (9 + ml + 6 > pl) return UM_READ_UNREADABLE;
+    if (seed) *seed = (uint32_t)fixed_value(s_pay + 9 + ml, 6);
+    /* no moves: the moves section is the count 0, which packs to nothing,
+     * and nothing follows the seed */
+    return ml == 0 && 15 + ml == pl ? UM_READ_DEAL : UM_READ_MOVES;
+}
+
+bool um_limit_in_deal(uint32_t seed)
+{
+    um_new(&s_sim, seed);
+    uint8_t h[UM_HAND], k[UM_HAND];
+    for (int i = 0; i < UM_HAND; i++) h[i] = (uint8_t)s_sim.hand[i];
+    for (uint32_t m = 0; m < (1u << UM_HAND); m++) {
+        if (__builtin_popcount(m) < 14) continue;
+        int n = 0;
+        for (int i = 0; i < UM_HAND; i++) if (m >> i & 1) k[n++] = h[i];
+        if (um_set_is_limit(um_classify(k, n))) return true;
+    }
+    return false;
+}
+
+/* ------------------------------------------------------------------ */
 
 int um_replay_code(const um_game_t *g, uint32_t nonce_from, int work, char *out, size_t cap)
 {

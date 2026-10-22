@@ -240,10 +240,11 @@ function achCheck() {
   const GAMES_N = 400;
   for (let gi = 0; gi < GAMES_N; gi++) {
     // now and then a seed played before, as a loaded deal: Full needs different deals
-    const prev = script.filter(x => x.op === 'N' || x.op === 'U');
+    const prev = script.filter(x => x.op === 'N' || x.op === 'U' || x.op === 'L');
     const legacy = gi > 0 && rnd(25) === 0, again = prev.length && rnd(4) === 0 && gi < GAMES_N - 3;
     const s = again ? prev[prev.length - 1 - rnd(Math.min(4, prev.length))].seed : (rnd(1 << 24) * 256 + rnd(256)) >>> 0;
-    script.push({ op: legacy ? 'U' : 'N', seed: s });
+    const loaded = !legacy && gi > 0 && gi < GAMES_N - 3 && rnd(12) === 0;   // now and then a deal played from a code
+    script.push({ op: legacy ? 'U' : loaded ? 'L' : 'N', seed: s });
     const mode = rnd(5);   // 0 any, 1 no pairs, 2 no poker, 3 a few favorites, 4 poker hands
     const poker = sets.filter(e => A.isPoker(e.t));
     const pool = mode === 1 ? sets.filter(e => !A.holdsPair(e)) : mode === 2 ? sets.filter(e => !A.isPoker(e.t))
@@ -268,8 +269,8 @@ function achCheck() {
   script.forEach((x, i) => {
     A.celebs.length = 0;
     let award = '-', ended = 0;
-    if (x.op === 'N' || x.op === 'U') legacy = x.op === 'U';
-    if (x.op === 'N' || x.op === 'U') A.setS({ seed: x.seed, game: x.op === 'N' ? A.nextGame() : undefined, log: [], hand: [], wall: [], discards: [], melds: [] });
+    if (x.op === 'N' || x.op === 'U' || x.op === 'L') legacy = x.op === 'U';
+    if (x.op === 'N' || x.op === 'U' || x.op === 'L') A.setS({ seed: x.seed, game: x.op !== 'U' ? A.nextGame() : undefined, log: [], hand: [], wall: [], discards: [], melds: [], ...(x.op === 'L' ? { loaded: true } : {}) });
     else if (x.op === 'C') {
       A.S.log.push({ t: x.e.t, k: x.e.k.slice().sort((a, b) => a - b), v: 0 });
       const a = A.setAward(x.e.t);
