@@ -86,4 +86,6 @@ and a patch that changes either side runs it.
   - Wait wait wait: sorting deselects tiles.. Even if autosort is on.
   - Try try again: load a seed already represented in achivements
   - A place for everthing: finish a game with no tiles remaining
+  - guaranteed random: load a playable seed
+  - shadows of the past: load a completed game
 - tab5 : qr code reading with camera to enter seeds
