@@ -24,7 +24,7 @@ The footer names the build you're playing: the commit it was published from, lin
 - **Limit hands** play a short animation: Thirteen Orphans, Nine Gates, Big and Little Four Winds, All Honors, All Terminals, Big Three Dragons, Seven Pairs, All Green and Four Kongs. In these hands a kong counts as a pung.
 - **Poker hands** are allowed but score little: two pair, straight, flush, full house, royal flush. If their tiles also split into mahjong sets, they score those sets plus 1.
 - **Melds:** set aside up to 4 pairs, chows, pungs, kongs, runs or straights. Melds score nothing until cleared and don't count toward the table limit. A melded pung can become a kong; it is the only meld that can grow, so a melded pair, chow, run or straight stays as it is. Select melds together with table tiles to clear one bigger hand.
-- **Penalty:** starts at −272 (2 per tile) and rises as you clear. A clean sweep ends at 0.
+- **Penalty:** starts at −272 (2 per tile) and is reduced by 2 for each tile you clear. A clean sweep ends at 0.
   - **Add 6** (−6): six more tiles on the table, up to 24 out.
   - **Discard 6** (−6): six tiles go to the discard pile. Discards come back, in order, once the wall is empty.
   - **Discard set** (optional, off by default; turn on *Discard sets*): a set from the table goes to the discard pile instead, for what it would have scored. Six tiles always go as Discard 6.
