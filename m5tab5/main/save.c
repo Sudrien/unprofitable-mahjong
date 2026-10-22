@@ -143,7 +143,8 @@ void save_load_ach(um_ach_t *a)
     if (err != ESP_OK) return;
     if (len == sizeof(ach_blob_v1_t) && s_ach_blob.ver == 1u && s_ach_blob.size == sizeof(ach_v1_t)) {
         static ach_v1_t v1;     /* off the stack */
-        memcpy(&v1, &((const ach_blob_v1_t *)(const void *)&s_ach_blob)->a, sizeof v1);
+        /* by offset, as bytes: the blob was read as a version 2 struct */
+        memcpy(&v1, (const uint8_t *)&s_ach_blob + offsetof(ach_blob_v1_t, a), sizeof v1);
         memset(&s_ach_blob.a, 0, sizeof s_ach_blob.a);
         s_ach_blob.a.games = v1.games;
         memcpy(s_ach_blob.a.first, v1.first, sizeof v1.first);
