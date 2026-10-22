@@ -1899,7 +1899,7 @@ static void draw_share(void)
  * -- unless a limit hand is already among its first 18 tiles. A code
  * with moves is a game to watch, which is the website's to do. */
 #define SCAN_STEP   (2)
-#define SCAN_TURN   (1)         /* quarter turns clockwise that stand the frame up, in landscape */
+#define SCAN_TURN   (1)         /* quarter turns clockwise that stand the frame up on the panel as it is mounted (portrait, GFX_ROT_0) */
 static uint8_t *s_scan_buf;             /* PSRAM, made the first time */
 static size_t s_scan_cap;
 static int s_scan_w, s_scan_h, s_scan_seen;
@@ -2017,12 +2017,13 @@ static void draw_scan(void)
     if (s_scan == SC_LIVE) {
         const char *title = _("Hold a replay QR code up to the camera");
         gfx_draw_text((gfx_w() - gfx_text_w(title, TXT)) / 2, TOP_Y + 8, title, TXT, gfx_w(), C_INK);
-        /* the frame, grey, turned to stand as the camera sees it: on this
-         * Tab5 a quarter turn clockwise in landscape (the screen's
-         * GFX_ROT_90), and so on round with the screen; scaled down,
-         * nearest pixel, to fit between the title and the status */
+        /* the frame, grey, turned to stand as the camera sees it. The
+         * camera is fixed to the panel, so the turn is SCAN_TURN in the
+         * panel's own portrait and one quarter less for each quarter the
+         * screen is turned. Scaled down, nearest pixel, to fit between
+         * the title and the status. */
         const int top = TOP_Y + GFX_GLYPH_H(TXT) + 24, avail_h = gfx_h() - 90 - top, avail_w = gfx_w() - 2 * M_X;
-        const int q = (SCAN_TURN + gfx_rotation() - GFX_ROT_90 + 4) % 4;
+        const int q = (SCAN_TURN - gfx_rotation() + 4) % 4;
         const int sw = q & 1 ? s_scan_h : s_scan_w, sh = q & 1 ? s_scan_w : s_scan_h;     /* the turned frame */
         int dw = sw, dh = sh;
         if (dw > avail_w) { dh = dh * avail_w / dw; dw = avail_w; }
