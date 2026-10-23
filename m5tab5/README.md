@@ -3,10 +3,9 @@
 The same game as `../web/index.html`, as firmware for the M5Stack Tab5
 (ESP32-P4, 5″ 1280×720 touch panel), in landscape or portrait.
 
-**Status: built with ESP-IDF 6.1 and run on a board** (the panel, touch
-and the four orientations). The settings panel -- theme and language --
-has so far only been run on a PC through the graphics library's own host
-shim (below). The rules are tested against the web version.
+**Status: built with ESP-IDF 6.1 and run on a board**: the panel, touch,
+the four orientations, the achievements, and the camera reading replay
+codes. The rules are tested against the web version.
 
 ![The table](screenshots/table.png)
 
@@ -17,8 +16,19 @@ shim (below). The rules are tested against the web version.
     idf.py build flash monitor
 
 ESP-IDF 5.4.2 or later. The libraries are fetched by the component
-manager at the tags in `main/idf_component.yml`; the first build writes
-`dependencies.lock`, which should be read before it is committed.
+manager at the tags in `main/idf_component.yml` and
+`components/feckless_camera/idf_component.yml`; the first build writes
+`dependencies.lock`, which should be read before it is committed. After
+any change to `sdkconfig.defaults`, `rm sdkconfig` before building: the
+defaults only fill what an existing sdkconfig lacks.
+
+Three components are kept here rather than fetched:
+`components/qrcodegen` and `components/quirc`, copied unchanged at the
+commits their READMEs name, and `components/esp_ipa`, Espressif's image
+processing for the camera with the libraries for ESP32-P4 chips before
+v3 -- the registry's release links one that dies on them (VENDORED.md
+says why, and when to drop it). `components/feckless_camera` is the
+camera itself, here until it moves to a repository of its own.
 
 ## Plan
 
@@ -27,7 +37,9 @@ manager at the tags in `main/idf_component.yml`; the first build writes
 | `core/` | Rules: deal, sets and scores, melds, discards, penalty, hint. Plain C, no IDF. | -- |
 | `test/` | Host tests that check `core/` against the web version's own code, run with Node. | gcc, Node |
 | `tools/` | Renders the 34 tile faces from the web version's drawings into RGB565 arrays, committed like Ark12. | Python, Pillow |
-| `main/` | Board bring-up, drawing, touch and saves. | `feckless_graphics_handler`, `feckless_drivers` |
+| `main/` | Board bring-up, drawing, touch, saves, and reading QR codes off the camera (`qrscan.c`). | `feckless_graphics_handler`, `feckless_drivers`, `feckless_camera`, quirc |
+| `components/feckless_camera/` | The SC202CS camera through esp_video, as grey frames. | esp_video |
+| `camera/` | The camera's image-processing tuning: Espressif's for the SC202CS with its colour matrix made plain (its README says why). | -- |
 | `test/screen/` | Runs `main/ui.c` on a PC with scripted taps and saves what it draws. | gcc, the graphics library's host shim |
 
 Drawing goes through `gfx`: the shadow buffer is redrawn where something
@@ -43,7 +55,7 @@ dependency until something is.
 ## The screen
 
 The gear, top right, opens the settings across the whole screen. New
-deal, which asks for a second tap, and Share come first; then the
+deal, which asks for a second tap, Share and Scan a code come first; then the
 orientation (landscape, portrait, or either one flipped), a light or
 dark theme, the language -- English, 日本語 or 简体中文 -- auto-sort,
 and Discard sets, off until turned on, which lets Discard take a set
@@ -85,6 +97,30 @@ Tab5 kept its moves has no code, and Share says so.
 
 ![Share](screenshots/share.png)
 
+Scan a code, beside Share, reads one back with the camera above the
+screen. The view is the camera's, in grey, turned to stand upright in
+each orientation and mirrored, as a front camera's view usually is;
+"a code is in view" shows before it can be read. Each frame -- 640×360,
+every second pixel of the sensor's 1280×720 -- goes to quirc
+(`main/qrscan.c`), which finds the code and takes the replay code out of
+a link or bare. `core/umreplay.c` then reads it all the way through,
+replaying every move from the seed:
+
+- A code with no moves is a deal. Play this deal starts it as a new
+  game -- a second tap if it gives up one in play -- unless a limit hand
+  is already among its first 18 tiles. A loaded deal earns Firsts, and
+  so the river, and not the rest of what play earns, as on the web; the
+  status line says *Loaded deal · Firsts only*.
+- A code with moves is a game to watch, which is left to the web version
+  on a phone or computer.
+- A code that is not genuine -- its proof of work, or a move against
+  the rules -- or one from a newer version says so.
+
+The camera is an SC202CS on MIPI CSI, through Espressif's esp_video and
+the P4's ISP (`components/feckless_camera`); it is started only while
+scanning, and the ISP's per-frame complaints are kept out of the log
+meanwhile.
+
 The panel is about 294 pixels to the inch, so text is Ark12 at 36 px
 (about 9 pt); 24 px is left for the line of bests and piles, the
 rail's values, and the list of chosen tiles in landscape.
@@ -93,7 +129,15 @@ Landscape is 1280×720: the scores along the top, the rail of recent
 clears, the meld row, the hand (two rows of 9, or 12 after Add 6), the
 status and seven buttons in a row. Portrait is 720×1280: the hand six
 across in three rows (four after Add 6), the status under it, and the
-buttons in three rows at the bottom. Tap tiles to select them;
+buttons in three rows at the bottom -- Clear, Meld and Undo; Add 6 and
+Hint; Discard and Sort.
+
+Up to three goals -- chosen in the Sets list: tap a set, then Make this
+a goal beside Done -- sit beside the buttons by name: right of the row in
+landscape, which moves left to make room, and right of the two shorter
+rows in portrait. The Sets list marks their cards with a bar and the
+word Goal. Clearing a goal's set says Goal met and drops it. A set that
+is already Full is not offered; a run's card means any run. Tap tiles to select them;
 tap a meld to select all of it. The rail of recent clears, newest at the
 left, keeps the last 64 entries -- a whole ordinary game -- and drags
 sideways to show the ones that do not fit. Undo goes back up to 64 moves, and like
@@ -112,7 +156,10 @@ Chinese), and the points counting up.
 ![Big Three Dragons](screenshots/limit-hand.png)
 
 The achievements are the web version's, kept on the board: each set's
-First and Full, the two wins, and The Yellow River Floods Again, each
+First and Full (counting only games played to their end, as on the
+web, so a clear that would make one says *finish the game to confirm*),
+the three wins, The Yellow River Floods Again, The Capital is Gone, High
+Score, and some secrets that stay out of the list until found -- each
 earned once, with the game number (games are counted on the board, one
 per deal). An ordinary set's First or Full is a banner over the rail
 for a few seconds -- a check or a star, the set, what it earned and its
@@ -120,8 +167,8 @@ tiles -- that never stops play; limit hands, the wins and the flood play
 the full celebration, and when two of those come at once, such as a
 last set and the win it finishes, they play one after the other. The Sets list opens with them:
 how many sets have a First and how many are Full, the river rising
-toward all 40, and the wins, each with the game it was earned in; tap
-one for what it asks. Every set below is marked once cleared, a check
+toward all 40, a second river toward every Full, the wins and High
+Score, each with the game it was earned in; tap one for what it asks. Every set below is marked once cleared, a check
 or, when Full, a star (both drawn, since Ark12 has neither), with the
 games underneath; the runs card shows each run length.
 
@@ -195,16 +242,21 @@ of range, or a move record that is cut short or garbled, is refused
 before the board plays it, and `test/savecheck` runs
 `main/save.c` over an in-memory NVS: settings and games round trip, and
 games saved before the rail kept 64 entries, or before the moves were
-kept, are still read. check.js also takes the Tab5's replay codes from
+kept, are still read, and so is every older version of the saved
+achievements. check.js also takes the Tab5's replay codes from
 `umtest code` and has the web version read and replay them, and pack
-the same moves into the same payload, byte for byte.
+the same moves into the same payload, byte for byte; `umtest code` reads
+each one back itself too, to the same end. `test/scancheck` draws replay
+links as QR codes into camera-sized frames -- small, turned, blurred,
+dim, noisy, mirrored -- and requires `main/qrscan.c` to read every one.
 
 The achievements are in `core/umach.c`, which the game calls at each new deal, clear
 and finished game, saving them in NVS when one changes. check.js runs one script of 400 games -- deals, clears,
-wins, a few games saved before games were counted -- through it and
-through the web version's own achievement code, and compares every
-record after every step: each set's First and Full, both wins, and The
-Yellow River Floods Again, with the game and seed each was earned in.
+wins, deals played again, loaded deals, games given up, a few saved
+before games were counted -- through it and through the web version's
+own achievement code, and compares every record after every step: each
+set's First and Full, the wins, both rivers, High Score and the secrets,
+with the game and seed each was earned in.
 It also checks, for every tile group above, that both agree whether it
 holds a pair, and, move by move, what each game has cleared.
 
