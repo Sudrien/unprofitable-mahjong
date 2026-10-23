@@ -393,6 +393,8 @@ bool um_limit_in_deal(uint32_t seed)
 
 /* ------------------------------------------------------------------ */
 
+void (*um_replay_yield)(void);
+
 int um_replay_code(const um_game_t *g, uint32_t nonce_from, int work, char *out, size_t cap)
 {
     char head[1];
@@ -407,6 +409,7 @@ int um_replay_code(const um_game_t *g, uint32_t nonce_from, int work, char *out,
         fixed_chars(n, 6, s_pay + 1);
         if (work <= 0 || um_murmur2(s_pay, (size_t)pl) >> (32 - work) == 0) break;
         if (++n == nonce_from) return -1;       /* every 32-bit nonce tried */
+        if (um_replay_yield && (n - nonce_from) % UM_REPLAY_YIELD_EVERY == 0) um_replay_yield();
     }
 
     gf_init();

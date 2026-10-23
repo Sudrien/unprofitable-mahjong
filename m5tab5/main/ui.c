@@ -2002,6 +2002,11 @@ static struct {
     char code[UM_CODE_MAX], url[sizeof REPLAY_URL + UM_CODE_MAX];
 } *s_sh;
 
+/* The proof of work's pause, every 65536 tries (about half a second on
+ * the board): a tick to the idle task, which feeds the task watchdog --
+ * a whole game's code takes longer than its five seconds. */
+static void replay_yield(void) { vTaskDelay(1); }
+
 static void share_open(void)
 {
     /* the proof of work takes a moment: say so first */
@@ -2010,6 +2015,7 @@ static void share_open(void)
     gfx_draw_text((gfx_w() - gfx_text_w(wk, TXT)) / 2, gfx_h() / 2 - GFX_GLYPH_H(TXT) / 2, wk, TXT, gfx_w(), C_MUTED);
     gfx_blit(0, gfx_h());
     const int64_t t0 = esp_timer_get_time();
+    um_replay_yield = replay_yield;
     if (!s_sh) s_sh = heap_caps_malloc(sizeof *s_sh, MALLOC_CAP_SPIRAM | MALLOC_CAP_8BIT);
     const int n = s_sh ? um_replay_code(&s_g, esp_random(), UI_REPLAY_WORK, s_sh->code, sizeof s_sh->code) : -1;
     s_share_ok = n > 0;

@@ -39,6 +39,13 @@ int um_replay_pack(const um_game_t *g, char *head, char *rest, size_t cap);
  * characters. out is NUL-terminated; returns its length, or -1. */
 int um_replay_code(const um_game_t *g, uint32_t nonce_from, int work, char *out, size_t cap);
 
+/* Called, when set, every UM_REPLAY_YIELD_EVERY tries of the proof of
+ * work, which takes seconds on the board: the firmware sets it to give
+ * up the CPU, so the idle task can feed the task watchdog. The rules
+ * know nothing of tasks, so they only call it. NULL by default. */
+#define UM_REPLAY_YIELD_EVERY (1u << 16)
+extern void (*um_replay_yield)(void);
+
 /* Reading a code back, as far as the Tab5 needs: the web version's
  * readCode up to the moves. A code with no moves is a deal (its seed);
  * one with moves is a game to watch, which the Tab5 leaves to the web,
