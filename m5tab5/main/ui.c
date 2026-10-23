@@ -1611,6 +1611,8 @@ static void after_move(bool was_done)
 {
     if (s_prefs.auto_sort && !s_g.done) um_sort(&s_g);
     if (!was_done && s_g.done) {
+        ESP_LOGI(TAG, "game %u over: %d points, penalty %d, %s%s", (unsigned)s_g.game_no, (int)s_g.points, (int)um_penalty(&s_g),
+                 um_all_cleared(&s_g) ? "every tile cleared" : "stuck", (s_g.had & UM_HAD_LOADED) ? ", a loaded deal" : "");
         if (s_prefs.best_penalty == INT32_MIN || um_penalty(&s_g) > s_prefs.best_penalty) s_prefs.best_penalty = um_penalty(&s_g);
         if (s_prefs.best_points == INT32_MIN || s_g.points > s_prefs.best_points) s_prefs.best_points = s_g.points;
         save_prefs(&s_prefs);
@@ -1706,18 +1708,36 @@ static void new_deal(void)
 {
     um_new(&s_g, esp_random());
     um_ach_new_game(&s_ach, &s_g);
+    ESP_LOGI(TAG, "game %u: new deal, seed %u", (unsigned)s_g.game_no, (unsigned)s_g.rng);
     s_ban.until = 0;
     save_ach(&s_ach);
     s_undo_n = 0;
     after_move(false);
 }
 
+/* The tiles of a move, for the log: kinds as numbers, "3,3,3". */
+static const char *kinds_str(const uint8_t *k, int n)
+{
+    static char out[UM_MAX_SEL * 4 + 1];
+    int o = 0;
+    out[0] = 0;
+    for (int i = 0; i < n && o < (int)sizeof out - 4; i++) o += snprintf(out + o, sizeof out - (size_t)o, "%s%u", i ? "," : "", (unsigned)k[i]);
+    return out;
+}
+
 static void press(int b)
 {
+    const unsigned gno = (unsigned)s_g.game_no;
+    (void)gno;      /* the log reads these; a build with it turned down does not */
     if (!s_btn[b].enabled) {
         /* Meld stays drawn disabled, but a press on a melded pair and
          * its third tile is caught: Intentional Game Design */
-        if (b == B_MELD && um_pair_grow(&s_g, s_sel)) secret_banner(UM_SECRET_DESIGN);
+        if (b == B_MELD && um_pair_grow(&s_g, s_sel)) {
+            ESP_LOGI(TAG, "game %u: meld refused: a melded pair does not grow%s", gno,
+                     (s_g.had & UM_HAD_LOADED) ? " (a loaded deal earns no secret)"
+                     : um_ach_secret_crec(&s_ach, UM_SECRET_DESIGN)->game ? " (Intentional Game Design already found)" : "");
+            secret_banner(UM_SECRET_DESIGN);
+        }
         return;
     }
     const bool was_done = s_g.done;
@@ -1729,6 +1749,7 @@ static void press(int b)
         int v;
         undo_push();
         if (!um_clear(&s_g, s_sel, &t, &v)) { undo_pop(); return; }
+        ESP_LOGI(TAG, "game %u: cleared %s [%s] %+d, points %d", gno, um_set_key(t), kinds_str(k, n), v, (int)s_g.points);
         bool flood = false, capital = false;
         const um_award_t aw = um_ach_clear(&s_ach, &s_g, t, &flood, &capital);
         if (aw != UM_AWARD_NONE) {
@@ -1768,18 +1789,31 @@ static void press(int b)
         }
         break;
     }
-    case B_MELD:
+    case B_MELD: {
+        uint8_t k[UM_MAX_SEL];
+        const int n = um_sel_kinds(&s_g, s_sel, k);
+        const int melds = s_g.meld_n;
+        (void)n; (void)melds;
         undo_push();
         if (!um_meld(&s_g, s_sel)) { undo_pop(); return; }
+        ESP_LOGI(TAG, "game %u: %s [%s]", gno, s_g.meld_n > melds ? "melded" : "made a kong of", kinds_str(k, n));
         break;
+    }
     case B_ADD:
         if (!um_add_six(&s_g)) return;
+        ESP_LOGI(TAG, "game %u: added 6, penalty %d", gno, (int)um_penalty(&s_g));
         s_undo_n = 0;       /* adding is final */
         break;
-    case B_DISCARD:
-        if (!(discard_kind() == 2 ? um_discard_set(&s_g, s_sel, NULL) : um_discard_six(&s_g, s_sel))) return;
+    case B_DISCARD: {
+        uint8_t k[UM_MAX_SEL];
+        const int n = um_sel_kinds(&s_g, s_sel, k);
+        const bool set = discard_kind() == 2;
+        (void)n;
+        if (!(set ? um_discard_set(&s_g, s_sel, NULL) : um_discard_six(&s_g, s_sel))) return;
+        ESP_LOGI(TAG, "game %u: discarded %s [%s], penalty %d", gno, set ? "a set" : "6", kinds_str(k, n), (int)um_penalty(&s_g));
         s_undo_n = 0;       /* and so is discarding */
         break;
+    }
     case B_HINT: {
         um_sel_t h;
         s_sel.hand = 0; s_sel.melds = 0;
@@ -1796,6 +1830,7 @@ static void press(int b)
     }
     case B_UNDO:
         if (!undo_pop()) return;
+        ESP_LOGI(TAG, "game %u: undo", gno);
         s_sel.hand = 0; s_sel.melds = 0;
         save_game(&s_g);
         return;
