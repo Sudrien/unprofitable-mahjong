@@ -15,3 +15,5 @@ esp_err_t nvs_get_u8(nvs_handle_t h, const char *key, uint8_t *v);
 esp_err_t nvs_set_u8(nvs_handle_t h, const char *key, uint8_t v);
 esp_err_t nvs_get_u32(nvs_handle_t h, const char *key, uint32_t *v);
 esp_err_t nvs_set_u32(nvs_handle_t h, const char *key, uint32_t v);
+typedef struct { size_t used_entries, free_entries, available_entries, total_entries, namespace_count; } nvs_stats_t;
+static inline esp_err_t nvs_get_stats(const char *part, nvs_stats_t *st) { (void)part; (void)st; return -1; }

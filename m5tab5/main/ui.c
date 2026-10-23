@@ -1085,7 +1085,15 @@ static enum { SC_OFF, SC_LIVE, SC_MSG, SC_DEAL } s_scan;
 
 static void draw_banner(void);
 
+static void redraw_(void);
+/* TEST (cyan flash on New deal): how long a whole repaint takes. */
 static void redraw(void)
+{
+    const int64_t t0 = esp_timer_get_time();
+    redraw_();
+    ESP_LOGI(TAG, "redraw %lld us", (long long)(esp_timer_get_time() - t0));
+}
+static void redraw_(void)
 {
     if (s_guide) { draw_guide(); gfx_blit(0, gfx_h()); return; }
     if (s_share) { draw_share(); gfx_blit(0, gfx_h()); return; }
@@ -1832,9 +1840,11 @@ static void new_deal(void)
     um_ach_new_game(&s_ach, &s_g);
     ESP_LOGI(TAG, "game %u: new deal, seed %u", (unsigned)s_g.game_no, (unsigned)s_g.rng);
     s_ban.until = 0;
+    ESP_LOGW(TAG, "new deal: saving achievements");
     save_ach(&s_ach);
     s_undo_n = 0;
     after_move(false);
+    ESP_LOGW(TAG, "new deal: saved; the repaint follows");
 }
 
 /* The tiles of a move, for the log: kinds as numbers, "3,3,3". */
