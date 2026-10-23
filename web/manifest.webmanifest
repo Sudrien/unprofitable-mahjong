@@ -1,6 +1,6 @@
 {
   "name": "Unprofitable Mahjong",
-  "short_name": "Mahjong",
+  "short_name": "Unprofitable Mahjong",
   "description": "A slow, single-player mahjong: clear all 136 tiles in sets, 18 at a time.",
   "id": "./",
   "start_url": "./",
