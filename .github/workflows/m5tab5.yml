@@ -35,6 +35,11 @@ on:
 # Needed to create a release; the default token may be read-only.
 permissions:
   contents: write
+  # Build provenance: id-token gets the short-lived certificate the
+  # attestation is signed with; attestations stores it against this
+  # repository.
+  id-token: write
+  attestations: write
 
 jobs:
   build:
@@ -123,6 +128,21 @@ jobs:
           idf.py merge-bin
           mv build/merged-binary.bin "build/unprofitable_mahjong_${NAME}_m5tab5_standalone.bin"
           mv build/unprofitable_mahjong_m5tab5.bin "build/unprofitable_mahjong_${NAME}_m5tab5.bin"
+
+      # A signed record that these two files, by their SHA-256, were
+      # built by this workflow from this commit. It is stored with the
+      # repository, not in the files: the .bins are byte for byte what
+      # they were and flash as before. Every run attests, not only a
+      # release, so a downloaded artifact can be checked too:
+      #   gh attestation verify <file> --repo Sudrien/unprofitable-mahjong
+      # A uses: step does not take the run steps' working-directory, so
+      # the paths start at m5tab5/, as the archive step's do.
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: |
+            m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5_standalone.bin
+            m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5.bin
 
       - name: Archive build output artifacts
         uses: actions/upload-artifact@v4
