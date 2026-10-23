@@ -16,8 +16,7 @@ codes. The rules are tested against the web version.
     idf.py build flash monitor
 
 ESP-IDF 5.4.2 or later. The libraries are fetched by the component
-manager at the tags in `main/idf_component.yml` and
-`components/feckless_camera/idf_component.yml`; the first build writes
+manager at the tags in `main/idf_component.yml`; the first build writes
 `dependencies.lock`, which should be read before it is committed. After
 any change to `sdkconfig.defaults`, `rm sdkconfig` before building: the
 defaults only fill what an existing sdkconfig lacks.
@@ -27,8 +26,7 @@ Three components are kept here rather than fetched:
 commits their READMEs name, and `components/esp_ipa`, Espressif's image
 processing for the camera with the libraries for ESP32-P4 chips before
 v3 -- the registry's release links one that dies on them (VENDORED.md
-says why, and when to drop it). `components/feckless_camera` is the
-camera itself, here until it moves to a repository of its own.
+says why, and when to drop it).
 
 ## Plan
 
@@ -38,7 +36,6 @@ camera itself, here until it moves to a repository of its own.
 | `test/` | Host tests that check `core/` against the web version's own code, run with Node. | gcc, Node |
 | `tools/` | Renders the 34 tile faces from the web version's drawings into RGB565 arrays, committed like Ark12. | Python, Pillow |
 | `main/` | Board bring-up, drawing, touch, saves, and reading QR codes off the camera (`qrscan.c`). | `feckless_graphics_handler`, `feckless_drivers`, `feckless_camera`, quirc |
-| `components/feckless_camera/` | The SC202CS camera through esp_video, as grey frames. | esp_video |
 | `camera/` | The camera's image-processing tuning: Espressif's for the SC202CS with its colour matrix made plain (its README says why). | -- |
 | `test/screen/` | Runs `main/ui.c` on a PC with scripted taps and saves what it draws. | gcc, the graphics library's host shim |
 
@@ -117,7 +114,7 @@ replaying every move from the seed:
   the rules -- or one from a newer version says so.
 
 The camera is an SC202CS on MIPI CSI, through Espressif's esp_video and
-the P4's ISP (`components/feckless_camera`); it is started only while
+the P4's ISP ([feckless-camera-for-m5tab5](https://github.com/Sudrien/feckless-camera-for-m5tab5)); it is started only while
 scanning, and the ISP's per-frame complaints are kept out of the log
 meanwhile.
 

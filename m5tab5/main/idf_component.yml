@@ -25,3 +25,10 @@ dependencies:
   # descriptor-parser fix; nothing here uses USB audio, so the registry's
   # 1.5.0 is enough. Exact, not ^, for the reason at the top.
   espressif/usb_host_uac: "1.5.0"
+
+  # The camera, for Scan a code: the SC202CS as grey frames, through
+  # esp_video 2.5.0 (its own manifest pins that). Written here, in
+  # components/, and moved out once it had run on a board.
+  feckless_camera:
+    git: https://github.com/Sudrien/feckless-camera-for-m5tab5.git
+    version: "v0.1.0"

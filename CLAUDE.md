@@ -39,8 +39,8 @@ look at the last one used (`git log`) and take the next.
 
 Built with ESP-IDF (>= 5.4.2) on the same libraries as
 [defeatist-music-player-for-m5tab5](https://github.com/Sudrien/defeatist-music-player-for-m5tab5):
-`feckless_graphics_handler`, `feckless_drivers` and, where it is needed,
-`feckless_storage_handler`. Its CLAUDE.md is the longer version of the
+`feckless_graphics_handler`, `feckless_drivers`, `feckless_camera` and,
+where it is needed, `feckless_storage_handler`. Its CLAUDE.md is the longer version of the
 board rules below, learned the hard way; read it before touching memory,
 stacks or the build.
 
