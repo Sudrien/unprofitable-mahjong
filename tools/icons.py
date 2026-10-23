@@ -7,7 +7,9 @@ draws it, on its ivory face with the two edge shades under it.
 
 writes
 
-    apple-touch-icon.png      180x180, opaque: iOS paints transparency black
+    apple-touch-icon.png      180x180, the same tile on the table's surface:
+                              opaque, since iOS paints transparency black,
+                              and clear of the corners iOS rounds off
     icons/icon-192.png        the web app manifest's icons: the tile alone,
     icons/icon-512.png        no background, a block of a real tile's
                               proportions lying on its side, seen from
@@ -68,15 +70,6 @@ def favicon_svg():
     """Transparent, the tile the square's full height."""
     s = 58 / 80
     return f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">{tile((64 - 60 * s) / 2, 1, s, 4)}</svg>'
-
-
-def square_svg(tile_h):
-    """Opaque, on the table's surface, the tile tile_h of 180 tall, centred."""
-    s = tile_h / 80
-    edge = 8 * tile_h / 132
-    y = (180 - tile_h) / 2 - 6 * tile_h / 132   # a little high, so tile and edge sit centred
-    return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 180 180">'
-            f'<rect width="180" height="180" fill="{SURFACE}"/>{tile((180 - 60 * s) / 2, y, s, edge)}</svg>')
 
 
 def face_svg():
@@ -218,13 +211,13 @@ def main():
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     os.makedirs(os.path.join(root, 'web', 'icons'), exist_ok=True)
 
-    # 132 of 180: the size apple-touch-icon.png has always been
-    plain = square_svg(132)
+    # apple-touch-icon.png: 80% of the width keeps the tile clear of the
+    # corners iOS rounds (a radius of about 22%)
     # a maskable icon keeps its art in the circle of radius 40% at the
     # centre, and fills the square: the tile, its outlines and all, at
     # 62% of the width, has its farthest corner just inside that circle
     out = {
-        'apple-touch-icon.png': png(plain, 180),
+        'apple-touch-icon.png': perspective_png(180, bg=SURFACE, fill=.8),
         'icons/icon-192.png': perspective_png(192),
         'icons/icon-512.png': perspective_png(512),
         'icons/maskable-512.png': perspective_png(512, bg=SURFACE, fill=.62),
