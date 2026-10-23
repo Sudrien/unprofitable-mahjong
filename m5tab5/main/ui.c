@@ -2133,12 +2133,14 @@ static void scan_found(const char *code)
     const um_read_t r = um_replay_read_game(code, UM_REPLAY_WORK, &s_scan_game, &moves, &fixed);
     const uint32_t seed = s_scan_game.rng;
     ESP_LOGI(TAG, "scanned a code: %d chars, read %d after %d moves, %d put right", (int)strlen(code), (int)r, moves, fixed);
-    /* the secrets loading earns: a deal one of the records holds (Try Try
-     * Again), a finished game (Shadows of the Past) */
+    /* the secrets loading earns, as on the web: a deal one of the
+     * records holds (Try Try Again), or a finished game (Shadows of the
+     * Past) -- a code with moves is watched, not loaded as a deal, so it
+     * earns Shadows and never Try Try Again */
     if (r == UM_READ_DEAL || r == UM_READ_MOVES) {
         int sec = -1;
         if (r == UM_READ_MOVES && s_scan_game.done && um_ach_load_secret(&s_ach, UM_SECRET_SHADOWS, seed)) sec = UM_SECRET_SHADOWS;
-        if (um_ach_has_seed(&s_ach, seed) && um_ach_load_secret(&s_ach, UM_SECRET_AGAIN, seed)) sec = UM_SECRET_AGAIN;
+        else if (r == UM_READ_DEAL && um_ach_has_seed(&s_ach, seed) && um_ach_load_secret(&s_ach, UM_SECRET_AGAIN, seed)) sec = UM_SECRET_AGAIN;
         if (sec >= 0) { save_ach(&s_ach); s_scan_secret = sec; ESP_LOGI(TAG, "secret %s", SECRET_NAMES[sec]); }
     }
     s_scan = SC_MSG;
