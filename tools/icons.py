@@ -22,6 +22,14 @@ and rewrites the two favicon <link>s in index.html, which are data URIs so
 the page still works opened from disk: an SVG, and a 32x32 PNG for
 browsers that take no SVG favicon.
 
+The perspective tile is also the replay QR code's centre icon, on both
+sides, so the code a phone sees carries the app's own icon:
+
+    QR_ICON in index.html     a 160x160 PNG data URI, transparent round
+                              the tile, drawn by showQr over a white square
+    m5tab5/main/qricon.[ch]   the same tile at QRICON_PX square, on white,
+                              as RGB565 for the Tab5's Share view
+
 Needs cairosvg and Pillow (pip install cairosvg pillow).
 
 SPDX-License-Identifier: MIT
@@ -203,6 +211,30 @@ def perspective_png(px, bg=None, fill=.9):
     return buf.getvalue()
 
 
+QR_PX, QRICON_PX = 160, 200     # the web's (2x its largest showing), the Tab5's (as large as portrait draws it)
+
+
+def qricon_c(root):
+    """m5tab5/main/qricon.[ch]: the tile on white, RGB565, row by row."""
+    img = Image.open(io.BytesIO(perspective_png(QRICON_PX, bg='#ffffff', fill=1.0))).convert('RGB')
+    raw = img.tobytes()
+    px = [((raw[i] >> 3) << 11) | ((raw[i + 1] >> 2) << 5) | (raw[i + 2] >> 3) for i in range(0, len(raw), 3)]
+    head = ('/*\n * qricon -- the app\'s icon, the 1 Bamboo tile in perspective, on white:\n'
+            ' * the middle of the replay QR code (ui.c, draw_share).\n *\n'
+            ' * GENERATED FILE. Do not edit. Regenerate with:\n *     python3 tools/icons.py\n *\n'
+            ' * SPDX-License-Identifier: MIT\n */\n')
+    with open(os.path.join(root, 'm5tab5', 'main', 'qricon.h'), 'w') as f:
+        f.write(head + '#pragma once\n#include <stdint.h>\n\n'
+                f'#define QRICON_PX ({QRICON_PX})\n\n'
+                '/* QRICON_PX x QRICON_PX pixels, RGB565, opaque */\n'
+                'extern const uint16_t qricon[QRICON_PX * QRICON_PX];\n')
+    rows = [', '.join(f'0x{v:04x}' for v in px[i:i + 12]) for i in range(0, len(px), 12)]
+    with open(os.path.join(root, 'm5tab5', 'main', 'qricon.c'), 'w') as f:
+        f.write(head + '#include "qricon.h"\n\nconst uint16_t qricon[QRICON_PX * QRICON_PX] = {\n    '
+                + ',\n    '.join(rows) + ',\n};\n')
+    print('wrote m5tab5/main/qricon.[ch]')
+
+
 def png(svg, px):
     return cairosvg.svg2png(bytestring=svg.encode(), output_width=px, output_height=px)
 
@@ -240,9 +272,14 @@ def main():
                        lambda m: m.group(1) + svg_uri + m.group(2), html)
     if n1 != 1 or n2 != 1:
         sys.exit("index.html: expected one PNG and one SVG favicon <link> to rewrite")
+    qr_uri = 'data:image/png;base64,' + base64.b64encode(perspective_png(QR_PX, fill=1.0)).decode()
+    html, n3 = re.subn(r"(const QR_ICON = ')[^']*(';)", lambda m: m.group(1) + qr_uri + m.group(2), html)
+    if n3 != 1:
+        sys.exit("index.html: expected one `const QR_ICON = '...';` to rewrite")
     with open(page, 'w', encoding='utf-8') as f:
         f.write(html)
-    print('rewrote the favicons in index.html')
+    print('rewrote the favicons and QR_ICON in index.html')
+    qricon_c(root)
 
 
 if __name__ == '__main__':

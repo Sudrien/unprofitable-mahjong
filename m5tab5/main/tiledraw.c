@@ -52,40 +52,29 @@ void tiledraw_ring(const tilefaces_size_t *sz, int x, int y, int edge, int t, ui
     gfx_fill_rect(x + sz->w, y, t, sz->h + edge, c);
 }
 
-void tiledraw_face_scaled(const tilefaces_size_t *sz, int kind, int x, int y, int w, int h, uint16_t tint)
+void tiledraw_image_scaled(const uint16_t *src, int sw, int sh, int x, int y, int w, int h)
 {
-    if (kind < 0 || kind >= TILEFACES_KINDS || w <= 0 || h <= 0 || sz->w > 128) return;
+    if (!src || sw <= 0 || sh <= 0 || w <= 0 || h <= 0) return;
     uint16_t *fb = gfx_fb();
     const int fw = gfx_w(), fh = gfx_h();
-    const uint8_t *r = sz->rle[kind];
-    const int len = sz->len[kind];
-    uint8_t line[128];         /* one source row, as palette indexes */
-    int at = 0, row = -1;      /* where in the RLE the next source row starts, and which row that is */
     for (int dy = 0; dy < h; dy++) {
-        const int yy = y + dy, sy = dy * sz->h / h;
-        /* walk the RLE forward to source row sy; rows only ever advance */
-        while (row < sy && at + 1 < len) {
-            int px = 0;
-            while (px < sz->w && at + 1 < len) {
-                const int n = r[at], v = r[at + 1];
-                for (int i = 0; i < n && px + i < sz->w; i++) line[px + i] = (uint8_t)v;
-                px += n;
-                at += 2;
-            }
-            row++;
-        }
+        const int yy = y + dy;
         if (yy < 0 || yy >= fh) continue;
+        int y0 = dy * sh / h, y1 = (dy + 1) * sh / h;
+        if (y1 <= y0) y1 = y0 + 1;
         uint16_t *dst = fb + (size_t)yy * (size_t)fw;
         for (int dx = 0; dx < w; dx++) {
-            const int xx = x + dx, v = line[dx * sz->w / w];
-            if (v && xx >= 0 && xx < fw) dst[xx] = tint ? tint : tilefaces_palette[v];
+            const int xx = x + dx;
+            if (xx < 0 || xx >= fw) continue;
+            int x0 = dx * sw / w, x1 = (dx + 1) * sw / w;
+            if (x1 <= x0) x1 = x0 + 1;
+            uint32_t r = 0, g = 0, b = 0, n = 0;
+            for (int sy = y0; sy < y1; sy++)
+                for (int sx = x0; sx < x1; sx++) {
+                    const uint16_t c = src[sy * sw + sx];
+                    r += c >> 11; g += (c >> 5) & 0x3f; b += c & 0x1f; n++;
+                }
+            dst[xx] = (uint16_t)(((r / n) << 11) | ((g / n) << 5) | (b / n));
         }
     }
-}
-
-void tiledraw_tile_scaled(const tilefaces_size_t *sz, int kind, int x, int y, int w, int h, int edge)
-{
-    tiledraw_face_scaled(sz, kind, x, y + edge, w, h, EDGE_DARK);
-    tiledraw_face_scaled(sz, kind, x, y + edge - (edge > 2 ? 2 : 1), w, h, EDGE_LIGHT);
-    tiledraw_face_scaled(sz, kind, x, y, w, h, 0);
 }

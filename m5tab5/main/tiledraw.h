@@ -25,11 +25,11 @@ void tiledraw_face(const tilefaces_size_t *sz, int kind, int x, int y, uint16_t 
 /* A whole tile: edge, then face. `edge` is TILEDRAW_EDGE_*. */
 void tiledraw_tile(const tilefaces_size_t *sz, int kind, int x, int y, int edge);
 
-/* A frame `t` pixels thick just outside the tile's face and edge. */
-/* A face, and a whole tile, drawn at any size w x h from sz's picture,
- * nearest pixel: for the QR code's icon, which is sized to the code
- * rather than to one of the three sizes the faces were made at. */
-void tiledraw_face_scaled(const tilefaces_size_t *sz, int kind, int x, int y, int w, int h, uint16_t tint);
-void tiledraw_tile_scaled(const tilefaces_size_t *sz, int kind, int x, int y, int w, int h, int edge);
+/* An opaque RGB565 picture, sw x sh, drawn at w x h with its top-left at
+ * (x, y), clipped to the screen: each pixel the average of the source
+ * pixels under it when shrinking, the nearest when not. For the QR code's
+ * icon, which is sized to the code. */
+void tiledraw_image_scaled(const uint16_t *src, int sw, int sh, int x, int y, int w, int h);
 
+/* A frame `t` pixels thick just outside the tile's face and edge. */
 void tiledraw_ring(const tilefaces_size_t *sz, int x, int y, int edge, int t, uint16_t c);

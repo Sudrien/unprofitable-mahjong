@@ -84,11 +84,13 @@ game and plays it back move by move. The code is the web version's
 (`core/umreplay.c` makes the same one, character for character), with
 the same proof of work, which takes a moment. The QR is the full link,
 through the short `sudrien.github.io/umj`, which forwards to the game;
-error correction H lets the 1 Bamboo cover the middle, 30% of the
+error correction H lets the app's icon -- the 1 Bamboo tile in
+perspective, as the web version draws it -- cover the middle, 30% of the
 code's height, with the site written underneath. That size came from
 decoding the screen test's codes with OpenCV and ZXing, shrunk, blurred
 and tilted as a phone sees them: ZXing lost nothing to the icon up to
-40%, and broke at 45%. The QR is drawn by Project Nayuki's
+40%, and broke at 45%, the upright tile that was there first and the
+square one in perspective alike. The QR is drawn by Project Nayuki's
 qrcodegen, vendored in `components/qrcodegen`. A game saved before the
 Tab5 kept its moves has no code, and Share says so.
 

@@ -33,6 +33,7 @@
 #include "save.h"
 #include "guide.h"
 #include "qrcodegen.h"
+#include "qricon.h"
 #include "tiledraw.h"
 #include "libversions.h"     /* generated: cmake/libversions.cmake */
 #include "umach.h"
@@ -2051,13 +2052,13 @@ static void draw_share(void)
         for (int x = 0; x < size; x++)
             if (qrcodegen_getModule(s_sh->qr, x, y)) gfx_fill_rect(x0 + (x + 4) * m, y0 + (y + 4) * m, m, m, black);
 
-    /* the 1 Bamboo over the middle, on a white margin a module wide, its
+    /* the app's icon over the middle, as the web version draws it: the
+     * 1 Bamboo tile in perspective, on a white margin a module wide, its
      * height ui_qr_icon_pct of the code's (the quiet zone not counted) */
     const int cx = x0 + px / 2, cy = y0 + px / 2;
-    const int ih = size * m * ui_qr_icon_pct / 100, edge = ih / 20 > 2 ? ih / 20 : 2;
-    const int fh = ih - edge, fw = fh * tilefaces_L.w / tilefaces_L.h;
-    gfx_fill_rect(cx - fw / 2 - m, cy - ih / 2 - m, fw + 2 * m, ih + 2 * m, white);
-    tiledraw_tile_scaled(&tilefaces_L, 18, cx - fw / 2, cy - ih / 2, fw, fh, edge);
+    const int ih = size * m * ui_qr_icon_pct / 100;
+    gfx_fill_rect(cx - ih / 2 - m, cy - ih / 2 - m, ih + 2 * m, ih + 2 * m, white);
+    tiledraw_image_scaled(qricon, QRICON_PX, QRICON_PX, cx - ih / 2, cy - ih / 2, ih, ih);
 
     /* the site, and how to leave */
     const int sy = y0 + px + 16;
