@@ -269,6 +269,8 @@ zh-CN:
     "Loaded a deal one of your achievements was earned in.": "载入了曾获得成就的那副牌。"
     # ui.c
     "Loaded a finished game to watch.": "载入一局已结束的牌局来观看。"
+    # ui.c
+    "Loaded deal · Firsts only": "载入的牌 · 仅计首次达成"
     # guide.c
     "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.": "同花色连得越长分越高。4连：+6 · 5：+9 · 6：+13 · 7：+18 · 8：+24。"
     # ui.c

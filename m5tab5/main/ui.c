@@ -748,6 +748,8 @@ static void draw_status(void)
             c2 = C_WARN;
         }
     }
+    /* a loaded deal says so whenever nothing else is on the first line */
+    if (!l1[0] && (s_g.had & UM_HAD_LOADED)) snprintf(l1, sizeof l1, "%s", _("Loaded deal · Firsts only"));
     /* The tiles chosen, then what they make, wrapped to as many rows as
      * reach the buttons. Landscape has room for the tile list only at
      * 24 px, on one line; it repeats what the lifted tiles already show.

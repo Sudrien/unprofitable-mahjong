@@ -88,6 +88,7 @@ h1 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.35rem, 
 .set small .v { color: var(--ink); font-weight: 700; }
 .count { font-variant-numeric: tabular-nums; font-size: .85rem; color: var(--muted); display: grid; gap: 5px; min-width: 210px; }
 .count b { color: var(--ink); font-weight: 600; }
+.count .loaded { color: var(--warn); font-weight: 600; }
 .bar { height: 6px; border-radius: 3px; background: var(--surface); overflow: hidden; }
 .bar i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .35s ease; }
 
@@ -2004,7 +2005,8 @@ function render() {
   const w = S.wall.length, d = S.discards.length;
   $('count').innerHTML = `<span>${L(`<b>${done}</b> of 136 cleared · wall <b>${w}</b> · discards <b>${d}</b>`,
       `<b>${done}</b>/136 消去 · 山 <b>${w}</b> · 捨て牌 <b>${d}</b>`,
-      `已清 <b>${done}</b>/136 · 牌墙 <b>${w}</b> · 弃牌 <b>${d}</b>`)}</span><span class="bar"><i style="width:${done / TOTAL * 100}%"></i></span>`;
+      `已清 <b>${done}</b>/136 · 牌墙 <b>${w}</b> · 弃牌 <b>${d}</b>`)}${S.loaded && !replaying
+      ? ' · <span class="loaded">' + L('Loaded deal · Firsts only', '読み込んだ配牌 · 初めての役のみ', '载入的牌 · 仅计首次达成') + '</span>' : ''}</span><span class="bar"><i style="width:${done / TOTAL * 100}%"></i></span>`;
   const none = L('none yet', 'まだなし', '暂无');
   $('score').innerHTML =
     `<div class="stat"><span>${L('Points', '得点', '得分')}</span><b class="${S.points > 0 ? 'pos' : ''}">${S.points}</b><small>${L('Best', 'ベスト', '最佳')} ${bestPts === null ? none : bestPts}</small></div>` +

@@ -269,6 +269,8 @@ ja:
     "Loaded a deal one of your achievements was earned in.": "実績を取った対局の配牌を読み込んだ。"
     # ui.c
     "Loaded a finished game to watch.": "終わった対局を読み込んで観た。"
+    # ui.c
+    "Loaded deal · Firsts only": "読み込んだ配牌 · 初めての役のみ"
     # guide.c
     "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.": "同じ種類で長く続くほど高得点。4連：+6 · 5：+9 · 6：+13 · 7：+18 · 8：+24。"
     # ui.c

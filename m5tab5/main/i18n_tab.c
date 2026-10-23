@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include "i18n.h"
 
-const unsigned i18n_count = 274;
+const unsigned i18n_count = 275;
 const char *const i18n_keys[] = {
     " Undo to fix it.",
     " and a lone ",
@@ -142,6 +142,7 @@ const char *const i18n_keys[] = {
     "Loaded a deal and played it.",
     "Loaded a deal one of your achievements was earned in.",
     "Loaded a finished game to watch.",
+    "Loaded deal · Firsts only",
     "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.",
     "Looking for a code…",
     "Make every set full: each cleared in 3 of 5 games in a row.",
@@ -564,6 +565,7 @@ const char *const i18n_vals[] = {
     NULL,
     NULL,
     NULL,
+    NULL,
     /* zh-CN */
     "撤销来补救。",
     "和",
@@ -696,6 +698,7 @@ const char *const i18n_vals[] = {
     "载入一副牌并玩了起来。",
     "载入了曾获得成就的那副牌。",
     "载入一局已结束的牌局来观看。",
+    "载入的牌 · 仅计首次达成",
     "同花色连得越长分越高。4连：+6 · 5：+9 · 6：+13 · 7：+18 · 8：+24。",
     "正在寻找代码…",
     "让每种组合都全满：连续5局中有3局消除。",
@@ -971,6 +974,7 @@ const char *const i18n_vals[] = {
     "配牌を読み込んで遊んだ。",
     "実績を取った対局の配牌を読み込んだ。",
     "終わった対局を読み込んで観た。",
+    "読み込んだ配牌 · 初めての役のみ",
     "同じ種類で長く続くほど高得点。4連：+6 · 5：+9 · 6：+13 · 7：+18 · 8：+24。",
     "コードを探しています…",
     "すべての役をフルに：連続5局のうち3局で消す。",
