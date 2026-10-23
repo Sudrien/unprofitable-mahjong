@@ -74,6 +74,8 @@ esp_err_t nvs_get_i32(nvs_handle_t h, const char *k, int32_t *v) { (void)h; retu
 esp_err_t nvs_set_i32(nvs_handle_t h, const char *k, int32_t v) { (void)h; return put(k, &v, sizeof v); }
 esp_err_t nvs_get_u8(nvs_handle_t h, const char *k, uint8_t *v) { (void)h; return get(k, v, sizeof *v); }
 esp_err_t nvs_set_u8(nvs_handle_t h, const char *k, uint8_t v) { (void)h; return put(k, &v, sizeof v); }
+esp_err_t nvs_get_u32(nvs_handle_t h, const char *k, uint32_t *v) { (void)h; return get(k, v, sizeof *v); }
+esp_err_t nvs_set_u32(nvs_handle_t h, const char *k, uint32_t v) { (void)h; return put(k, &v, sizeof v); }
 
 /* ---- the checks ---- */
 static int s_bad;
@@ -143,7 +145,9 @@ int main(void)
     save_load_prefs(&p);
     CHECK(p.best_points == INT32_MIN && p.best_penalty == INT32_MIN && p.rotation == 1 && p.discard_set == 0 && p.auto_sort == 0,
           "settings: wrong defaults with nothing saved");
+    CHECK(!p.goals[0] && !p.goals[1] && !p.goals[2], "settings: goals with nothing saved");
     p.best_points = 301; p.best_penalty = -12; p.auto_sort = 1; p.lang = 2; p.rotation = 3; p.theme = 1; p.discard_set = 1;
+    p.goals[0] = UM_NINE_GATES; p.goals[1] = SAVE_GOAL_RUN; p.goals[2] = 0;
     save_prefs(&p);
     save_prefs_t q;
     save_load_prefs(&q);

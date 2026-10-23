@@ -18,6 +18,8 @@ en:
     # ui.c
     "%d tiles out. You can add 6 again once you're back to %d.": ~
     # ui.c
+    "%s · Full %d/%d": ~
+    # ui.c
     "1 Bamboo": ~
     # ui.c
     "1 Character": ~
@@ -41,6 +43,8 @@ en:
     "3 Characters": ~
     # ui.c
     "3 Dots": ~
+    # ui.c
+    "3 goals set": ~
     # ui.c
     "4 Bamboo": ~
     # ui.c
@@ -122,6 +126,8 @@ en:
     # guide.c, ui.c
     "All Terminals": ~
     # ui.c
+    "Any run": ~
+    # ui.c
     "Auto-sort": ~
     # guide.c
     "Basic sets": ~
@@ -166,6 +172,8 @@ en:
     # guide.c
     "Dragon set": ~
     # ui.c
+    "Drop this goal": ~
+    # ui.c
     "EVERY SET FULL · GAME %d": ~
     # ui.c
     "EVERY SET · GAME %d": ~
@@ -185,6 +193,8 @@ en:
     "FULL · FINISH THE GAME TO CONFIRM": ~
     # ui.c
     "Finished a game with no tiles left.": ~
+    # ui.c
+    "First": ~
     # guide.c
     "Five of one suit that also split into mahjong sets, here a chow and a pair: 3 + 1, plus 1 bonus.": ~
     # guide.c
@@ -217,12 +227,16 @@ en:
     "Four sets and a pair using only green tiles: 2, 3, 4, 6 and 8 Bamboo and Green dragons.": ~
     # guide.c
     "Four sets and a pair where every set has a 1, a 9 or an honor.": ~
+    # ui.c
+    "Full": ~
     # guide.c, ui.c
     "Full Flush": ~
     # guide.c
     "Full house": ~
     # guide.c
     "Full straight": ~
+    # ui.c
+    "GOAL MET · GAME %d": ~
     # ui.c
     "Game over: %d points, %s penalty.": ~
     # ui.c
@@ -279,6 +293,8 @@ en:
     "Make every set full: each cleared in 3 of 5 games in a row.": ~
     # ui.c
     "Make kong": ~
+    # ui.c
+    "Make this a goal": ~
     # ui.c
     "Makes %s for +%d, its mahjong sets plus 1 for clearing them together.": ~
     # ui.c

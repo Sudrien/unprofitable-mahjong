@@ -142,6 +142,10 @@ bool um_ach_load_secret(um_ach_t *a, int s, uint32_t seed);
 /* Some achievement's record holds this seed (loadedAgain). */
 bool um_ach_has_seed(const um_ach_t *a, uint32_t seed);
 
+/* How far set t's Full has come before game gn: the different deals
+ * among its completed games in the window (the goals' "1 of 3"). */
+int  um_ach_full_progress(const um_ach_t *a, um_set_t t, uint32_t gn);
+
 int  um_ach_firsts(const um_ach_t *a);   /* sets with a First, of UM_ACH_SETS */
 int  um_ach_fulls(const um_ach_t *a);
 

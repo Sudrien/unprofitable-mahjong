@@ -219,6 +219,7 @@ void save_load_prefs(save_prefs_t *p)
     p->lang = 0;
     p->rotation = 1;
     p->theme = 0;
+    memset(p->goals, 0, sizeof p->goals);
     nvs_handle_t h;
     if (nvs_open(NS, NVS_READONLY, &h) != ESP_OK) return;
     nvs_get_i32(h, "best_pts", &p->best_points);
@@ -228,6 +229,12 @@ void save_load_prefs(save_prefs_t *p)
     nvs_get_u8(h, "lang", &p->lang);
     nvs_get_u8(h, "rot", &p->rotation);
     nvs_get_u8(h, "theme", &p->theme);
+    uint32_t goals = 0;
+    nvs_get_u32(h, "goals", &goals);
+    for (int i = 0; i < 3; i++) {
+        const uint8_t g = (uint8_t)(goals >> (8 * i));
+        p->goals[i] = g == SAVE_GOAL_RUN || (g > UM_NONE && g < UM_SET_COUNT) ? g : 0;
+    }
     if (p->rotation > 3) p->rotation = 1;
     if (p->theme > 1) p->theme = 0;
     if (p->discard_set > 1) p->discard_set = 0;
@@ -245,6 +252,7 @@ void save_prefs(const save_prefs_t *p)
     nvs_set_u8(h, "lang", p->lang);
     nvs_set_u8(h, "rot", p->rotation);
     nvs_set_u8(h, "theme", p->theme);
+    nvs_set_u32(h, "goals", (uint32_t)p->goals[0] | (uint32_t)p->goals[1] << 8 | (uint32_t)p->goals[2] << 16);
     nvs_commit(h);
     nvs_close(h);
 }

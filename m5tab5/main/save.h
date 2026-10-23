@@ -20,7 +20,9 @@ typedef struct {
     uint8_t lang;           /* an i18n_lang_t: 0 English, 1 Simplified Chinese, 2 Japanese */
     uint8_t rotation;       /* gfx quarter turns, 0..3; 1 (landscape) until changed */
     uint8_t theme;          /* 0 light, 1 dark */
+    uint8_t goals[3];       /* up to three goals: an um_set_t, SAVE_GOAL_RUN for any run, 0 none */
 } save_prefs_t;
+#define SAVE_GOAL_RUN (0xFF)
 
 void save_init(void);                       /* nvs_flash_init, erasing an unusable partition */
 bool save_load_game(um_game_t *g);          /* false: nothing saved, saved by another build, or not um_valid */

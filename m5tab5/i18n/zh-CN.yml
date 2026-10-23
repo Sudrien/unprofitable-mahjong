@@ -18,6 +18,8 @@ zh-CN:
     # ui.c
     "%d tiles out. You can add 6 again once you're back to %d.": "场上%d张。回到%d张后才能再加6张。"
     # ui.c
+    "%s · Full %d/%d": "%s · 全满 %d/%d"
+    # ui.c
     "1 Bamboo": "一条"
     # ui.c
     "1 Character": "一万"
@@ -41,6 +43,8 @@ zh-CN:
     "3 Characters": "三万"
     # ui.c
     "3 Dots": "三筒"
+    # ui.c
+    "3 goals set": "最多3个目标"
     # ui.c
     "4 Bamboo": "四条"
     # ui.c
@@ -122,6 +126,8 @@ zh-CN:
     # guide.c, ui.c
     "All Terminals": "清幺九"
     # ui.c
+    "Any run": "任意连顺"
+    # ui.c
     "Auto-sort": "自动排序"
     # guide.c
     "Basic sets": "基本组合"
@@ -166,6 +172,8 @@ zh-CN:
     # guide.c
     "Dragon set": "三元齐"
     # ui.c
+    "Drop this goal": "取消目标"
+    # ui.c
     "EVERY SET FULL · GAME %d": "所有组合全满 · 第%d局"
     # ui.c
     "EVERY SET · GAME %d": "所有组合 · 第%d局"
@@ -185,6 +193,8 @@ zh-CN:
     "FULL · FINISH THE GAME TO CONFIRM": "全满 · 结束本局后确认"
     # ui.c
     "Finished a game with no tiles left.": "一张牌不剩地结束了一局。"
+    # ui.c
+    "First": "已首次"
     # guide.c
     "Five of one suit that also split into mahjong sets, here a chow and a pair: 3 + 1, plus 1 bonus.": "同花色五张，又能拆成麻将组合（这里是顺子加对子）：3 + 1，再加1分。"
     # guide.c
@@ -217,12 +227,16 @@ zh-CN:
     "Four sets and a pair using only green tiles: 2, 3, 4, 6 and 8 Bamboo and Green dragons.": "只用绿色的牌组成四组加一对：二三四六八条和发财。"
     # guide.c
     "Four sets and a pair where every set has a 1, a 9 or an honor.": "四组加一对，每组都含幺九或字牌。"
+    # ui.c
+    "Full": "全满"
     # guide.c, ui.c
     "Full Flush": "清一色"
     # guide.c
     "Full house": "葫芦"
     # guide.c
     "Full straight": "清龙"
+    # ui.c
+    "GOAL MET · GAME %d": "目标达成 · 第%d局"
     # ui.c
     "Game over: %d points, %s penalty.": "游戏结束：%d分，罚分%s"
     # ui.c
@@ -279,6 +293,8 @@ zh-CN:
     "Make every set full: each cleared in 3 of 5 games in a row.": "让每种组合都全满：连续5局中有3局消除。"
     # ui.c
     "Make kong": "加杠"
+    # ui.c
+    "Make this a goal": "设为目标"
     # ui.c
     "Makes %s for +%d, its mahjong sets plus 1 for clearing them together.": "组成%s，得+%d（麻将组合之和，加一起消除加分+1）"
     # ui.c

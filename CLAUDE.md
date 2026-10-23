@@ -121,6 +121,12 @@ and a patch that changes either side runs it.
   Shadows of the Past when a scanned code's game, read move by move by
   um_replay_read_game, was finished.
 
+- **Goals (Tab5):** up to three, kept with the settings (NVS "goals");
+  chosen from a set's card in the Sets list (a button beside Done, not
+  offered once the set is Full); shown beside the buttons -- right of the
+  row in landscape, right of the two shorter rows in portrait -- with
+  each one's First and Full progress; met with a "Goal met" banner.
+
 ## Not yet built
 
 - For reference: the brute forced maximum score is 804 & -4; bots

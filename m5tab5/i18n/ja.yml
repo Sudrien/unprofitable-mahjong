@@ -18,6 +18,8 @@ ja:
     # ui.c
     "%d tiles out. You can add 6 again once you're back to %d.": "場に%d枚。%d枚に戻れば、また6枚追加できます。"
     # ui.c
+    "%s · Full %d/%d": "%s · フル %d/%d"
+    # ui.c
     "1 Bamboo": "1索"
     # ui.c
     "1 Character": "1萬"
@@ -41,6 +43,8 @@ ja:
     "3 Characters": "3萬"
     # ui.c
     "3 Dots": "3筒"
+    # ui.c
+    "3 goals set": "目標は3つまで"
     # ui.c
     "4 Bamboo": "4索"
     # ui.c
@@ -122,6 +126,8 @@ ja:
     # guide.c, ui.c
     "All Terminals": "清老頭"
     # ui.c
+    "Any run": "連順（長さ自由）"
+    # ui.c
     "Auto-sort": "自動整列"
     # guide.c
     "Basic sets": "基本の組"
@@ -166,6 +172,8 @@ ja:
     # guide.c
     "Dragon set": "三元牌セット"
     # ui.c
+    "Drop this goal": "目標を外す"
+    # ui.c
     "EVERY SET FULL · GAME %d": "すべての役がフル · 第%d局"
     # ui.c
     "EVERY SET · GAME %d": "すべての役 · 第%d局"
@@ -185,6 +193,8 @@ ja:
     "FULL · FINISH THE GAME TO CONFIRM": "フル · 対局を終えると確定"
     # ui.c
     "Finished a game with no tiles left.": "牌を1枚も残さずに終局した。"
+    # ui.c
+    "First": "初めて済"
     # guide.c
     "Five of one suit that also split into mahjong sets, here a chow and a pair: 3 + 1, plus 1 bonus.": "同じ種類の5枚がマージャンの面子にも分けられる場合（ここでは順子と対子）：3 + 1、ボーナス+1。"
     # guide.c
@@ -217,12 +227,16 @@ ja:
     "Four sets and a pair using only green tiles: 2, 3, 4, 6 and 8 Bamboo and Green dragons.": "緑の牌だけで面子4組と対子：2・3・4・6・8索と發。"
     # guide.c
     "Four sets and a pair where every set has a 1, a 9 or an honor.": "面子4組と対子のすべてに1・9・字牌を含む。"
+    # ui.c
+    "Full": "フル"
     # guide.c, ui.c
     "Full Flush": "清一色"
     # guide.c
     "Full house": "フルハウス"
     # guide.c
     "Full straight": "一気通貫"
+    # ui.c
+    "GOAL MET · GAME %d": "目標達成 · 第%d局"
     # ui.c
     "Game over: %d points, %s penalty.": "ゲーム終了：%d点、ペナルティ%s"
     # ui.c
@@ -279,6 +293,8 @@ ja:
     "Make every set full: each cleared in 3 of 5 games in a row.": "すべての役をフルに：連続5局のうち3局で消す。"
     # ui.c
     "Make kong": "加槓"
+    # ui.c
+    "Make this a goal": "これを目標に"
     # ui.c
     "Makes %s for +%d, its mahjong sets plus 1 for clearing them together.": "%s：+%d（面子の合計に、まとめて消すボーナス+1）"
     # ui.c

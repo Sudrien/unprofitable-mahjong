@@ -385,6 +385,61 @@ static int discard_kind(void)
     return s_prefs.discard_set && um_can_discard_set(&s_g, s_sel) ? 2 : 0;
 }
 
+/* ------------------------------------------------------------------ */
+/* Goals: up to three sets to aim for, the web version's goals          */
+
+/* Chosen from a set's card in the Sets list, kept with the settings,
+ * shown beside the buttons with how far each one's First and Full have
+ * come, and each met -- a banner, then dropped -- the next time its set
+ * is cleared. A run's card means any run. */
+#define GOAL_N      (3)
+#define GOALS_LAND_W (380)      /* the panel's width in landscape, which the buttons make room for */
+static struct { int x, y, w, h; } s_goal_box;
+static struct { int64_t at; um_set_t t; uint8_t n, k[UM_MAX_SEL]; uint32_t game; } s_goalmet;   /* a "Goal met" banner to come */
+
+static bool is_run(um_set_t t) { return t >= UM_RUN4 && t <= UM_RUN8; }
+static uint8_t goal_key(um_set_t t) { return is_run(t) ? SAVE_GOAL_RUN : (uint8_t)t; }
+static bool goal_matches(uint8_t g, um_set_t t) { return g && (g == SAVE_GOAL_RUN ? is_run(t) : g == t); }
+static int goal_count(void) { int n = 0; for (int i = 0; i < GOAL_N; i++) n += s_prefs.goals[i] != 0; return n; }
+static bool goal_has(uint8_t g) { for (int i = 0; i < GOAL_N; i++) if (s_prefs.goals[i] == g) return true; return false; }
+/* nothing left to aim for: Full (every run length, for the runs) */
+static bool goal_all_done(uint8_t g)
+{
+    if (g != SAVE_GOAL_RUN) return s_ach.full[g].game != 0;
+    for (int t = UM_RUN4; t <= UM_RUN8; t++) if (!s_ach.full[t].game) return false;
+    return true;
+}
+static void goal_toggle(uint8_t g)
+{
+    if (goal_has(g)) { for (int i = 0; i < GOAL_N; i++) if (s_prefs.goals[i] == g) s_prefs.goals[i] = 0; }
+    else { for (int i = 0; i < GOAL_N; i++) if (!s_prefs.goals[i]) { s_prefs.goals[i] = g; break; } }
+    /* kept in the order chosen, with no gaps */
+    uint8_t keep[GOAL_N] = { 0 };
+    for (int i = 0, n = 0; i < GOAL_N; i++) if (s_prefs.goals[i]) keep[n++] = s_prefs.goals[i];
+    memcpy(s_prefs.goals, keep, sizeof keep);
+    save_prefs(&s_prefs);
+}
+static const char *goal_name(uint8_t g, char *buf, size_t cap)
+{
+    if (g == SAVE_GOAL_RUN) return _("Any run");
+    return heading(set_name((um_set_t)g), buf, cap, i18n_lang() == I18N_EN);
+}
+/* its First, and its Full's progress: "First · Full 1/3", or "Full" */
+static void goal_status(uint8_t g, char *out, size_t cap)
+{
+    const int lo = g == SAVE_GOAL_RUN ? UM_RUN4 : g, hi = g == SAVE_GOAL_RUN ? UM_RUN8 : g;
+    bool first = false, full = false;
+    int deals = 0;
+    for (int t = lo; t <= hi; t++) {
+        first |= s_ach.first[t].game != 0;
+        full |= s_ach.full[t].game != 0;
+        const int d = um_ach_full_progress(&s_ach, (um_set_t)t, s_g.game_no ? s_g.game_no : s_ach.games);
+        if (d > deals) deals = d;
+    }
+    if (full) { snprintf(out, cap, "%s", _("Full")); return; }
+    snprintf(out, cap, _("%s · Full %d/%d"), first ? _("First") : _("not yet"), deals > UM_ACH_FULL_OF ? UM_ACH_FULL_OF : deals, UM_ACH_FULL_OF);
+}
+
 static void layout_buttons(void)
 {
     static const char *const base[B_COUNT] = { N_("Clear"), N_("Meld"), N_("Add 6"), N_("Discard 6"), N_("Hint"),
@@ -416,6 +471,9 @@ static void layout_buttons(void)
 
     const uint8_t *order = L.land ? ORDER_LAND : ORDER_PORT, *rows = L.land ? ROWS_LAND : ROWS_PORT;
     const int gap = L.land ? 10 : 8;
+    /* landscape's one row leaves room for the goals beside it */
+    const bool goals = goal_count() > 0;
+    const int room = gfx_w() - 2 * M_X - (goals && L.land ? GOALS_LAND_W + 16 : 0);
     /* As roomy as the widest row allows: Japanese labels are longer than
      * English ones, so the padding gives way before a row overflows. */
     for (int pad = 40, min_w = 120; ; pad -= 4, min_w -= 8) {
@@ -437,18 +495,58 @@ static void layout_buttons(void)
             for (int i = first; i < first + rows[r]; i++) total += s_btn[order[i]].w + (i > first ? gap : 0);
             if (total > widest) widest = total;
         }
-        if (widest <= gfx_w() - 2 * M_X || pad <= 8) break;
+        if (widest <= room || pad <= 8) break;
     }
+    int row_w[4] = { 0 };
     for (int r = 0, first = 0; rows[r]; first += rows[r], r++) {
         int total = 0;
         for (int i = first; i < first + rows[r]; i++) total += s_btn[order[i]].w + (i > first ? gap : 0);
-        int x = (gfx_w() - total) / 2;
+        row_w[r] = total;
+        /* centred, or to the left when the goals sit beside them */
+        int x = goals ? M_X : (gfx_w() - total) / 2;
         for (int i = first; i < first + rows[r]; i++) {
             button_t *bt = &s_btn[order[i]];
             bt->x = x;
             bt->y = L.btn_y + r * (BTN_H + gap);
             x += bt->w + gap;
         }
+    }
+    /* the goals: right of the row in landscape; in portrait, right of
+     * the two shorter rows under the first */
+    if (L.land) {
+        s_goal_box.x = M_X + row_w[0] + 16;
+        s_goal_box.y = L.btn_y;
+        s_goal_box.h = BTN_H;
+    } else {
+        s_goal_box.x = M_X + (row_w[1] > row_w[2] ? row_w[1] : row_w[2]) + 16;
+        s_goal_box.y = L.btn_y + BTN_H + gap;
+        s_goal_box.h = 2 * BTN_H + gap;
+    }
+    s_goal_box.w = gfx_w() - M_X - s_goal_box.x;
+}
+
+static void box(int x, int y, int w, int h, uint16_t border, uint16_t fill);
+
+/* The goals, in their box beside the buttons: each its name, and how far
+ * its First and Full have come. */
+static void draw_goals(void)
+{
+    if (!goal_count() || s_goal_box.w < 120) return;
+    box(s_goal_box.x, s_goal_box.y, s_goal_box.w, s_goal_box.h, C_ACCENT, C_BG);
+    const int n = goal_count(), line = (s_goal_box.h - 8) / GOAL_N;
+    const int x = s_goal_box.x + 12, w = s_goal_box.w - 24;
+    for (int i = 0, row = 0; i < GOAL_N; i++) {
+        const uint8_t g = s_prefs.goals[i];
+        if (!g) continue;
+        /* one goal sits in the middle; two or three from the top */
+        const int y = s_goal_box.y + 4 + (n == 1 ? line : row * line) + (line - GFX_GLYPH_H(SMALL)) / 2;
+        static char nb[96], st[96];
+        const char *nm = goal_name(g, nb, sizeof nb);
+        goal_status(g, st, sizeof st);
+        const int sw = gfx_text_w(st, SMALL);
+        gfx_draw_text(x, y, nm, SMALL, w - sw - 12, C_INK);
+        gfx_draw_text(x + w - sw, y, st, SMALL, sw + 2, goal_all_done(g) ? C_GREEN : C_MUTED);
+        row++;
     }
 }
 
@@ -787,6 +885,7 @@ static void draw_buttons(void)
         gfx_draw_text(tx, ty, bt->label, TXT, bt->w, fg);
         if (bt->cost) gfx_draw_text(tx + gfx_text_w(bt->label, TXT), ty, bt->cost_txt, TXT, bt->w, on ? C_WARN : C_LINE);
     }
+    draw_goals();
 }
 
 /* ------------------------------------------------------------------ */
@@ -1229,7 +1328,7 @@ static void celebrate(um_set_t t, const uint8_t *kinds, int n, int v, const char
 typedef struct { int x, y, h; } gpos_t;     /* in the list, before scrolling */
 static gpos_t s_gpos[G_ITEMS];
 static int s_ghead_y[GD_SECTIONS], s_glist_h, s_gscroll;
-static button_t s_gdone;
+static button_t s_gdone, s_ggoal;      /* s_ggoal: the chosen card's goal button, w 0 when there is none */
 static struct { bool down, drag, ignore; int x0, y0, scroll0; } s_gtouch;   /* ignore: the press that opened the list */
 
 static int guide_cols(void) { return L.land ? 2 : 1; }
@@ -1262,7 +1361,6 @@ static int guide_tiles(const guide_item_t *g, int w, int *tx, int *ty)
 /* What the achievements say of a set's card: a First (done), and Full.
  * The runs card stands for every run length, as on the web: done when
  * any length has a First, full when any is Full. */
-static bool is_run(um_set_t t) { return t >= UM_RUN4 && t <= UM_RUN8; }
 static void item_marks(um_set_t t, bool *done, bool *full)
 {
     *done = *full = false;
@@ -1421,6 +1519,23 @@ static void guide_layout(void)
     if (s_gdone.w < 200) s_gdone.w = 200;
     s_gdone.x = gfx_w() - M_X - s_gdone.w;
     s_gdone.y = guide_btn_y();
+    /* a chosen set's card: make it a goal, or drop it -- not offered once
+     * there is nothing left to earn on it, nor past three goals */
+    s_ggoal.w = 0;
+    if (s_guide_sel >= 0) {
+        const guide_item_t *gi = &guide_items[s_guide_sel];
+        const uint8_t g = goal_key(um_classify(gi->k, gi->n));
+        const bool on = goal_has(g);
+        if (g && (on || !goal_all_done(g))) {
+            s_ggoal.enabled = on || goal_count() < GOAL_N;
+            s_ggoal.label = on ? _("Drop this goal") : s_ggoal.enabled ? _("Make this a goal") : _("3 goals set");
+            s_ggoal.primary = on;
+            s_ggoal.w = gfx_text_w(s_ggoal.label, TXT) + 48;
+            s_ggoal.x = s_gdone.x - 16 - s_ggoal.w;
+            s_ggoal.y = s_gdone.y;
+            if (s_ggoal.x < M_X) s_ggoal.w = 0;     /* no room beside Done */
+        }
+    }
 }
 
 static void draw_guide(void)
@@ -1534,6 +1649,11 @@ static void draw_guide(void)
     else if (s_guide_sel >= 0) gfx_draw_para(M_X, ny, _(guide_items[s_guide_sel].note), TXT, gfx_w() - 2 * M_X, LINE, guide_note_rows(), C_INK);
     else gfx_draw_para(M_X, ny, _("Drag to scroll. Tap a set to read about it."), TXT, gfx_w() - 2 * M_X, LINE, guide_note_rows(), C_MUTED);
 
+    if (s_ggoal.w) {
+        box(s_ggoal.x, s_ggoal.y, s_ggoal.w, BTN_H, s_ggoal.enabled ? C_ACCENT : C_LINE, s_ggoal.primary ? C_ACCENT : C_RAISED);
+        gfx_draw_text(s_ggoal.x + (s_ggoal.w - gfx_text_w(s_ggoal.label, TXT)) / 2, s_ggoal.y + (BTN_H - GFX_GLYPH_H(TXT)) / 2,
+                      s_ggoal.label, TXT, s_ggoal.w, !s_ggoal.enabled ? C_LINE : s_ggoal.primary ? C_ON_ACC : C_INK);
+    }
     box(s_gdone.x, s_gdone.y, s_gdone.w, BTN_H, C_ACCENT, C_ACCENT);
     gfx_draw_text(s_gdone.x + (s_gdone.w - gfx_text_w(s_gdone.label, TXT)) / 2, s_gdone.y + (BTN_H - GFX_GLYPH_H(TXT)) / 2,
                   s_gdone.label, TXT, s_gdone.w, C_ON_ACC);
@@ -1543,6 +1663,11 @@ static void draw_guide(void)
 static void guide_tap(int x, int y)
 {
     guide_layout();
+    if (s_ggoal.w && s_ggoal.enabled && x >= s_ggoal.x && x < s_ggoal.x + s_ggoal.w && y >= s_ggoal.y && y < s_ggoal.y + BTN_H) {
+        const guide_item_t *gi = &guide_items[s_guide_sel];
+        goal_toggle(goal_key(um_classify(gi->k, gi->n)));
+        return;
+    }
     if (x >= s_gdone.x && x < s_gdone.x + s_gdone.w && y >= s_gdone.y && y < s_gdone.y + BTN_H) {
         s_guide = false;
         s_guide_sel = -1;
@@ -1718,7 +1843,7 @@ static void new_deal(void)
 }
 
 /* The tiles of a move, for the log: kinds as numbers, "3,3,3". */
-static const char *kinds_str(const uint8_t *k, int n)
+__attribute__((unused)) static const char *kinds_str(const uint8_t *k, int n)
 {
     static char out[UM_MAX_SEL * 4 + 1];
     int o = 0;
@@ -1788,6 +1913,18 @@ static void press(int b)
         if (flood) {
             snprintf(kick, sizeof kick, _("EVERY SET · GAME %d"), gn);
             celebrate(t, k, n, UM_ACH_SETS, kick, FLOOD_NAME);
+        }
+        /* goals met: each dropped, and one "Goal met" banner, after what
+         * the clear itself earned (meetGoals) */
+        bool met = false;
+        for (int i = 0; i < GOAL_N; i++) if (goal_matches(s_prefs.goals[i], t)) { goal_toggle(s_prefs.goals[i]); met = true; i = -1; }
+        if (met) {
+            ESP_LOGI(TAG, "game %u: goal met, %s", gno, um_set_key(t));
+            s_goalmet.t = t;
+            s_goalmet.n = (uint8_t)n;
+            memcpy(s_goalmet.k, k, (size_t)n);
+            s_goalmet.game = s_g.game_no;
+            s_goalmet.at = esp_timer_get_time() + (aw != UM_AWARD_NONE ? BANNER_US + 300000 : 0);
         }
         break;
     }
@@ -2336,6 +2473,18 @@ void ui_run(void)
         const bool hint_on = now < s_hint_until, armed_on = now < s_armed_until, ban_on = now < s_ban.until;
         if (hint_on != (hint_seen != 0) || armed_on != (armed_seen != 0) || ban_on != (ban_seen != 0)) dirty = true;
         hint_seen = hint_on; armed_seen = armed_on; ban_seen = ban_on;
+        /* a "Goal met" banner, when its turn comes */
+        if (s_goalmet.at && esp_timer_get_time() >= s_goalmet.at && !s_scan && !s_share) {
+            s_ban.t = s_goalmet.t;
+            s_ban.name = NULL;
+            s_ban.full = true;
+            s_ban.n = s_goalmet.n;
+            memcpy(s_ban.k, s_goalmet.k, s_goalmet.n);
+            snprintf(s_ban.kick, sizeof s_ban.kick, _("GOAL MET · GAME %d"), (int)s_goalmet.game);
+            s_ban.until = esp_timer_get_time() + BANNER_US;
+            s_goalmet.at = 0;
+            dirty = true;
+        }
         /* the camera, while it is live: a frame each pass, which waits for it */
         if (scan_step()) dirty = true;
         if (dirty) { redraw(); dirty = false; }
