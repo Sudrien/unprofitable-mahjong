@@ -13,6 +13,9 @@ CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
 
 CONFIG_SPIRAM=y
 CONFIG_SPIRAM_SPEED_200M=y
+# Code runs from PSRAM, so a flash write or erase (every save) no longer
+# pauses it: without this, a save flashed the panel cyan.
+CONFIG_SPIRAM_XIP_FROM_PSRAM=y
 CONFIG_IDF_EXPERIMENTAL_FEATURES=y
 CONFIG_CACHE_L2_CACHE_256KB=y
 CONFIG_CACHE_L2_CACHE_LINE_128B=y

@@ -9,37 +9,11 @@
 #include <string.h>
 
 #include "esp_log.h"
-#include "esp_timer.h"
 #include "nvs.h"
 #include "nvs_flash.h"
 
 static const char *TAG = "save";
 #define NS          "umj"
-
-/* TEST (cyan flash on New deal): how long each save holds the flash.
- * A write is a few ms; one that erases a page is tens. Set
- * UM_TEST_NO_SAVES to 1 to make every save a no-op, to see whether
- * the flash goes with them. Not for a release. */
-#ifndef UM_TEST_NO_SAVES
-#define UM_TEST_NO_SAVES (0)
-#endif
-static void save_timed(const char *key, const void *blob, size_t len)
-{
-    if (UM_TEST_NO_SAVES) { ESP_LOGW(TAG, "%s: skipped (UM_TEST_NO_SAVES)", key); return; }
-    nvs_handle_t h;
-    if (nvs_open(NS, NVS_READWRITE, &h) != ESP_OK) return;
-    const int64_t t0 = esp_timer_get_time();
-    esp_err_t err = nvs_set_blob(h, key, blob, len);
-    if (err == ESP_OK) err = nvs_commit(h);
-    const int64_t us = esp_timer_get_time() - t0;
-    nvs_close(h);
-    nvs_stats_t st;
-    const bool have = nvs_get_stats(NULL, &st) == ESP_OK;
-    ESP_LOGW(TAG, "%s: %u bytes in %lld us%s, err %d; entries used %u free %u",
-             key, (unsigned)len, (long long)us, us > 10000 ? " (SLOW: an erase?)" : "", (int)err,
-             have ? (unsigned)st.used_entries : 0u, have ? (unsigned)st.free_entries : 0u);
-    (void)us; (void)have;   /* when logging is compiled out */
-}
 #define GAME_VER    (4u)    /* 4: the game's number and what it cleared, for achievements; 3: the moves are kept, for replay codes; 2: the rail keeps 64 */
 
 /* Version 1 is version 2 with a 32-entry log: the log is the last member
@@ -155,10 +129,13 @@ bool save_load_game(um_game_t *g)
 
 void save_game(const um_game_t *g)
 {
+    nvs_handle_t h;
+    if (nvs_open(NS, NVS_READWRITE, &h) != ESP_OK) return;
     s_blob.ver = GAME_VER;
     s_blob.size = sizeof(um_game_t);
     memcpy(&s_blob.g, g, sizeof *g);
-    save_timed("game", &s_blob, sizeof s_blob);
+    if (nvs_set_blob(h, "game", &s_blob, sizeof s_blob) == ESP_OK) nvs_commit(h);
+    nvs_close(h);
 }
 
 void save_load_ach(um_ach_t *a)
@@ -224,10 +201,13 @@ void save_load_ach(um_ach_t *a)
 
 void save_ach(const um_ach_t *a)
 {
+    nvs_handle_t h;
+    if (nvs_open(NS, NVS_READWRITE, &h) != ESP_OK) return;
     s_ach_blob.ver = ACH_VER;
     s_ach_blob.size = sizeof(um_ach_t);
     memcpy(&s_ach_blob.a, a, sizeof *a);
-    save_timed("ach", &s_ach_blob, sizeof s_ach_blob);
+    if (nvs_set_blob(h, "ach", &s_ach_blob, sizeof s_ach_blob) == ESP_OK) nvs_commit(h);
+    nvs_close(h);
 }
 
 void save_load_prefs(save_prefs_t *p)
