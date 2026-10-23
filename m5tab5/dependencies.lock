@@ -2,7 +2,7 @@ dependencies:
   esp_ipa:
     dependencies: []
     source:
-      path: /home/sudrien/Projects/unprofitable-mahjong/m5tab5/components/esp_ipa
+      path: components/esp_ipa
       type: local
     version: 2.4.0
   espressif/cmake_utilities:
@@ -169,6 +169,23 @@ dependencies:
     - esp32c61
     - esp32s31
     version: 2.5.0
+  espressif/usb:
+    component_hash: 99eee72ea224d9117d4c342442717a1f20bf8112e2ab5d7d7038b827874f4c92
+    dependencies:
+    - name: idf
+      require: private
+      version: '>=5.5.3'
+    source:
+      registry_url: https://components.espressif.com
+      type: service
+    targets:
+    - esp32s2
+    - esp32s3
+    - esp32s31
+    - esp32p4
+    - esp32h4
+    - linux
+    version: 1.6.0
   espressif/usb_host_uac:
     component_hash: 02f7e669b4dae033347e4523acaed4b8c402290a887878d396811c4bee47cc46
     dependencies:
@@ -262,7 +279,7 @@ dependencies:
   idf:
     source:
       type: idf
-    version: 5.5.6
+    version: 6.1.0
 direct_dependencies:
 - espressif/cmake_utilities
 - espressif/usb_host_uac
@@ -272,4 +289,4 @@ direct_dependencies:
 - idf
 manifest_hash: 5beff7f4cef2de1eac37237d1f3e4df32e4faea31a5c1ed8dc2459999b2b26ee
 target: esp32p4
-version: 2.0.0
+version: 3.0.0
