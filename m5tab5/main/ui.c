@@ -883,7 +883,9 @@ static void draw_buttons(void)
 enum { G_ROT, G_THEME, G_LANG, G_AUTO, G_DSET, G_NEW, G_SHARE, G_SCAN, G_DONE };
 #define G_SECTIONS (5)
 #define CHIP_H     (72)
-#define CHIP_MAX   (16)
+/* New deal, Share, Scan a code; 4 orientations, 2 themes, the languages,
+ * Auto-sort's and Discard sets' 2 each; Done: 17 with three languages */
+#define CHIP_MAX   (3 + 4 + 2 + I18N_LANG_COUNT + 2 + 2 + 1)
 typedef struct { int x, y, w, group, value; const char *label; } chip_t;
 static bool s_menu;
 static chip_t s_chip[CHIP_MAX];
@@ -911,7 +913,9 @@ static bool chip_on(const chip_t *c)
 
 static chip_t *add_chip(int group, int value, const char *label, int min_w)
 {
-    chip_t *c = &s_chip[s_chip_n++];
+    /* never past the end: a chip added without CHIP_MAX growing lands on
+     * the last one, drawn wrong but writing nothing it should not */
+    chip_t *c = &s_chip[s_chip_n < CHIP_MAX ? s_chip_n++ : CHIP_MAX - 1];
     c->group = group; c->value = value; c->label = label;
     c->w = gfx_text_w(label, TXT) + 40;
     if (c->w < min_w) c->w = min_w;
