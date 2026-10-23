@@ -12,9 +12,9 @@ writes
     icons/icon-512.png        no background, a block of a real tile's
                               proportions lying on its side, seen from
                               in front and above
-    icons/maskable-512.png    on the table's surface, small enough to
-                              survive any mask (the tile inside the
-                              central circle)
+    icons/maskable-512.png    the same tile on the table's surface,
+                              small enough to survive any mask (all of
+                              it inside the central circle)
 
 and rewrites the two favicon <link>s in index.html, which are data URIs so
 the page still works opened from disk: an SVG, and a 32x32 PNG for
@@ -168,7 +168,7 @@ def perspective_png(px, bg=None, fill=.9):
         x, y = proj(p)
         return (ox + x * k, oy + y * k)
 
-    out = Image.new('RGBA', (big, big), bg or (0, 0, 0, 0))
+    out = Image.new('RGBA', (big, big), (0, 0, 0, 0))     # the background, if any, goes under at the end
     draw = ImageDraw.Draw(out)
     light = _norm(LIGHT)
     n = len(outline)
@@ -197,11 +197,13 @@ def perspective_png(px, bg=None, fill=.9):
     ring = out.getchannel('A').filter(ImageFilter.MaxFilter(2 * ow + 1))
     # and round that, a white one as wide, so the dark edge shows on a dark screen too
     halo = ring.filter(ImageFilter.MaxFilter(2 * ow + 1))
-    under = Image.new('RGBA', (big, big), bg or (0, 0, 0, 0))
+    under = Image.new('RGBA', (big, big), (0, 0, 0, 0))
     under.paste(Image.new('RGBA', (big, big), '#ffffff'), (0, 0), halo)
     under.paste(Image.new('RGBA', (big, big), DARK_BG), (0, 0), ring)
     under.alpha_composite(out)
     out = under
+    if bg:
+        out = Image.alpha_composite(Image.new('RGBA', (big, big), bg), out)
     out = out.resize((px, px), Image.LANCZOS)
     buf = io.BytesIO()
     out.save(buf, 'PNG', optimize=True)
@@ -219,14 +221,13 @@ def main():
     # 132 of 180: the size apple-touch-icon.png has always been
     plain = square_svg(132)
     # a maskable icon keeps its art in the circle of radius 40% at the
-    # centre; the tile's corners, 0.625 of its height from its middle,
-    # stay inside at 102 of 180
-    maskable = square_svg(102)
+    # centre, and fills the square: the tile, its outlines and all, at
+    # 62% of the width, has its farthest corner just inside that circle
     out = {
         'apple-touch-icon.png': png(plain, 180),
         'icons/icon-192.png': perspective_png(192),
         'icons/icon-512.png': perspective_png(512),
-        'icons/maskable-512.png': png(maskable, 512),
+        'icons/maskable-512.png': perspective_png(512, bg=SURFACE, fill=.62),
     }
     for name, data in out.items():
         with open(os.path.join(root, 'web', name), 'wb') as f:
