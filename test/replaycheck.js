@@ -18,9 +18,10 @@
 const fs = require('fs');
 const path = require('path');
 const html = fs.readFileSync(process.argv[2] || path.join(__dirname, '..', 'web', 'index.html'), 'utf8');
-const js = html.split('<script>')[1].split('</script>')[0];
+// the game's own script, not the QR code library before it
+const js = html.split('<script>').slice(1).map(s => s.split('</script>')[0]).find(s => s.includes('const HAND'));
 const core = js.slice(js.indexOf('const HAND'), js.indexOf('/* ---------- render'));
-const G = new Function(`function render(){}; ${core};
+const G = new Function(`function render(){} function meetGoals(){}; ${core};
   return { newGame, get S() { return S; }, sel, clearSet, meldSet, addSix, discardSix, discardSet, findSet, canAdd, canMeld,
            pool, visible, get, meldKeys, classify, packGame, proveWork, hammingAdd, hammingFix, readCode, B64, REPLAY_WORK, murmur2 };`)();
 const GAMES = +process.argv[3] || 300, WORK = 8;      // a light proof of work for the many; the real one at the end

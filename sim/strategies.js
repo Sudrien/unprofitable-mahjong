@@ -4,9 +4,10 @@
 // "None left" bot: only clears sets that keep every remaining tile (shown + unseen) groupable into sets.
 const fs = require('fs');
 const html = fs.readFileSync(process.argv[2], 'utf8');
-const js = html.split('<script>')[1].split('</script>')[0];
+// the game's own script, not the QR code library before it
+const js = html.split('<script>').slice(1).map(s => s.split('</script>')[0]).find(s => s.includes('const HAND'));
 const core = js.slice(js.indexOf('const HAND'), js.indexOf('/* ---------- render'));
-const make = new Function(`function render(){}; ${core};
+const make = new Function(`function render(){} function meetGoals(){}; ${core};
   return { newGame, get S(){ return S; }, clearSet, addSix, discardSix, canAdd, pool, inHand, visible, sel, classify, setValue, get, penalty, remaining, meldSet, meldKeys };`);
 
 // Can a 34-count multiset be split entirely into pairs, chows, pungs, kongs, wind sets and dragon sets?
