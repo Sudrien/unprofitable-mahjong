@@ -2537,9 +2537,11 @@ function buildGuide() {
     const play = LIMIT.has(t) ? ` data-preview="${kinds.join(',')}" tabindex="0" role="button" title="${pick('Play the animation', '演出を見る', '播放动画')}"` : '';
     const label = kinds.map(k => kindNameIn(k, lang)).join(lang === 'en' ? ', ' : '、');
     const gk = run ? 'run' : t, on = goals.includes(gk), full3 = !on && goals.length >= MAX_GOALS;
+    // nothing left to aim for once the set is Full (every run length, for the runs): no button
+    const allDone = run ? RUNS.every(n => fulls.has('run of ' + n)) : fulls.has(t);
     const goalBtn = `<button type="button" class="g-goal" data-goal="${gk}" aria-pressed="${on}"${full3 ? ' disabled' : ''}>${on ? L('Goal ◎', '目標 ◎', '目标 ◎')
       : full3 ? L(`${MAX_GOALS} goals set`, `目標は${MAX_GOALS}つまで`, `最多${MAX_GOALS}个目标`) : L('Make this a goal', 'これを目標に', '设为目标')}</button>`;
-    return `<div class="g-item${play ? ' g-play' : ''}${full ? ' g-full' : done ? ' g-done' : ''}"${play}><div class="g-head"><b>${LA(name)}</b><span class="g-pts">${p}</span></div><div class="g-tiles" role="img" aria-label="${label}">${tiles}</div>${runs}<p class="g-note">${LA(note)}</p>${when}${goalBtn}</div>`;
+    return `<div class="g-item${play ? ' g-play' : ''}${full ? ' g-full' : done ? ' g-done' : ''}"${play}><div class="g-head"><b>${LA(name)}</b><span class="g-pts">${p}</span></div><div class="g-tiles" role="img" aria-label="${label}">${tiles}</div>${runs}<p class="g-note">${LA(note)}</p>${when}${allDone && !on ? '' : goalBtn}</div>`;
   };
   const card = (name, ptsTxt, neg, chip, note) => `<div class="g-item"><div class="g-head"><b>${name}</b><span class="g-pts${neg ? ' neg' : ''}">${ptsTxt}</span></div><div class="g-tiles">${chip}</div><p class="g-note">${note}</p></div>`;
   const start = pts(-LEFT_COST * TOTAL);
