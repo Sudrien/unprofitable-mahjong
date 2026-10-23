@@ -373,7 +373,9 @@ static button_t s_btn[B_COUNT];
  * what costs, and the helpers. */
 static const uint8_t ORDER_LAND[B_COUNT] = { B_CLEAR, B_MELD, B_ADD, B_DISCARD, B_HINT, B_SORT, B_UNDO };
 static const uint8_t ROWS_LAND[] = { 7, 0 };
-static const uint8_t ORDER_PORT[B_COUNT] = { B_CLEAR, B_MELD, B_UNDO, B_ADD, B_DISCARD, B_HINT, B_SORT };
+/* Portrait's two shorter rows each pair a wide button with a narrow one
+ * (Add 6 with Hint, Discard with Sort), leaving room beside them for the goals. */
+static const uint8_t ORDER_PORT[B_COUNT] = { B_CLEAR, B_MELD, B_UNDO, B_ADD, B_HINT, B_DISCARD, B_SORT };
 static const uint8_t ROWS_PORT[] = { 3, 2, 2, 0 };
 
 /* What Discard would do with the selection: 1 Discard 6, 2 Discard set
@@ -424,22 +426,6 @@ static const char *goal_name(uint8_t g, char *buf, size_t cap)
     if (g == SAVE_GOAL_RUN) return _("Any run");
     return heading(set_name((um_set_t)g), buf, cap, i18n_lang() == I18N_EN);
 }
-/* its First, and its Full's progress: "First · Full 1/3", or "Full" */
-static void goal_status(uint8_t g, char *out, size_t cap)
-{
-    const int lo = g == SAVE_GOAL_RUN ? UM_RUN4 : g, hi = g == SAVE_GOAL_RUN ? UM_RUN8 : g;
-    bool first = false, full = false;
-    int deals = 0;
-    for (int t = lo; t <= hi; t++) {
-        first |= s_ach.first[t].game != 0;
-        full |= s_ach.full[t].game != 0;
-        const int d = um_ach_full_progress(&s_ach, (um_set_t)t, s_g.game_no ? s_g.game_no : s_ach.games);
-        if (d > deals) deals = d;
-    }
-    if (full) { snprintf(out, cap, "%s", _("Full")); return; }
-    snprintf(out, cap, _("%s · Full %d/%d"), first ? _("First") : _("not yet"), deals > UM_ACH_FULL_OF ? UM_ACH_FULL_OF : deals, UM_ACH_FULL_OF);
-}
-
 static void layout_buttons(void)
 {
     static const char *const base[B_COUNT] = { N_("Clear"), N_("Meld"), N_("Add 6"), N_("Discard 6"), N_("Hint"),
@@ -527,8 +513,8 @@ static void layout_buttons(void)
 
 static void box(int x, int y, int w, int h, uint16_t border, uint16_t fill);
 
-/* The goals, in their box beside the buttons: each its name, and how far
- * its First and Full have come. */
+/* The goals, in their box beside the buttons: each its name, and only
+ * that -- how far it has come is the Sets list's to say. */
 static void draw_goals(void)
 {
     if (!goal_count() || s_goal_box.w < 120) return;
@@ -540,12 +526,8 @@ static void draw_goals(void)
         if (!g) continue;
         /* one goal sits in the middle; two or three from the top */
         const int y = s_goal_box.y + 4 + (n == 1 ? line : row * line) + (line - GFX_GLYPH_H(SMALL)) / 2;
-        static char nb[96], st[96];
-        const char *nm = goal_name(g, nb, sizeof nb);
-        goal_status(g, st, sizeof st);
-        const int sw = gfx_text_w(st, SMALL);
-        gfx_draw_text(x, y, nm, SMALL, w - sw - 12, C_INK);
-        gfx_draw_text(x + w - sw, y, st, SMALL, sw + 2, goal_all_done(g) ? C_GREEN : C_MUTED);
+        static char nb[96];
+        gfx_draw_text(x, y, goal_name(g, nb, sizeof nb), SMALL, w, C_INK);     /* cut at the box's edge if long */
         row++;
     }
 }
@@ -1599,7 +1581,15 @@ static void draw_guide(void)
         if (full) draw_mark(MARK_STAR, 7, p->x, y, C_KICK);
         else if (done) draw_mark(MARK_TICK, 6, p->x, y, C_GREEN);
         if (done) nx += MARK_W;
-        gfx_draw_text(nx, y, _(g->name), TXT, cw - vw - 16 - (nx - p->x), C_INK);
+        /* a goal: a bar down the card's left, and "Goal" before the points */
+        int gw = 0;
+        if (goal_has(goal_key(t))) {
+            gfx_fill_rect(p->x - 10, y - 6, 4, p->h - 6, C_ACCENT);
+            const char *gl = _("Goal");
+            gw = gfx_text_w(gl, SMALL) + 16;
+            gfx_draw_text(p->x + cw - vw - gw, y + (GFX_GLYPH_H(TXT) - GFX_GLYPH_H(SMALL)) / 2, gl, SMALL, gw, C_ACCENT);
+        }
+        gfx_draw_text(nx, y, _(g->name), TXT, cw - vw - gw - 16 - (nx - p->x), C_INK);
         gfx_draw_text(p->x + cw - vw, y, v, TXT, vw + 2, C_GREEN);
         const int rows = guide_tiles(g, cw, tx, ty);
         for (int j = 0; j < g->n; j++)

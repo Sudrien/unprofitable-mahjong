@@ -9,7 +9,7 @@
 #include <stddef.h>
 #include "i18n.h"
 
-const unsigned i18n_count = 283;
+const unsigned i18n_count = 284;
 const char *const i18n_keys[] = {
     " Undo to fix it.",
     " and a lone ",
@@ -127,6 +127,7 @@ const char *const i18n_keys[] = {
     "Full straight",
     "GOAL MET · GAME %d",
     "Game over: %d points, %s penalty.",
+    "Goal",
     "Green dragon",
     "Guaranteed Random",
     "Half Flush",
@@ -582,6 +583,7 @@ const char *const i18n_vals[] = {
     NULL,
     NULL,
     NULL,
+    NULL,
     /* zh-CN */
     "撤销来补救。",
     "和",
@@ -699,6 +701,7 @@ const char *const i18n_vals[] = {
     "清龙",
     "目标达成 · 第%d局",
     "游戏结束：%d分，罚分%s",
+    "目标",
     "发财",
     "保证随机",
     "混一色",
@@ -983,6 +986,7 @@ const char *const i18n_vals[] = {
     "一気通貫",
     "目標達成 · 第%d局",
     "ゲーム終了：%d点、ペナルティ%s",
+    "目標",
     "發",
     "保証付きの乱数",
     "混一色",

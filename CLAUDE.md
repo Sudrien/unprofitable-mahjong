@@ -123,9 +123,10 @@ and a patch that changes either side runs it.
 
 - **Goals (Tab5):** up to three, kept with the settings (NVS "goals");
   chosen from a set's card in the Sets list (a button beside Done, not
-  offered once the set is Full); shown beside the buttons -- right of the
-  row in landscape, right of the two shorter rows in portrait -- with
-  each one's First and Full progress; met with a "Goal met" banner.
+  offered once the set is Full), and marked there; shown beside the
+  buttons by name only -- right of the row in landscape, right of the
+  two shorter rows in portrait (Add 6 and Hint, Discard and Sort); met
+  with a "Goal met" banner.
 
 ## Not yet built
 

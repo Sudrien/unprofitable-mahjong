@@ -17,7 +17,7 @@ zh-CN:
     "%d tiles left with no set to make, at -%d each. Undo, or start a new deal.": "剩下%d张牌无法组合，每张-%d。撤销，或重新发牌。"
     # ui.c
     "%d tiles out. You can add 6 again once you're back to %d.": "场上%d张。回到%d张后才能再加6张。"
-    # ui.c
+    # not in the source any more
     "%s · Full %d/%d": "%s · 全满 %d/%d"
     # ui.c
     "1 Bamboo": "一条"
@@ -193,7 +193,7 @@ zh-CN:
     "FULL · FINISH THE GAME TO CONFIRM": "全满 · 结束本局后确认"
     # ui.c
     "Finished a game with no tiles left.": "一张牌不剩地结束了一局。"
-    # ui.c
+    # not in the source any more
     "First": "已首次"
     # guide.c
     "Five of one suit that also split into mahjong sets, here a chow and a pair: 3 + 1, plus 1 bonus.": "同花色五张，又能拆成麻将组合（这里是顺子加对子）：3 + 1，再加1分。"
@@ -227,7 +227,7 @@ zh-CN:
     "Four sets and a pair using only green tiles: 2, 3, 4, 6 and 8 Bamboo and Green dragons.": "只用绿色的牌组成四组加一对：二三四六八条和发财。"
     # guide.c
     "Four sets and a pair where every set has a 1, a 9 or an honor.": "四组加一对，每组都含幺九或字牌。"
-    # ui.c
+    # not in the source any more
     "Full": "全满"
     # guide.c, ui.c
     "Full Flush": "清一色"
@@ -239,6 +239,8 @@ zh-CN:
     "GOAL MET · GAME %d": "目标达成 · 第%d局"
     # ui.c
     "Game over: %d points, %s penalty.": "游戏结束：%d分，罚分%s"
+    # ui.c
+    "Goal": "目标"
     # ui.c
     "Green dragon": "发财"
     # ui.c

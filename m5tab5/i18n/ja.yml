@@ -17,7 +17,7 @@ ja:
     "%d tiles left with no set to make, at -%d each. Undo, or start a new deal.": "組にできない牌が%d枚残りました（1枚-%d）。元に戻すか、新しく配ろう。"
     # ui.c
     "%d tiles out. You can add 6 again once you're back to %d.": "場に%d枚。%d枚に戻れば、また6枚追加できます。"
-    # ui.c
+    # not in the source any more
     "%s · Full %d/%d": "%s · フル %d/%d"
     # ui.c
     "1 Bamboo": "1索"
@@ -193,7 +193,7 @@ ja:
     "FULL · FINISH THE GAME TO CONFIRM": "フル · 対局を終えると確定"
     # ui.c
     "Finished a game with no tiles left.": "牌を1枚も残さずに終局した。"
-    # ui.c
+    # not in the source any more
     "First": "初めて済"
     # guide.c
     "Five of one suit that also split into mahjong sets, here a chow and a pair: 3 + 1, plus 1 bonus.": "同じ種類の5枚がマージャンの面子にも分けられる場合（ここでは順子と対子）：3 + 1、ボーナス+1。"
@@ -227,7 +227,7 @@ ja:
     "Four sets and a pair using only green tiles: 2, 3, 4, 6 and 8 Bamboo and Green dragons.": "緑の牌だけで面子4組と対子：2・3・4・6・8索と發。"
     # guide.c
     "Four sets and a pair where every set has a 1, a 9 or an honor.": "面子4組と対子のすべてに1・9・字牌を含む。"
-    # ui.c
+    # not in the source any more
     "Full": "フル"
     # guide.c, ui.c
     "Full Flush": "清一色"
@@ -239,6 +239,8 @@ ja:
     "GOAL MET · GAME %d": "目標達成 · 第%d局"
     # ui.c
     "Game over: %d points, %s penalty.": "ゲーム終了：%d点、ペナルティ%s"
+    # ui.c
+    "Goal": "目標"
     # ui.c
     "Green dragon": "發"
     # ui.c

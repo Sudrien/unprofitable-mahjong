@@ -194,15 +194,6 @@ bool um_ach_secret(um_ach_t *a, um_game_t *g, int s)
     return true;
 }
 
-int um_ach_full_progress(const um_ach_t *a, um_set_t t, uint32_t gn)
-{
-    if (t <= UM_NONE || t >= UM_SET_COUNT) return 0;
-    uint8_t mask = 0;
-    for (int i = 0; i < UM_ACH_WINDOW; i++)
-        if (a->played[t][i] && a->played[t][i] + UM_ACH_WINDOW > gn && (a->played_done[t] >> i & 1)) mask |= (uint8_t)(1u << i);
-    return deals_in(a, t, mask);
-}
-
 int um_ach_firsts(const um_ach_t *a)
 {
     int n = 0;
