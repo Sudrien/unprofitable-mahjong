@@ -238,6 +238,18 @@ dependencies:
     - esp32s31
     - linux
     version: 2.5.2
+  feckless_camera:
+    component_hash: c1284fd4f3e5b5832007033400fd0b28b78505fe48cbe3dfe54d807dd8d85e9a
+    dependencies:
+    - name: idf
+      version: '>=5.4.2'
+    - name: espressif/esp_video
+      version: 2.5.0
+    source:
+      git: https://github.com/Sudrien/feckless-camera-for-m5tab5.git
+      path: .
+      type: git
+    version: 44ad3dc698e9a615ecfab85e70e6a0e24a61efce
   feckless_drivers:
     component_hash: 3c2de6845ea3eb95038ce6557e480ca9950c2d6fabed90621adbb3c536fa4f9a
     dependencies:
@@ -270,11 +282,11 @@ dependencies:
     version: 6.1.0
 direct_dependencies:
 - espressif/cmake_utilities
-- espressif/esp_video
 - espressif/usb_host_uac
+- feckless_camera
 - feckless_drivers
 - feckless_graphics_handler
 - idf
-manifest_hash: 2be1dde47bc87dbea16d108cb1bb009893791c23702dadb4ecfd2e3bd8e04ebe
+manifest_hash: 5beff7f4cef2de1eac37237d1f3e4df32e4faea31a5c1ed8dc2459999b2b26ee
 target: esp32p4
 version: 3.0.0
