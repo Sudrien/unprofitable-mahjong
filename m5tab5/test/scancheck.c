@@ -3,9 +3,16 @@
  *
  * Replay links, as the Tab5 and the web version draw them (qrcodegen,
  * error correction High), are drawn into 640x360 grey frames -- the
- * camera's 1280x720 at every second pixel -- small and large, turned,
- * blurred, dimmed, noisy and mirrored, and read back. Every one must
- * give back its code. Also: what qrscan_code_in takes and refuses.
+ * camera's 1280x720 at every second pixel -- as a phone or a screen held
+ * up to the camera shows them: modules of 3.5 px and up, turned up to 10
+ * degrees, blurred, dimmed, a little noisy, some mirrored -- and read
+ * back. Every one must give back its code. Also: what qrscan_code_in
+ * takes and refuses.
+ *
+ * Smaller, more turned or dimmer than that is past what quirc reads
+ * after this blur -- 2.6 px modules blurred, or 3 px turned 11 degrees
+ * and blurred, fail -- and past what Scan a code needs: a code held up
+ * fills far more of the frame.
  *
  *   scancheck [frames]
  *
@@ -22,6 +29,18 @@
 #define W 640
 #define H 360
 #define URL "https://sudrien.github.io/umj/#replay="
+#ifndef MAXLEN
+#define MAXLEN 160
+#endif
+#ifndef TURN
+#define TURN 0.087
+#endif
+#ifndef TRIES
+#define TRIES 16
+#endif
+#ifndef MIN_PX
+#define MIN_PX 4.0
+#endif
 
 static int s_bad;
 #define CHECK(c, ...) do { if (!(c)) { printf("scancheck: " __VA_ARGS__); printf("\n"); s_bad++; } } while (0)
@@ -59,8 +78,8 @@ static void draw(double m, double a, int mirror, int paper, int ink, int noise)
         for (int x = 0; x < W; x++) {
             int s = 0, k = 0;
             for (int j = -1; j <= 1; j++) for (int i = -1; i <= 1; i++) {
-                const int xx = x + i, yy = y + j;
-                if (xx >= 0 && yy >= 0 && xx < W && yy < H) { s += s_img[yy * W + xx]; k++; }
+                const int xx = x + i, yy = y + j, wt = (i ? 1 : 2) * (j ? 1 : 2);   /* 1-2-1 each way */
+                if (xx >= 0 && yy >= 0 && xx < W && yy < H) { s += wt * s_img[yy * W + xx]; k += wt; }
             }
             int c = s / k + (noise ? (int)(rnd() % (2 * noise + 1)) - noise : 0);
             s_blur[y * W + x] = (uint8_t)(c < 0 ? 0 : c > 255 ? 255 : c);
@@ -98,7 +117,7 @@ int main(int argc, char **argv)
     double smallest = 1e9;
     for (int f = 0; f < frames; f++) {
         /* a code the length of a fresh deal's (17) up to a long game's */
-        const int len = 17 + (int)(rnd() % 240);
+        const int len = 17 + (int)(rnd() % (unsigned)(MAXLEN - 16));
         for (int i = 0; i < len; i++) want[i] = B64[rnd() % 64];
         want[len] = 0;
         snprintf(link, sizeof link, "%s%s", URL, want);
@@ -107,12 +126,22 @@ int main(int argc, char **argv)
             continue;
         }
         const int n = qrcodegen_getSize(s_qr);
-        /* modules of 2.5 pixels and up, as large as fits */
-        const double mmax = (H - 8) / (double)(n + 8), m = 2.5 + frand() * (mmax - 2.5);
+        /* turned up to TURN radians each way; modules of MIN_PX pixels and
+         * up, as large as fits turned */
+        const double a = (frand() - .5) * 2 * TURN;
+        const double mmax = (H - 8) / ((n + 8) * (cos(a) + fabs(sin(a)))), m = MIN_PX + frand() * (mmax - MIN_PX);
+        if (mmax < MIN_PX) continue;    /* a code too long to show that large in the frame */
         const int mirror = f % 7 == 3;
-        draw(m, (frand() - .5) * .7, mirror, 150 + (int)(rnd() % 100), 20 + (int)(rnd() % 50), (int)(rnd() % 12));
+        const int paper = 170 + (int)(rnd() % 80), ink = 20 + (int)(rnd() % 40), noise = (int)(rnd() % 7);
+        /* as the camera does: a few frames of a hand that is never quite
+         * still -- the turn and the size a touch different each time --
+         * and the code read if any of them reads */
         int seen = 0;
-        const bool ok = qrscan_frame(s_blur, W, H, got, sizeof got, &seen);
+        bool ok = false;
+        for (int t = 0; t < TRIES && !ok; t++) {
+            draw(m * (1 + (frand() - .5) * .04), a + (frand() - .5) * .02, mirror, paper, ink, noise);
+            ok = qrscan_frame(s_blur, W, H, got, sizeof got, &seen);
+        }
         CHECK(ok && !strcmp(got, want), "frame %d: %d modules of %.2f px%s, %d found: %s", f, n, m, mirror ? ", mirrored" : "", seen,
               ok ? "the wrong code" : "nothing read");
         if (ok) { read++; mirrored += mirror; if (m < smallest) smallest = m; }

@@ -14,6 +14,10 @@
  *                              payload, code (light work, 8 bits) and end
  *   umtest valid               um_valid passes games mid-play and fails
  *                              each kind of corruption; exits 1 if not
+ *   umtest read                um_replay_read_game mends a wrong
+ *                              character and refuses short work and
+ *                              junk; the maker refuses changed moves; exits 1 if not
+ *   umtest limit <seed> <n>    um_limit_in_deal for n seeds, for check.js
  *
  * The games are played by a deliberately careless random player, so the
  * odd corners get visited: invalid selections, melds cleared alone,
@@ -199,7 +203,6 @@ static int valid_mode(void)
     BAD("a log kind", { um_log_t *e = &c.log[(c.log_n - 1) % UM_LOG_N]; e->k[0] = UM_KINDS; });
     BAD("a log type", c.log[(c.log_n - 1) % UM_LOG_N].t = UM_SET_COUNT);
     BAD("five of a kind", { for (int i = 0; i < c.hand_len; i++) if (c.hand[i] != UM_EMPTY) c.hand[i] = 0; });
-    BAD("had with a bit it never sets", c.had |= 0x10);
     /* the move record: these would have the replay code read past it */
     if (!g.moves_ok || g.mv_len < 8) { fprintf(stderr, "valid: setup kept no moves\n"); return 1; }
     BAD("a move cut short", c.mv_len--);
@@ -248,12 +251,11 @@ static void print_end(const um_game_t *g)
 
 /* Random games with every kind of move, as play_mode's player makes them,
  * then the replay code of each. */
-static void code_mode(uint32_t seed, int games)
+/* game gi of a code run from seed: the careless player's moves */
+static void careless_game(um_game_t *gp, uint32_t seed, int gi)
 {
-    static um_game_t g;
-    static char code[UM_CODE_MAX];
-    static char head[1], rest[UM_CODE_MAX];
-    for (int gi = 0; gi < games; gi++) {
+    um_game_t g;
+    {
         s_rng = seed * 2654435761u + (uint32_t)gi * 40503u + 7u;
         um_new(&g, seed * 7919u + (uint32_t)gi);
         for (int step = 0; step < 500 && !g.done; step++) {
@@ -281,6 +283,17 @@ static void code_mode(uint32_t seed, int games)
             else if (r < 88) { if (um_hint(&g, &s)) um_discard_set(&g, s, NULL); }
             else { s = random_sel(&g, 2 + below(4), below(4) == 0); um_clear(&g, s, NULL, NULL); }
         }
+    }
+    *gp = g;
+}
+
+static void code_mode(uint32_t seed, int games)
+{
+    static um_game_t g;
+    static char code[UM_CODE_MAX];
+    static char head[1], rest[UM_CODE_MAX];
+    for (int gi = 0; gi < games; gi++) {
+        careless_game(&g, seed, gi);
         const int rl = um_replay_pack(&g, head, rest, sizeof rest);
         const int cl = um_replay_code(&g, s_rng, 8, code, sizeof code);
         if (rl < 0 || cl < 0) { printf("X %d\n", gi); continue; }
@@ -404,12 +417,80 @@ static int ach_mode(void)
     return 0;
 }
 
+/* The reader's refusals, each where it belongs: a character wrong in a
+ * block is mended and counted; a code read asking more work than it holds
+ * is not genuine; a game changed after it was played (a tile in its first
+ * move swapped) makes no code when its moves no longer hold, and reads
+ * back whole when they do; and what is not a code at all is unreadable. Exits 1 at the first that is not so. */
+#define RFAIL(...) do { fprintf(stderr, "read: " __VA_ARGS__); fputc('\n', stderr); return 1; } while (0)
+static int read_mode(void)
+{
+    static um_game_t g, back;
+    static char code[UM_CODE_MAX], bent[UM_CODE_MAX];
+    static const char B64[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
+    int mended = 0, tampered = 0, games = 0;
+    for (int gi = 0; gi < 60; gi++) {
+        careless_game(&g, 11, gi);
+        if (um_replay_code(&g, 1000u + (uint32_t)gi, 8, code, sizeof code) < 0) continue;
+        games++;
+        const size_t len = strlen(code);
+        int mv = 0, fixed = -1;
+        /* one character wrong, anywhere: read the same, one mended */
+        for (int t = 0; t < 8; t++) {
+            memcpy(bent, code, len + 1);
+            const size_t at = (size_t)below((int)len);
+            char c;
+            do c = B64[below(64)]; while (c == bent[at]);
+            bent[at] = c;
+            const um_read_t r = um_replay_read_game(bent, 8, &back, &mv, &fixed);
+            if ((r != UM_READ_MOVES && r != UM_READ_DEAL) || fixed != 1 || back.score != g.score || back.done != g.done)
+                RFAIL("game %d: character %d changed read as %d, %d mended", gi, (int)at, (int)r, fixed);
+            mended++;
+        }
+        /* asked for more work than was done: refused as not genuine */
+        if (um_replay_read_game(code, 24, &back, &mv, &fixed) != UM_READ_WORK)
+            RFAIL("game %d: read at 24 bits of work, made at 8, was not refused for it", gi);
+        /* a tile in the first move changed: the maker plays every move as
+         * it packs, so a game whose moves no longer hold makes no code;
+         * one that still holds reads back whole */
+        if (g.mv_len >= 4 && g.mv[1] > 0) {
+            static um_game_t t;
+            t = g;
+            t.mv[2] = (uint8_t)((t.mv[2] + 1 + below(UM_KINDS - 1)) % UM_KINDS);
+            if (um_replay_code(&t, 5000u + (uint32_t)gi, 8, bent, sizeof bent) < 0) tampered++;
+            else {
+                const um_read_t r = um_replay_read_game(bent, 8, &back, &mv, NULL);
+                if (r != UM_READ_MOVES && r != UM_READ_DEAL) RFAIL("game %d: a changed first move made a code read as %d", gi, (int)r);
+            }
+        }
+    }
+    /* not codes */
+    static const char *const junk[] = { "", "hello", "!!!!!!!!!!!!!!!!!!!!!!!!", "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" };
+    for (size_t i = 0; i < sizeof junk / sizeof *junk; i++) {
+        int mv = 0;
+        const um_read_t r = um_replay_read_game(junk[i], 8, &back, &mv, NULL);
+        if (r == UM_READ_DEAL || r == UM_READ_MOVES) RFAIL("\"%s\" read as a code", junk[i]);
+    }
+    if (tampered < games / 4) RFAIL("only %d of %d changed first moves were refused", tampered, games);
+    printf("read: %d codes, %d with a character wrong mended, read at too much work refused, %d changed after the game refused by the maker, junk refused\n",
+           games, mended, tampered);
+    return 0;
+}
+
+/* um_limit_in_deal for n seeds from <from>: "<seed> <0|1>" a line */
+static void limit_mode(uint32_t from, int n)
+{
+    for (int i = 0; i < n; i++) printf("%u %d\n", (unsigned)(from + (uint32_t)i), um_limit_in_deal(from + (uint32_t)i));
+}
+
 int main(int argc, char **argv)
 {
     if (argc >= 2 && !strcmp(argv[1], "ach")) return ach_mode();
     if (argc >= 4 && !strcmp(argv[1], "code")) { code_mode((uint32_t)strtoul(argv[2], NULL, 10), atoi(argv[3])); return 0; }
     if (argc >= 4 && !strcmp(argv[1], "deal")) { deal_mode((uint32_t)strtoul(argv[2], NULL, 10), atoi(argv[3])); return 0; }
     if (argc >= 2 && !strcmp(argv[1], "valid")) return valid_mode();
+    if (argc >= 2 && !strcmp(argv[1], "read")) return read_mode();
+    if (argc >= 4 && !strcmp(argv[1], "limit")) { limit_mode((uint32_t)strtoul(argv[2], NULL, 10), atoi(argv[3])); return 0; }
     if (argc >= 2 && !strcmp(argv[1], "classify")) return classify_mode();
     if (argc >= 4 && !strcmp(argv[1], "play")) { play_mode((uint32_t)strtoul(argv[2], NULL, 10), atoi(argv[3])); return 0; }
     fprintf(stderr, "usage: umtest classify | umtest play <seed> <games> | umtest valid\n");

@@ -10,6 +10,8 @@
 //   deal       the walls dealt from 400 seeds, C and web, tile for tile
 //   code       the Tab5's replay codes: the web version reads them, replays
 //              them to the same end, and packs the same payload
+//   limit      um_limit_in_deal against the web version's limitInDeal,
+//              over seeds that hold a limit hand and seeds around them
 //   guide      main/guide.c against the web version's GUIDE: sections,
 //              names, notes, tiles, and the set and points each makes
 //   ach        core/umach.c against the web version's achievements: the
@@ -28,9 +30,10 @@ const GAMES = +process.argv[3] || 2000;
 const GUIDECHECK = process.argv[4] ? path.resolve(process.argv[4]) : null;
 const CODES = +process.env.CODES || 300;
 const html = fs.readFileSync(path.join(__dirname, '..', '..', 'web', 'index.html'), 'utf8');
-const js = html.split('<script>')[1].split('</script>')[0];
+// the game's own script: the page has others (the QR code maker among them)
+const js = html.split('<script>').slice(1).map(s => s.split('</script>')[0]).find(s => s.includes('const HAND'));
 const core = js.slice(js.indexOf('const HAND'), js.indexOf('/* ---------- render'));
-const make = new Function(`function render(){}; ${core};
+const make = new Function(`function render(){} function meetGoals(){}; ${core};
   return { deal, setS: v => { S = v; }, get S() { return S; }, sel, clearSet, meldSet, addSix, discardSix, discardSet, sortHand,
            findSet, penalty, classify, setValue, hasBonus, remaining, meldKeys, limitGroups, LIMIT, readCode, packGame };`);
 
@@ -303,11 +306,31 @@ function achCheck() {
   console.log(`ach: ${script.length} steps over ${GAMES_N} games, ${fulls} sets full, every win, every secret, the flood, the Capital and High score, ${legacyWins} older games won; records the same`);
 }
 
+// The web version's limitInDeal, from the loading section, run on the rules
+// above: a deal whose first 18 tiles hold a limit hand is not played from a
+// code, and the Tab5 must refuse the same deals. Seeds 950 on hold 987, and
+// 1160 on hold 1163 and 1171.
+function limitCheck() {
+  const a = js.indexOf('function limitInDeal'), b = js.indexOf('\n}\n', a) + 3;
+  const limitInDeal = new Function(`function render(){} function meetGoals(){}; ${core}; ${js.slice(a, b)}; return limitInDeal;`)();
+  let n = 0, held = 0;
+  for (const [from, count] of [[950, 50], [1160, 20]]) {
+    for (const line of execFileSync(UMTEST, ['limit', String(from), String(count)]).toString().trim().split('\n')) {
+      const [seed, c] = line.split(' ').map(Number), w = limitInDeal(seed);
+      if (w !== !!c) fail(`limit: seed ${seed}: C ${!!c}, JS ${w}`);
+      n++; held += w;
+    }
+  }
+  if (held < 3) fail(`limit: only ${held} of the seeds held a limit hand`);
+  console.log(`limit: ${n} deals, ${held} with a limit hand, refused alike`);
+}
+
 classifyCheck();
 achCheck();
 dealCheck();
 playCheck();
 codeCheck();
+limitCheck();
 if (GUIDECHECK) guideCheck();
 if (failures) { console.error(`${failures} mismatches`); process.exit(1); }
 console.log('core matches the web version');
