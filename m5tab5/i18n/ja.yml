@@ -227,6 +227,8 @@ ja:
     "Game over: %d points, %s penalty.": "ゲーム終了：%d点、ペナルティ%s"
     # ui.c
     "Green dragon": "發"
+    # ui.c
+    "Guaranteed Random": "保証付きの乱数"
     # guide.c, ui.c
     "Half Flush": "混一色"
     # ui.c
@@ -261,6 +263,12 @@ ja:
     "Little Four Winds": "小四喜"
     # guide.c, ui.c
     "Little Three Dragons": "小三元"
+    # ui.c
+    "Loaded a deal and played it.": "配牌を読み込んで遊んだ。"
+    # ui.c
+    "Loaded a deal one of your achievements was earned in.": "実績を取った対局の配牌を読み込んだ。"
+    # ui.c
+    "Loaded a finished game to watch.": "終わった対局を読み込んで観た。"
     # guide.c
     "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.": "同じ種類で長く続くほど高得点。4連：+6 · 5：+9 · 6：+13 · 7：+18 · 8：+24。"
     # ui.c
@@ -364,6 +372,8 @@ ja:
     # ui.c
     "Score 500 points in one game.": "1局で500点取る。"
     # ui.c
+    "Secret found: %s": "シークレット発見：%s"
+    # ui.c
     "Set sets aside here to build a bigger hand.": "組をここに置いて、大きな役を育てよう。"
     # ui.c
     "Sets": "役"
@@ -375,6 +385,8 @@ ja:
     "Seven Pairs": "七対子"
     # guide.c
     "Seven different pairs.": "異なる対子7組。"
+    # ui.c
+    "Shadows of the Past": "過去の影"
     # ui.c
     "Share": "共有"
     # ui.c
@@ -428,6 +440,8 @@ ja:
     # ui.c
     "This code is not genuine: its proof of work does not match.": "このコードは本物ではありません：作業証明が合いません。"
     # ui.c
+    "This code is not genuine: one of its moves breaks the rules.": "このコードは本物ではありません：ルールに反する手があります。"
+    # ui.c
     "This deal cannot be played: a limit hand is already among its first 18 tiles.": "この配牌は遊べません：最初の18枚に役満がすでにあります。"
     # ui.c
     "This game cannot be shared: it was dealt before replay codes, or ran too long. Start a new deal to get one.": "この対局は共有できません。リプレイコードの導入前に配られたか、長すぎます。新しく配ると使えます。"
@@ -445,6 +459,8 @@ ja:
     "Tried to grow a melded pair into a pung. Only a pung grows.": "副露した対子を刻子に伸ばそうとした。伸ばせるのは刻子だけ。"
     # guide.c, ui.c
     "Triple Pung": "三色同刻"
+    # ui.c
+    "Try Try Again": "七転び八起き"
     # guide.c
     "Two dragon pungs and a pair of the third dragon.": "三元牌の刻子2組と、残りの三元牌の対子。"
     # guide.c

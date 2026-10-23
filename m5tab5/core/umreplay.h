@@ -49,8 +49,17 @@ typedef enum {
     UM_READ_UNREADABLE, /* not a code, or more than one character wrong in a block */
     UM_READ_VERSION,    /* from a newer version of the game */
     UM_READ_WORK,       /* its proof of work does not hold: not genuine */
+    UM_READ_MOVE,       /* a move breaks the rules: not genuine (um_replay_read_game) */
 } um_read_t;
 um_read_t um_replay_read(const char *code, int work, uint32_t *seed, int *fixed);
+
+/* The whole of readCode: the code read as um_replay_read does, then its
+ * moves unpacked and played from the seed into *g, each checked by
+ * playing it. Returns UM_READ_DEAL or UM_READ_MOVES when every move held
+ * (g->done says whether the game was finished); UM_READ_MOVE with
+ * *moves the move that broke, counting from 1; or um_replay_read's
+ * errors. *moves, if not NULL, is how many moves were played. */
+um_read_t um_replay_read_game(const char *code, int work, um_game_t *g, int *moves, int *fixed);
 
 /* A deal's first 18 tiles already hold a limit hand (some 14 or more of
  * them make one): such a deal is not played from a code (limitInDeal). */

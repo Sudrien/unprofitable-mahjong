@@ -179,12 +179,16 @@ static const char *const WIN_NOTES[UM_WIN_N] = {
     N_("All 136 cleared with two pair, a flush, a straight and a full house among the sets. A royal flush counts as the flush."),
 };
 /* The secrets, the web version's SECRETS: listed only once earned. */
-static const char *const SECRET_NAMES[UM_SECRET_N] = { N_("A Place for Everything"), N_("Wait Wait Wait"), N_("Intentional Game Design"), N_("Overcompensating") };
+static const char *const SECRET_NAMES[UM_SECRET_N] = { N_("A Place for Everything"), N_("Wait Wait Wait"), N_("Intentional Game Design"), N_("Overcompensating"),
+                                                         N_("Guaranteed Random"), N_("Try Try Again"), N_("Shadows of the Past") };
 static const char *const SECRET_NOTES[UM_SECRET_N] = {
     N_("Finished a game with no tiles left."),
     N_("Sorted the hand with tiles chosen, and lost the choice."),
     N_("Tried to grow a melded pair into a pung. Only a pung grows."),
     N_("Cleared a limit hand holding four of a kind, where three would do."),
+    N_("Loaded a deal and played it."),
+    N_("Loaded a deal one of your achievements was earned in."),
+    N_("Loaded a finished game to watch."),
 };
 #define FLOOD_NAME N_("The Yellow River Floods Again")
 #define FLOOD_NOTE N_("Clear every set at least once. The river rises with each one.")
@@ -1679,10 +1683,9 @@ static void after_move(bool was_done)
     save_game(&s_g);
 }
 
-/* A secret earned away from a clear, shown in the banner with no tiles. */
-static void secret_banner(int s)
+/* A secret just earned, shown in the banner with no tiles. */
+static void announce_secret(int s)
 {
-    if (!um_ach_secret(&s_ach, &s_g, s)) return;
     ESP_LOGI(TAG, "game %u: secret %s", (unsigned)s_g.game_no, SECRET_NAMES[s]);
     save_ach(&s_ach);
     s_ban.name = SECRET_NAMES[s];
@@ -1690,6 +1693,11 @@ static void secret_banner(int s)
     s_ban.n = 0;
     snprintf(s_ban.kick, sizeof s_ban.kick, _("SECRET · GAME %d"), (int)s_g.game_no);
     s_ban.until = esp_timer_get_time() + BANNER_US;
+}
+/* A secret earned away from a clear, the first time. */
+static void secret_banner(int s)
+{
+    if (um_ach_secret(&s_ach, &s_g, s)) announce_secret(s);
 }
 /* A sort threw the selection away: Wait Wait Wait, the first time. */
 static void sorted_away(void) { secret_banner(UM_SECRET_WAIT); }
@@ -1907,6 +1915,8 @@ static int s_scan_w, s_scan_h, s_scan_seen;
 static uint32_t s_scan_seed;
 static const char *s_scan_msg;          /* untranslated: SC_MSG's text */
 static char s_scan_code[QRSCAN_CODE_MAX];
+static um_game_t s_scan_game;           /* a code's game, played from its seed to read it */
+static int s_scan_secret = -1;          /* a loading secret this code earned, to say so */
 static struct { int x, y, w; } s_scan_play, s_scan_cancel;
 
 static void scan_stop(void)
@@ -1919,6 +1929,7 @@ static void scan_open(void)
 {
     s_scan_msg = NULL;
     s_scan_seen = 0;
+    s_scan_secret = -1;
     if (!camera_present() || camera_start() != ESP_OK) {
         s_scan_msg = N_("The camera is not available.");
         s_scan = SC_MSG;
@@ -1954,10 +1965,18 @@ static void scan_close(void)
 static void scan_found(const char *code)
 {
     scan_stop();
-    uint32_t seed = 0;
-    int fixed = 0;
-    const um_read_t r = um_replay_read(code, UM_REPLAY_WORK, &seed, &fixed);
-    ESP_LOGI(TAG, "scanned a code: %d chars, read %d, %d put right", (int)strlen(code), (int)r, fixed);
+    int fixed = 0, moves = 0;
+    const um_read_t r = um_replay_read_game(code, UM_REPLAY_WORK, &s_scan_game, &moves, &fixed);
+    const uint32_t seed = s_scan_game.rng;
+    ESP_LOGI(TAG, "scanned a code: %d chars, read %d after %d moves, %d put right", (int)strlen(code), (int)r, moves, fixed);
+    /* the secrets loading earns: a deal one of the records holds (Try Try
+     * Again), a finished game (Shadows of the Past) */
+    if (r == UM_READ_DEAL || r == UM_READ_MOVES) {
+        int sec = -1;
+        if (r == UM_READ_MOVES && s_scan_game.done && um_ach_load_secret(&s_ach, UM_SECRET_SHADOWS, seed)) sec = UM_SECRET_SHADOWS;
+        if (um_ach_has_seed(&s_ach, seed) && um_ach_load_secret(&s_ach, UM_SECRET_AGAIN, seed)) sec = UM_SECRET_AGAIN;
+        if (sec >= 0) { save_ach(&s_ach); s_scan_secret = sec; ESP_LOGI(TAG, "secret %s", SECRET_NAMES[sec]); }
+    }
     s_scan = SC_MSG;
     switch (r) {
     case UM_READ_DEAL:
@@ -1973,6 +1992,9 @@ static void scan_found(const char *code)
         break;
     case UM_READ_WORK:
         s_scan_msg = N_("This code is not genuine: its proof of work does not match.");
+        break;
+    case UM_READ_MOVE:
+        s_scan_msg = N_("This code is not genuine: one of its moves breaks the rules.");
         break;
     default:
         s_scan_msg = N_("This code cannot be read.");
@@ -2003,6 +2025,7 @@ static void play_loaded(uint32_t seed)
     s_undo_n = 0;
     ESP_LOGI(TAG, "game %u: loaded deal %u", (unsigned)s_g.game_no, (unsigned)seed);
     after_move(false);
+    if (um_ach_load_secret(&s_ach, UM_SECRET_RANDOM, seed)) { save_ach(&s_ach); announce_secret(UM_SECRET_RANDOM); }
 }
 
 static void scan_button(int x, int y, int w, const char *label, bool primary)
@@ -2050,6 +2073,11 @@ static void draw_scan(void)
         gfx_draw_text((gfx_w() - gfx_text_w(st, TXT)) / 2, gfx_h() - 70, st, TXT, gfx_w(), s_scan_seen ? C_GREEN : C_MUTED);
         gfx_draw_text((gfx_w() - gfx_text_w(tap, SMALL)) / 2, gfx_h() - 30, tap, SMALL, gfx_w(), C_MUTED);
         return;
+    }
+    if (s_scan_secret >= 0) {
+        static char sec[160];
+        snprintf(sec, sizeof sec, _("Secret found: %s"), _(SECRET_NAMES[s_scan_secret]));
+        gfx_draw_text((gfx_w() - gfx_text_w(sec, TXT)) / 2, TOP_Y + 40, sec, TXT, gfx_w(), C_KICK);
     }
     if (s_scan == SC_DEAL) {
         const bool in_play = !s_g.done && s_g.log_n > 0;

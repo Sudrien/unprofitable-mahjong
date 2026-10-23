@@ -25,7 +25,10 @@
  *           Wait Wait Wait (a sort threw a selection away),
  *           Intentional Game Design (Meld pressed to grow a melded pair),
  *           Overcompensating (a limit hand with four of a kind where
- *           three would do)
+ *           three would do); and three earned by loading a code, which a
+ *           loaded deal does not stop: Guaranteed Random (played a loaded
+ *           deal), Try Try Again (loaded a deal an achievement's record
+ *           holds), Shadows of the Past (opened a finished game)
  *
  * The sets are every um_set_t, UM_PAIR to UM_FOUR_KONGS: the 40 the web
  * version counts. Each record is the game it was earned in, by the
@@ -55,7 +58,9 @@ typedef struct {
 } um_rec_t;
 
 enum { UM_WIN_NO_POKER, UM_WIN_NO_PAIRS, UM_WIN_ALL_POKER, UM_WIN_N };   /* the web version's WINS, in order */
-enum { UM_SECRET_PLACE, UM_SECRET_WAIT, UM_SECRET_DESIGN, UM_SECRET_OVER, UM_SECRET_N }; /* its SECRETS, in order, less the loading ones */
+enum { UM_SECRET_PLACE, UM_SECRET_WAIT, UM_SECRET_DESIGN, UM_SECRET_OVER,
+       UM_SECRET_RANDOM, UM_SECRET_AGAIN, UM_SECRET_SHADOWS, UM_SECRET_N };    /* its SECRETS, in order */
+#define UM_SECRET_FIRST_LOAD (UM_SECRET_RANDOM)   /* from here on, earned by loading (LOAD_SECRETS) */
 #define UM_SECRET_FIRST3 (3)    /* the secrets kept in secret[]; the rest in secret_more[], added later at the end */
 
 typedef struct {
@@ -128,6 +133,14 @@ uint8_t um_ach_win(um_ach_t *a, um_game_t *g);
  * when a sort throws a selection away, DESIGN when Meld is pressed on
  * um_pair_grow's selection. */
 bool um_ach_secret(um_ach_t *a, um_game_t *g, int s);
+
+/* A secret earned by loading (s from UM_SECRET_FIRST_LOAD): recorded at
+ * the device's game count and the seed loaded, whatever game is on the
+ * table. True if it is new. */
+bool um_ach_load_secret(um_ach_t *a, int s, uint32_t seed);
+
+/* Some achievement's record holds this seed (loadedAgain). */
+bool um_ach_has_seed(const um_ach_t *a, uint32_t seed);
 
 int  um_ach_firsts(const um_ach_t *a);   /* sets with a First, of UM_ACH_SETS */
 int  um_ach_fulls(const um_ach_t *a);

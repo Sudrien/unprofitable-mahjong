@@ -116,11 +116,15 @@ and a patch that changes either side runs it.
   is offered and played as a loaded game (UM_HAD_LOADED, Firsts only)
   unless a limit hand is in its first 18 (um_limit_in_deal).
 
+- **Loading secrets (Tab5):** Guaranteed Random when a scanned deal is
+  played, Try Try Again when a scanned code's seed is in a record,
+  Shadows of the Past when a scanned code's game, read move by move by
+  um_replay_read_game, was finished.
+
 ## Not yet built
 
 - For reference: the brute forced maximum score is 804 & -4; bots
   average under 300 and never reached 500.
-- tab5: the loading secrets (Guaranteed Random, Try Try Again, Shadows
-  of the Past), and watching a code with moves on the Tab5 itself --
-  Scan a code reads deals and plays them, and sends games with moves to
-  the website.
+- tab5: watching a code with moves on the Tab5 itself -- Scan a code
+  reads and checks the whole game (um_replay_read_game) but sends it to
+  the website to be watched.

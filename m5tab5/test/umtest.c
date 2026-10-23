@@ -284,6 +284,18 @@ static void code_mode(uint32_t seed, int games)
         const int rl = um_replay_pack(&g, head, rest, sizeof rest);
         const int cl = um_replay_code(&g, s_rng, 8, code, sizeof code);
         if (rl < 0 || cl < 0) { printf("X %d\n", gi); continue; }
+        /* and read back on this side too (um_replay_read_game): every move
+         * held, and the game ends where this one did */
+        {
+            static um_game_t back;
+            int mv = 0;
+            const um_read_t rr = um_replay_read_game(code, 8, &back, &mv, NULL);
+            if ((rr != UM_READ_MOVES && rr != UM_READ_DEAL) || back.points != g.points || back.score != g.score
+                || back.done != g.done || um_pool(&back) != um_pool(&g) || um_in_hand(&back) != um_in_hand(&g) || back.meld_n != g.meld_n) {
+                fprintf(stderr, "code: game %d read back as %d at move %d, not where it ended\n", gi, (int)rr, mv);
+                exit(1);
+            }
+        }
         printf("R %.1s%.*s %s %u\n", head, rl, rest, code, (unsigned)g.rng);
         print_end(&g);
     }
@@ -297,6 +309,8 @@ static void code_mode(uint32_t seed, int games)
  *   S             a sort threw a selection away
  *   D             Meld pressed on a melded pair and its third tile
  *   O             a limit hand cleared with four of a kind where three would do
+ *   G|T|V <seed>  that seed loaded: played (Guaranteed Random), held by a
+ *                 record (Try Try Again), a finished game (Shadows)
  *   H <points>    the game ends, stuck or not, with these points (its
  *                 Fulls, then High score)
  * and after each, the award and every record, for check.js to compare
@@ -355,6 +369,9 @@ static int ach_mode(void)
             um_ach_secret(&s_ach, &s_ag, UM_SECRET_WAIT);
         } else if (line[0] == 'D') {
             um_ach_secret(&s_ach, &s_ag, UM_SECRET_DESIGN);
+        } else if (line[0] == 'G' || line[0] == 'T' || line[0] == 'V') {
+            um_ach_load_secret(&s_ach, line[0] == 'G' ? UM_SECRET_RANDOM : line[0] == 'T' ? UM_SECRET_AGAIN : UM_SECRET_SHADOWS,
+                               (uint32_t)strtoul(line + 2, NULL, 10));
         } else if (line[0] == 'O') {
             um_ach_secret(&s_ach, &s_ag, UM_SECRET_OVER);
         } else if (line[0] == 'H') {
@@ -377,7 +394,7 @@ static int ach_mode(void)
         printf(" | high");
         if (s_ach.high.game) printf(";%u/%u", (unsigned)s_ach.high.game, (unsigned)s_ach.high.seed);
         printf(" | secret");
-        static const char *SN[UM_SECRET_N] = { "place", "wait", "design", "over" };
+        static const char *SN[UM_SECRET_N] = { "place", "wait", "design", "over", "random", "again", "shadows" };
         for (int s = 0; s < UM_SECRET_N; s++) {
             const um_rec_t *r = um_ach_secret_crec(&s_ach, s);
             if (r->game) printf(";%s=%u/%u", SN[s], (unsigned)r->game, (unsigned)r->seed);

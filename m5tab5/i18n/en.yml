@@ -227,6 +227,8 @@ en:
     "Game over: %d points, %s penalty.": ~
     # ui.c
     "Green dragon": ~
+    # ui.c
+    "Guaranteed Random": ~
     # guide.c, ui.c
     "Half Flush": ~
     # ui.c
@@ -261,6 +263,12 @@ en:
     "Little Four Winds": ~
     # guide.c, ui.c
     "Little Three Dragons": ~
+    # ui.c
+    "Loaded a deal and played it.": ~
+    # ui.c
+    "Loaded a deal one of your achievements was earned in.": ~
+    # ui.c
+    "Loaded a finished game to watch.": ~
     # guide.c
     "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.": ~
     # ui.c
@@ -364,6 +372,8 @@ en:
     # ui.c
     "Score 500 points in one game.": ~
     # ui.c
+    "Secret found: %s": ~
+    # ui.c
     "Set sets aside here to build a bigger hand.": ~
     # ui.c
     "Sets": ~
@@ -375,6 +385,8 @@ en:
     "Seven Pairs": ~
     # guide.c
     "Seven different pairs.": ~
+    # ui.c
+    "Shadows of the Past": ~
     # ui.c
     "Share": ~
     # ui.c
@@ -428,6 +440,8 @@ en:
     # ui.c
     "This code is not genuine: its proof of work does not match.": ~
     # ui.c
+    "This code is not genuine: one of its moves breaks the rules.": ~
+    # ui.c
     "This deal cannot be played: a limit hand is already among its first 18 tiles.": ~
     # ui.c
     "This game cannot be shared: it was dealt before replay codes, or ran too long. Start a new deal to get one.": ~
@@ -445,6 +459,8 @@ en:
     "Tried to grow a melded pair into a pung. Only a pung grows.": ~
     # guide.c, ui.c
     "Triple Pung": ~
+    # ui.c
+    "Try Try Again": ~
     # guide.c
     "Two dragon pungs and a pair of the third dragon.": ~
     # guide.c

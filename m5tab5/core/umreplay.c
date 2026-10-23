@@ -272,6 +272,111 @@ um_read_t um_replay_read(const char *code, int work, uint32_t *seed, int *fixed)
     return ml == 0 && 15 + ml == pl ? UM_READ_DEAL : UM_READ_MOVES;
 }
 
+/* Unpacker: the chars back into a number, and digits off its bottom */
+typedef struct { uint32_t n[LIMBS]; int nl; } unpacker_t;
+static unpacker_t s_mu, s_du;
+
+static bool up_init(unpacker_t *u, const char *s, int len)
+{
+    memset(u, 0, sizeof *u);
+    for (int i = 0; i < len; i++) {
+        const int v = b64_val(s[i]), b = i * 6, li = b / 32, sh = b % 32;
+        if (v < 0 || li + 1 >= LIMBS) return false;
+        u->n[li] |= (uint32_t)v << sh;
+        if (sh > 26) u->n[li + 1] |= (uint32_t)v >> (32 - sh);
+    }
+    u->nl = LIMBS;
+    while (u->nl && !u->n[u->nl - 1]) u->nl--;
+    return true;
+}
+
+/* get(r): v = n % r; n /= r */
+static uint32_t up_get(unpacker_t *u, uint32_t r)
+{
+    if (r <= 1) return 0;
+    uint64_t rem = 0;
+    for (int i = u->nl - 1; i >= 0; i--) {
+        const uint64_t cur = (rem << 32) | u->n[i];
+        u->n[i] = (uint32_t)(cur / r);
+        rem = cur % r;
+    }
+    while (u->nl && !u->n[u->nl - 1]) u->nl--;
+    return (uint32_t)rem;
+}
+
+um_read_t um_replay_read_game(const char *code, int work, um_game_t *g, int *moves, int *fixed)
+{
+    uint32_t seed = 0;
+    if (moves) *moves = 0;
+    const um_read_t r = um_replay_read(code, work, &seed, fixed);
+    if (r != UM_READ_DEAL && r != UM_READ_MOVES) return r;
+    /* um_replay_read left the payload in s_pay */
+    const int len = (int)strlen(code);
+    int fx;
+    const int pl = hamming_fix(code, len, s_pay, sizeof s_pay, &fx);
+    const int ml = (int)fixed_value(s_pay + 7, 2);
+    if (!up_init(&s_mu, s_pay + 9, ml) || !up_init(&s_du, s_pay + 15 + ml, pl - 15 - ml)) return UM_READ_UNREADABLE;
+    um_new(g, seed);
+    const int count = (int)up_get(&s_mu, 4096);
+    for (int i = 0; i < count; i++) {
+        if (moves) *moves = i + 1;
+        /* the table before the move: each kind on it, ascending, with its count */
+        uint8_t cnt[UM_KINDS] = { 0 };
+        for (int j = 0; j < g->hand_len; j++) if (g->hand[j] != UM_EMPTY) cnt[g->hand[j]]++;
+        const char op = OPS[up_get(&s_mu, 6)];
+        uint8_t k[UM_MAX_SEL > 18 ? UM_MAX_SEL : 18];
+        int n = 0;
+        uint32_t extra = 0;
+        if (op == 'C' || op == 'M') {
+            for (int x = 0; x < UM_KINDS; x++) {
+                if (!cnt[x]) continue;
+                for (uint32_t c = up_get(&s_mu, cnt[x] + 1u); c > 0; c--) {
+                    if (n >= (int)sizeof k) return UM_READ_MOVE;
+                    k[n++] = (uint8_t)x;
+                }
+            }
+            if (op == 'C') extra = up_get(&s_mu, 1u << g->meld_n);
+        } else if (op == 'K') {
+            extra = up_get(&s_mu, g->meld_n > 1 ? g->meld_n : 1);
+        } else if (op == 'D' || op == 'X') {
+            const int want = op == 'D' ? UM_DISCARD_N : (int)up_get(&s_du, 17) + 2;
+            uint8_t left[UM_KINDS];
+            memcpy(left, cnt, sizeof left);
+            for (int j = 0; j < want; j++) {
+                uint32_t avail = 0;
+                for (int x = 0; x < UM_KINDS; x++) avail += left[x] != 0;
+                if (!avail || n >= (int)sizeof k) return UM_READ_MOVE;
+                uint32_t pick = up_get(&s_du, avail);
+                for (int x = 0; x < UM_KINDS; x++) {
+                    if (!left[x]) continue;
+                    if (!pick--) { k[n++] = (uint8_t)x; left[x]--; break; }
+                }
+            }
+        }
+        /* and play it, choosing table tiles by kind (applyMove) */
+        um_sel_t s = { 0, 0 };
+        bool ok;
+        if (op == 'A') ok = um_add_six(g);
+        else if (op == 'K') {
+            if (extra >= g->meld_n) return UM_READ_MOVE;
+            const uint8_t w = g->melds[extra][0];
+            ok = um_sel_by_kinds(g, &w, 1, &s);
+            s.melds = (uint8_t)(1u << extra);
+            ok = ok && um_meld(g, s);
+        } else {
+            ok = um_sel_by_kinds(g, k, n, &s);
+            if (ok && op == 'C') { s.melds = (uint8_t)extra; ok = um_clear(g, s, NULL, NULL); }
+            else if (ok && op == 'M') ok = um_meld(g, s);
+            else if (ok && op == 'D') ok = um_discard_six_as(g, s, k);
+            else if (ok && op == 'X') ok = um_discard_set_as(g, s, k, NULL);
+        }
+        if (!ok) return UM_READ_MOVE;
+    }
+    if (s_mu.nl || s_du.nl) return UM_READ_UNREADABLE;
+    if (moves) *moves = count;
+    return count ? UM_READ_MOVES : UM_READ_DEAL;
+}
+
 bool um_limit_in_deal(uint32_t seed)
 {
     um_new(&s_sim, seed);

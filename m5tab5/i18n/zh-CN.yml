@@ -227,6 +227,8 @@ zh-CN:
     "Game over: %d points, %s penalty.": "游戏结束：%d分，罚分%s"
     # ui.c
     "Green dragon": "发财"
+    # ui.c
+    "Guaranteed Random": "保证随机"
     # guide.c, ui.c
     "Half Flush": "混一色"
     # ui.c
@@ -261,6 +263,12 @@ zh-CN:
     "Little Four Winds": "小四喜"
     # guide.c, ui.c
     "Little Three Dragons": "小三元"
+    # ui.c
+    "Loaded a deal and played it.": "载入一副牌并玩了起来。"
+    # ui.c
+    "Loaded a deal one of your achievements was earned in.": "载入了曾获得成就的那副牌。"
+    # ui.c
+    "Loaded a finished game to watch.": "载入一局已结束的牌局来观看。"
     # guide.c
     "Longer runs in one suit score more. Run of 4: +6 · 5: +9 · 6: +13 · 7: +18 · 8: +24.": "同花色连得越长分越高。4连：+6 · 5：+9 · 6：+13 · 7：+18 · 8：+24。"
     # ui.c
@@ -364,6 +372,8 @@ zh-CN:
     # ui.c
     "Score 500 points in one game.": "一局得500分。"
     # ui.c
+    "Secret found: %s": "发现隐藏成就：%s"
+    # ui.c
     "Set sets aside here to build a bigger hand.": "把组合放到这里，慢慢凑大牌。"
     # ui.c
     "Sets": "牌型"
@@ -375,6 +385,8 @@ zh-CN:
     "Seven Pairs": "七对"
     # guide.c
     "Seven different pairs.": "七组不同的对子。"
+    # ui.c
+    "Shadows of the Past": "往昔之影"
     # ui.c
     "Share": "分享"
     # ui.c
@@ -428,6 +440,8 @@ zh-CN:
     # ui.c
     "This code is not genuine: its proof of work does not match.": "这个代码不是真的：工作量证明不对。"
     # ui.c
+    "This code is not genuine: one of its moves breaks the rules.": "这个代码不是真的：有一步违反规则。"
+    # ui.c
     "This deal cannot be played: a limit hand is already among its first 18 tiles.": "这副牌不能玩：前18张里已经有大满贯。"
     # ui.c
     "This game cannot be shared: it was dealt before replay codes, or ran too long. Start a new deal to get one.": "这一局无法分享：它在回放码功能之前发的牌，或者太长。重新发牌后就能用。"
@@ -445,6 +459,8 @@ zh-CN:
     "Tried to grow a melded pair into a pung. Only a pung grows.": "想把副露的对子变成刻子。只有刻子能变大。"
     # guide.c, ui.c
     "Triple Pung": "三同刻"
+    # ui.c
+    "Try Try Again": "再接再厉"
     # guide.c
     "Two dragon pungs and a pair of the third dragon.": "两组箭牌刻子，加第三种箭牌的对子。"
     # guide.c

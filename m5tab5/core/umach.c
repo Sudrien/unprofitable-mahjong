@@ -155,6 +155,28 @@ bool um_ach_high(um_ach_t *a, um_game_t *g)
     return true;
 }
 
+/* secretAward, for the secrets loading earns */
+bool um_ach_load_secret(um_ach_t *a, int s, uint32_t seed)
+{
+    if (s < UM_SECRET_FIRST_LOAD || s >= UM_SECRET_N || um_ach_secret_rec(a, s)->game) return false;
+    um_rec_t *r = um_ach_secret_rec(a, s);
+    r->game = a->games;
+    r->seed = seed;
+    /* a record with game 0 reads as not earned: before any game, it takes 1 */
+    if (!r->game) r->game = a->games = 1;
+    return true;
+}
+
+/* loadedAgain */
+bool um_ach_has_seed(const um_ach_t *a, uint32_t seed)
+{
+    for (int t = UM_NONE + 1; t < UM_SET_COUNT; t++)
+        if ((a->first[t].game && a->first[t].seed == seed) || (a->full[t].game && a->full[t].seed == seed)) return true;
+    for (int w = 0; w < UM_WIN_N; w++) if (a->win[w].game && a->win[w].seed == seed) return true;
+    for (int s = 0; s < UM_SECRET_N; s++) { const um_rec_t *r = um_ach_secret_crec(a, s); if (r->game && r->seed == seed) return true; }
+    return (a->flood.game && a->flood.seed == seed) || (a->capital.game && a->capital.seed == seed) || (a->high.game && a->high.seed == seed);
+}
+
 /* overdone */
 bool um_ach_overdone(um_set_t t, const uint8_t *kinds, int n)
 {
@@ -167,7 +189,7 @@ bool um_ach_overdone(um_set_t t, const uint8_t *kinds, int n)
 /* secretAward */
 bool um_ach_secret(um_ach_t *a, um_game_t *g, int s)
 {
-    if (s < 0 || s >= UM_SECRET_N || (g->had & UM_HAD_LOADED) || um_ach_secret_rec(a, s)->game) return false;
+    if (s < 0 || s >= UM_SECRET_FIRST_LOAD || (g->had & UM_HAD_LOADED) || um_ach_secret_rec(a, s)->game) return false;
     *um_ach_secret_rec(a, s) = record(a, g);
     return true;
 }

@@ -256,6 +256,7 @@ function achCheck() {
       if (rnd(60) === 0) script.push({ op: 'S' });   // a sort with tiles chosen
       if (rnd(90) === 0) script.push({ op: 'D' });   // Meld pressed on a melded pair and its third tile
       if (rnd(120) === 0) script.push({ op: 'O' });  // a limit hand with four of a kind where three would do
+      if (rnd(150) === 0) script.push({ op: 'GTV'[rnd(3)], seed: s });   // a code loaded: played, held by a record, or finished
     }
     if (rnd(2) === 0 || last) script.push({ op: 'W' });
     if (rnd(3) === 0) script.push({ op: 'H', points: rnd(700) });   // the game's end, at these points
@@ -278,6 +279,7 @@ function achCheck() {
     } else if (x.op === 'S') A.secretAward('wait');
     else if (x.op === 'D') A.secretAward('design');
     else if (x.op === 'O') A.secretAward('over');
+    else if (x.op === 'G' || x.op === 'T' || x.op === 'V') A.secretAward({ G: 'random', T: 'again', V: 'shadows' }[x.op], x.seed);
     else if (x.op === 'H') { A.S.points = x.points; ended = A.endAwards(); A.highAward(); }
     else if (!legacy) { ended = A.endAwards(); A.winAwards(); }
     // a game saved before games were counted had nothing tracked on the
@@ -295,7 +297,7 @@ function achCheck() {
   });
   if (!pendings) fail('ach: no clear was ever told to finish the game to confirm a Full');
   if (!A.capital || !A.high) fail(`ach: the script never reached The Capital is Gone (${!!A.capital}) or High score (${!!A.high})`);
-  if (!flooded || !fulls || won !== (1 << A.WINS.length) - 1 || found !== A.SECRETS.length - A.LOAD_SECRETS.size)
+  if (!flooded || !fulls || won !== (1 << A.WINS.length) - 1 || found !== A.SECRETS.length)
     fail(`ach: the script never reached everything (flood ${flooded}, fulls ${fulls}, wins ${won}, secrets ${found})`);
   if (!legacyWins) fail('ach: no game saved before games were counted ended in a win');
   console.log(`ach: ${script.length} steps over ${GAMES_N} games, ${fulls} sets full, every win, every secret, the flood, the Capital and High score, ${legacyWins} older games won; records the same`);

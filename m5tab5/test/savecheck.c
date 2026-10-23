@@ -299,9 +299,22 @@ int main(void)
         save_load_ach(&b);
         CHECK(b.games == a.games && b.played[UM_PAIR][0] && !b.played_done[UM_PAIR] && !um_ach_secret_crec(&b, UM_SECRET_OVER)->game,
               "achievements: a version 6 save was not read as it was");
+
+        /* version 7: version 8 with one secret in secret_more, not four */
+        *um_ach_secret_rec(&a, UM_SECRET_OVER) = (um_rec_t){ a.games, 5 };
+        static uint8_t v7[8 + offsetof(um_ach_t, secret_more) + sizeof(um_rec_t)];
+        const uint32_t ver7 = 7, size7 = (uint32_t)(sizeof v7 - 8);
+        memcpy(v7, &ver7, 4);
+        memcpy(v7 + 4, &size7, 4);
+        memcpy(v7 + 8, &a, size7);
+        put("ach", v7, sizeof v7);
+        save_load_ach(&b);
+        CHECK(b.games == a.games && um_ach_secret_crec(&b, UM_SECRET_OVER)->game == a.games
+              && !um_ach_secret_crec(&b, UM_SECRET_RANDOM)->game && !um_ach_secret_crec(&b, UM_SECRET_SHADOWS)->game,
+              "achievements: a version 7 save was not read as it was");
     }
 
     if (s_bad) return 1;
-    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip, and versions 1 to 6 read\n");
+    printf("savecheck: settings and games round trip, moves too; version 1 and 2 games read without moves, version 3 with them; foreign saves refused; achievements round trip, and versions 1 to 7 read\n");
     return 0;
 }
