@@ -117,7 +117,8 @@ and a patch that changes either side runs it.
   unless a limit hand is in its first 18 (um_limit_in_deal).
 
 - **Loading secrets (Tab5):** Guaranteed Random when a scanned deal is
-  played, Try Try Again when a scanned code's seed is in a record,
+  played, Try Try Again when a scanned deal's seed (no moves, as on
+  the web) is in a record,
   Shadows of the Past when a scanned code's game, read move by move by
   um_replay_read_game, was finished.
 
