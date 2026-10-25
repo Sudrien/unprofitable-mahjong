@@ -12,7 +12,7 @@ dependencies:
   # The panel, the backlight, gfx and Ark12.
   feckless_graphics_handler:
     git: https://github.com/Sudrien/feckless-graphics-handler-for-m5tab5.git
-    version: "v0.2.4"
+    version: "v0.2.7"
 
   # tab5io (the I2C bus and expanders) and touch. The rest of the
   # component (USB host, audio, battery, clock) is built but not started.
