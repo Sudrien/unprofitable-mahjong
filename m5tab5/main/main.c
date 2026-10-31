@@ -15,6 +15,7 @@
 #include "esp_log.h"
 #include "gfx.h"
 #include "lcd.h"
+#include "nvs_handler.h"
 #include "tab5io.h"
 #include "touch.h"
 
@@ -62,6 +63,7 @@ void app_main(void)
         ESP_LOGW(TAG, "no camera -- seeds cannot be read from QR codes");
     }
 
+    nvsh_init();    /* a failure is logged; the game plays and saves nothing */
     save_init();
     ui_run();
 }

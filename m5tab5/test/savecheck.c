@@ -21,8 +21,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "nvs.h"
-#include "nvs_flash.h"
+#include "nvs_handler.h"
 #include "save.h"
 #include "umcore.h"
 
@@ -54,15 +53,11 @@ static esp_err_t get(const char *key, void *v, size_t len)
     return ESP_OK;
 }
 const char *esp_err_to_name(esp_err_t e) { (void)e; return "err"; }
-esp_err_t nvs_flash_init(void) { return ESP_OK; }
-esp_err_t nvs_flash_erase(void) { s_nkv = 0; return ESP_OK; }
-esp_err_t nvs_open(const char *ns, nvs_open_mode_t mode, nvs_handle_t *h) { (void)ns; (void)mode; *h = 1; return ESP_OK; }
-void nvs_close(nvs_handle_t h) { (void)h; }
-esp_err_t nvs_commit(nvs_handle_t h) { (void)h; return ESP_OK; }
-esp_err_t nvs_set_blob(nvs_handle_t h, const char *key, const void *v, size_t len) { (void)h; return put(key, v, len); }
-esp_err_t nvs_get_blob(nvs_handle_t h, const char *key, void *out, size_t *len)
+bool nvsh_ready(void) { return true; }
+esp_err_t nvsh_set_blob(const char *ns, const char *key, const void *v, size_t len) { (void)ns; return put(key, v, len); }
+esp_err_t nvsh_get_blob(const char *ns, const char *key, void *out, size_t *len)
 {
-    (void)h;
+    (void)ns;
     const int i = find(key, false);
     if (i < 0) return ESP_ERR_NVS_NOT_FOUND;
     if (*len < s_kv[i].len) { *len = s_kv[i].len; return ESP_ERR_NVS_INVALID_LENGTH; }
@@ -70,12 +65,12 @@ esp_err_t nvs_get_blob(nvs_handle_t h, const char *key, void *out, size_t *len)
     *len = s_kv[i].len;
     return ESP_OK;
 }
-esp_err_t nvs_get_i32(nvs_handle_t h, const char *k, int32_t *v) { (void)h; return get(k, v, sizeof *v); }
-esp_err_t nvs_set_i32(nvs_handle_t h, const char *k, int32_t v) { (void)h; return put(k, &v, sizeof v); }
-esp_err_t nvs_get_u8(nvs_handle_t h, const char *k, uint8_t *v) { (void)h; return get(k, v, sizeof *v); }
-esp_err_t nvs_set_u8(nvs_handle_t h, const char *k, uint8_t v) { (void)h; return put(k, &v, sizeof v); }
-esp_err_t nvs_get_u32(nvs_handle_t h, const char *k, uint32_t *v) { (void)h; return get(k, v, sizeof *v); }
-esp_err_t nvs_set_u32(nvs_handle_t h, const char *k, uint32_t v) { (void)h; return put(k, &v, sizeof v); }
+esp_err_t nvsh_get_i32(const char *ns, const char *k, int32_t *v) { (void)ns; return get(k, v, sizeof *v); }
+esp_err_t nvsh_set_i32(const char *ns, const char *k, int32_t v) { (void)ns; return put(k, &v, sizeof v); }
+esp_err_t nvsh_get_u8(const char *ns, const char *k, uint8_t *v) { (void)ns; return get(k, v, sizeof *v); }
+esp_err_t nvsh_set_u8(const char *ns, const char *k, uint8_t v) { (void)ns; return put(k, &v, sizeof v); }
+esp_err_t nvsh_get_u32(const char *ns, const char *k, uint32_t *v) { (void)ns; return get(k, v, sizeof *v); }
+esp_err_t nvsh_set_u32(const char *ns, const char *k, uint32_t v) { (void)ns; return put(k, &v, sizeof v); }
 
 /* ---- the checks ---- */
 static int s_bad;

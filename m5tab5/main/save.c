@@ -9,8 +9,7 @@
 #include <string.h>
 
 #include "esp_log.h"
-#include "nvs.h"
-#include "nvs_flash.h"
+#include "nvs_handler.h"    /* feckless_nvs_handler: the feckless ABI's nvs section */
 
 static const char *TAG = "save";
 #define NS          "umj"
@@ -75,24 +74,18 @@ typedef struct {
 } ach_blob_v1_t;
 static um_log_t s_v1_log[V1_LOG_N];
 
+/* NVS is brought up by whatever runs the game -- standalone.c, or a
+ * launcher -- with nvsh_init(), which erases a partition it cannot use.
+ * The game only says whether it will be saved. */
 void save_init(void)
 {
-    esp_err_t err = nvs_flash_init();
-    if (err == ESP_ERR_NVS_NO_FREE_PAGES || err == ESP_ERR_NVS_NEW_VERSION_FOUND) {
-        ESP_LOGW(TAG, "NVS unusable (%s); erasing", esp_err_to_name(err));
-        nvs_flash_erase();
-        err = nvs_flash_init();
-    }
-    if (err != ESP_OK) ESP_LOGE(TAG, "nvs_flash_init: %s -- nothing will be saved", esp_err_to_name(err));
+    if (!nvsh_ready()) ESP_LOGE(TAG, "NVS is not up -- nothing will be saved");
 }
 
 bool save_load_game(um_game_t *g)
 {
-    nvs_handle_t h;
-    if (nvs_open(NS, NVS_READONLY, &h) != ESP_OK) return false;
     size_t len = sizeof s_blob;
-    const esp_err_t err = nvs_get_blob(h, "game", &s_blob, &len);
-    nvs_close(h);
+    const esp_err_t err = nvsh_get_blob(NS, "game", &s_blob, &len);
     if (err != ESP_OK) return false;
     if (s_blob.ver == 1 && s_blob.size == V1_SIZE && len == offsetof(blob_t, g) + V1_SIZE) {
         um_game_t *n = &s_blob.g;
@@ -129,24 +122,18 @@ bool save_load_game(um_game_t *g)
 
 void save_game(const um_game_t *g)
 {
-    nvs_handle_t h;
-    if (nvs_open(NS, NVS_READWRITE, &h) != ESP_OK) return;
     s_blob.ver = GAME_VER;
     s_blob.size = sizeof(um_game_t);
     memcpy(&s_blob.g, g, sizeof *g);
-    if (nvs_set_blob(h, "game", &s_blob, sizeof s_blob) == ESP_OK) nvs_commit(h);
-    nvs_close(h);
+    nvsh_set_blob(NS, "game", &s_blob, sizeof s_blob);
 }
 
 void save_load_ach(um_ach_t *a)
 {
     memset(a, 0, sizeof *a);
-    nvs_handle_t h;
-    if (nvs_open(NS, NVS_READONLY, &h) != ESP_OK) return;
     size_t len = sizeof s_ach_blob;
     _Static_assert(sizeof(ach_blob_v1_t) <= sizeof(ach_blob_t), "a version 1 blob fits the buffer");
-    const esp_err_t err = nvs_get_blob(h, "ach", &s_ach_blob, &len);
-    nvs_close(h);
+    const esp_err_t err = nvsh_get_blob(NS, "ach", &s_ach_blob, &len);
     if (err != ESP_OK) return;
     if (len == sizeof(ach_blob_v1_t) && s_ach_blob.ver == 1u && s_ach_blob.size == sizeof(ach_v1_t)) {
         static ach_v1_t v1;     /* off the stack */
@@ -201,13 +188,10 @@ void save_load_ach(um_ach_t *a)
 
 void save_ach(const um_ach_t *a)
 {
-    nvs_handle_t h;
-    if (nvs_open(NS, NVS_READWRITE, &h) != ESP_OK) return;
     s_ach_blob.ver = ACH_VER;
     s_ach_blob.size = sizeof(um_ach_t);
     memcpy(&s_ach_blob.a, a, sizeof *a);
-    if (nvs_set_blob(h, "ach", &s_ach_blob, sizeof s_ach_blob) == ESP_OK) nvs_commit(h);
-    nvs_close(h);
+    nvsh_set_blob(NS, "ach", &s_ach_blob, sizeof s_ach_blob);
 }
 
 void save_load_prefs(save_prefs_t *p)
@@ -220,17 +204,15 @@ void save_load_prefs(save_prefs_t *p)
     p->rotation = 1;
     p->theme = 0;
     memset(p->goals, 0, sizeof p->goals);
-    nvs_handle_t h;
-    if (nvs_open(NS, NVS_READONLY, &h) != ESP_OK) return;
-    nvs_get_i32(h, "best_pts", &p->best_points);
-    nvs_get_i32(h, "best_pen", &p->best_penalty);
-    nvs_get_u8(h, "autosort", &p->auto_sort);
-    nvs_get_u8(h, "discset", &p->discard_set);
-    nvs_get_u8(h, "lang", &p->lang);
-    nvs_get_u8(h, "rot", &p->rotation);
-    nvs_get_u8(h, "theme", &p->theme);
+    nvsh_get_i32(NS, "best_pts", &p->best_points);
+    nvsh_get_i32(NS, "best_pen", &p->best_penalty);
+    nvsh_get_u8(NS, "autosort", &p->auto_sort);
+    nvsh_get_u8(NS, "discset", &p->discard_set);
+    nvsh_get_u8(NS, "lang", &p->lang);
+    nvsh_get_u8(NS, "rot", &p->rotation);
+    nvsh_get_u8(NS, "theme", &p->theme);
     uint32_t goals = 0;
-    nvs_get_u32(h, "goals", &goals);
+    nvsh_get_u32(NS, "goals", &goals);
     for (int i = 0; i < 3; i++) {
         const uint8_t g = (uint8_t)(goals >> (8 * i));
         p->goals[i] = g == SAVE_GOAL_RUN || (g > UM_NONE && g < UM_SET_COUNT) ? g : 0;
@@ -238,21 +220,16 @@ void save_load_prefs(save_prefs_t *p)
     if (p->rotation > 3) p->rotation = 1;
     if (p->theme > 1) p->theme = 0;
     if (p->discard_set > 1) p->discard_set = 0;
-    nvs_close(h);
 }
 
 void save_prefs(const save_prefs_t *p)
 {
-    nvs_handle_t h;
-    if (nvs_open(NS, NVS_READWRITE, &h) != ESP_OK) return;
-    nvs_set_i32(h, "best_pts", p->best_points);
-    nvs_set_i32(h, "best_pen", p->best_penalty);
-    nvs_set_u8(h, "autosort", p->auto_sort);
-    nvs_set_u8(h, "discset", p->discard_set);
-    nvs_set_u8(h, "lang", p->lang);
-    nvs_set_u8(h, "rot", p->rotation);
-    nvs_set_u8(h, "theme", p->theme);
-    nvs_set_u32(h, "goals", (uint32_t)p->goals[0] | (uint32_t)p->goals[1] << 8 | (uint32_t)p->goals[2] << 16);
-    nvs_commit(h);
-    nvs_close(h);
+    nvsh_set_i32(NS, "best_pts", p->best_points);
+    nvsh_set_i32(NS, "best_pen", p->best_penalty);
+    nvsh_set_u8(NS, "autosort", p->auto_sort);
+    nvsh_set_u8(NS, "discset", p->discard_set);
+    nvsh_set_u8(NS, "lang", p->lang);
+    nvsh_set_u8(NS, "rot", p->rotation);
+    nvsh_set_u8(NS, "theme", p->theme);
+    nvsh_set_u32(NS, "goals", (uint32_t)p->goals[0] | (uint32_t)p->goals[1] << 8 | (uint32_t)p->goals[2] << 16);
 }

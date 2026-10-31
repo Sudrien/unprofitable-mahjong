@@ -9,18 +9,25 @@ dependencies:
   idf:
     version: ">=5.4.2"
 
+  # The game, the best scores and the settings, in NVS (main/save.c).
+  # v0.4.0 is the first tag with it.
+  feckless_nvs_handler:
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/feckless_nvs_handler
+    version: "v0.4.0"
+
   # The panel, the backlight, gfx and Ark12.
   feckless_graphics_handler:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/feckless_graphics_handler
-    version: "v0.3.0"
+    version: "v0.4.0"
 
   # tab5io (the I2C bus and expanders) and touch. The rest of the
   # component (USB host, audio, battery, clock) is built but not started.
   feckless_drivers:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/feckless_drivers
-    version: "v0.3.0"
+    version: "v0.4.0"
 
   # usb_host_uac, which feckless_drivers requires by name and links:
   # feckless-libs' copy since v0.3.0, the registry's 1.5.0 with the
@@ -29,7 +36,7 @@ dependencies:
   usb_host_uac:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/usb_host_uac
-    version: "v0.3.0"
+    version: "v0.4.0"
 
   # The camera, for Scan a code: the SC202CS as grey frames, through
   # esp_video 2.5.0 (its own manifest pins that). Written here, in
@@ -38,4 +45,4 @@ dependencies:
   feckless_camera:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/feckless_camera
-    version: "v0.3.0"
+    version: "v0.4.0"
