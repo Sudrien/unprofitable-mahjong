@@ -7,15 +7,23 @@
  * controller's reset lines; then the panel; then touch, which has
  * nothing to answer on the bus until the panel's reset is released.
  *
+ * The game is an ELF built against the feckless ABI (../elf/), with
+ * NVS and the camera from its nvs and camera sections: this app_main()
+ * is what a launcher such as Avoidant runs, and standalone.c is the
+ * .bin's, which only loads it. The board may already be up; its inits
+ * return ESP_OK when called again.
+ *
  * SPDX-License-Identifier: MIT
  */
 #include "camera.h"
 #include "esp_app_desc.h"
 #include "esp_check.h"
 #include "esp_log.h"
+#include "feckless_abi.h"
+#include "feckless_abi_camera.h"
+#include "feckless_abi_nvs.h"
 #include "gfx.h"
 #include "lcd.h"
-#include "nvs_handler.h"
 #include "tab5io.h"
 #include "touch.h"
 
@@ -32,6 +40,12 @@ static const char *TAG = "main";
 
 void app_main(void)
 {
+    /* Tie the ELF to the launcher's ABI and to the two sections; a
+     * launcher without either refuses it before any of this runs. */
+    feckless_abi_require();
+    feckless_abi_require_nvs();
+    feckless_abi_require_camera();
+
     /* The line to start copying from, as in the player: everything above
      * it is the ROM, the bootloader and IDF's startup. The version is on
      * it so a pasted log can be matched to a tree; ESP_LOGW so it
@@ -63,7 +77,6 @@ void app_main(void)
         ESP_LOGW(TAG, "no camera -- seeds cannot be read from QR codes");
     }
 
-    nvsh_init();    /* a failure is logged; the game plays and saves nothing */
     save_init();
     ui_run();
 }

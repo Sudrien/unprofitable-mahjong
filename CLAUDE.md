@@ -40,8 +40,9 @@ look at the last one used (`git log`) and take the next.
 Built with ESP-IDF (>= 5.4.2) on the feckless libraries from
 [feckless-libs-for-m5tab5](https://github.com/Sudrien/feckless-libs-for-m5tab5),
 all named at one tag in `main/idf_component.yml`:
-`feckless_graphics_handler`, `feckless_drivers`, `feckless_camera` and,
-where it is needed, `feckless_storage_handler`. The libraries came out
+`feckless_graphics_handler`, `feckless_drivers`, `feckless_camera`,
+`feckless_nvs_handler`, `feckless_abi` and its `feckless_abi_nvs` and
+`feckless_abi_camera` sections. The libraries came out
 of [defeatist-music-player-for-m5tab5](https://github.com/Sudrien/defeatist-music-player-for-m5tab5);
 its CLAUDE.md is the longer version of the
 board rules below, learned the hard way; read it before touching memory,
@@ -59,6 +60,15 @@ stacks or the build.
   Say so in the commit message.
 - **Buffers go in PSRAM** (`MALLOC_CAP_SPIRAM`) unless a peripheral needs
   them internal. Nothing over a few hundred bytes goes on a task stack.
+- **The game is an ELF built against the feckless ABI** (`elf/`),
+  with NVS and the camera from its nvs and camera sections
+  (`feckless_abi_nvs`, `feckless_abi_camera`). `main/standalone.c` is
+  the .bin's app_main and only loads it; the published `.elf` runs on
+  a launcher (Avoidant) as it is. A call from the game to anything
+  outside the ABI fails the build: link it into the ELF
+  (`ELF_COMPONENTS` in `elf/CMakeLists.txt`, as the rules, qrcodegen
+  and quirc are), or it is a patch against feckless-libs first. The
+  shape is Lothesome Audio Analyzer's.
 - **A session cannot build the firmware.** There is no ESP-IDF here. What
   a session can do is compile and test the game rules on the host
   (`m5tab5/test/`), which is why the rules are kept free of IDF headers.

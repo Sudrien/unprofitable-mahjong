@@ -128,8 +128,13 @@ jobs:
           idf.py merge-bin
           mv build/merged-binary.bin "build/unprofitable_mahjong_${NAME}_m5tab5_standalone.bin"
           mv build/unprofitable_mahjong_m5tab5.bin "build/unprofitable_mahjong_${NAME}_m5tab5.bin"
+          # The game alone, for a launcher (Avoidant) to run with no
+          # install. The .bins above already contain this ELF. What it
+          # may take from a launcher is feckless_abi's and its nvs and
+          # camera sections', at the tag in main/idf_component.yml.
+          cp build/elf/unprofitable_mahjong.app.elf "build/unprofitable_mahjong_${NAME}_m5tab5.elf"
 
-      # A signed record that these two files, by their SHA-256, were
+      # A signed record that these three files, by their SHA-256, were
       # built by this workflow from this commit. It is stored with the
       # repository, not in the files: the .bins are byte for byte what
       # they were and flash as before. Every run attests, not only a
@@ -143,6 +148,7 @@ jobs:
           subject-path: |
             m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5_standalone.bin
             m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5.bin
+            m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5.elf
 
       - name: Archive build output artifacts
         uses: actions/upload-artifact@v4
@@ -151,6 +157,7 @@ jobs:
           path: |
             m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5_standalone.bin
             m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5.bin
+            m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5.elf
 
       # The lock the component manager resolved, to be read and
       # committed: nothing has committed one yet.
@@ -179,3 +186,4 @@ jobs:
           files: |
             m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5_standalone.bin
             m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5.bin
+            m5tab5/build/unprofitable_mahjong_${{ steps.ver.outputs.name }}_m5tab5.elf

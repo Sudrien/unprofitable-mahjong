@@ -7,6 +7,11 @@
 #
 # The rules live in ./core, built as the umcore
 # component (components/umcore), and are tested on the host by test/.
+#
+# The game itself is an ELF built against the feckless ABI, by elf/;
+# this build is main/standalone.c, which embeds that ELF and loads it.
+# The same ELF runs on a launcher (Avoidant) with no install. On its own:
+#   idf.py -C elf -B build-elf build
 cmake_minimum_required(VERSION 3.16)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 
@@ -16,8 +21,5 @@ idf_build_set_property(MINIMAL_BUILD ON)
 
 project(unprofitable_mahjong_m5tab5)
 
-# libversions.h, the settings' list of licences: generated from the lock
-# and the vendored pins when the build is configured. See the file.
-idf_component_get_property(main_lib main COMPONENT_LIB)
-include(${CMAKE_CURRENT_LIST_DIR}/cmake/libversions.cmake)
-target_include_directories(${main_lib} PRIVATE "${LIBVERSIONS_DIR}")
+# libversions.h, the settings' list of licences, is elf/'s now: the
+# game, which includes it, is built there.

@@ -9,6 +9,24 @@ dependencies:
   idf:
     version: ">=5.4.2"
 
+  # The feckless ABI: the list of what the game's ELF may take from a
+  # launcher (elf/), and its two sections the game takes from -- NVS,
+  # through feckless_nvs_handler, and the camera. v0.4.0 is the first
+  # tag with feckless_nvs_handler and the two sections; the standalone
+  # .bin links all three, as a launcher does.
+  feckless_abi:
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/feckless_abi
+    version: "v0.4.0"
+  feckless_abi_nvs:
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/feckless_abi_nvs
+    version: "v0.4.0"
+  feckless_abi_camera:
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/feckless_abi_camera
+    version: "v0.4.0"
+
   # The game, the best scores and the settings, in NVS (main/save.c).
   # v0.4.0 is the first tag with it.
   feckless_nvs_handler:
