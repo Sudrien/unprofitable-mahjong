@@ -176,34 +176,6 @@ dependencies:
       require: private
       version: '>=5.5.3'
     source:
-      registry_url: https://components.espressif.com
-      type: service
-    targets:
-    - esp32s2
-    - esp32s3
-    - esp32s31
-    - esp32p4
-    - esp32h4
-    - linux
-    version: 1.6.0
-  espressif/usb_host_uac:
-    component_hash: 02f7e669b4dae033347e4523acaed4b8c402290a887878d396811c4bee47cc46
-    dependencies:
-    - name: espressif/cmake_utilities
-      registry_url: https://components.espressif.com
-      require: private
-      version: 0.5.*
-    - name: idf
-      require: private
-      version: '>=5.0'
-    - name: espressif/usb
-      registry_url: https://components.espressif.com
-      require: public
-      rules:
-      - if: idf_version >=6.0
-      - if: target not in ["linux"]
-      version: ^1.0.0
-    source:
       registry_url: https://components.espressif.com/
       type: service
     targets:
@@ -213,7 +185,7 @@ dependencies:
     - esp32p4
     - esp32h4
     - linux
-    version: 1.5.0
+    version: 1.6.0
   espressif/usb_host_uvc:
     component_hash: ecb2604b71cb5a65d64e5f441be54793b1838096043ad8cf1fa0d3012de18a9a
     dependencies:
@@ -239,19 +211,19 @@ dependencies:
     - linux
     version: 2.5.2
   feckless_camera:
-    component_hash: c1284fd4f3e5b5832007033400fd0b28b78505fe48cbe3dfe54d807dd8d85e9a
+    component_hash: e92980c19993f35a4792ad2d780bff8c38393a367b989355fdb65e36c7e3ff95
     dependencies:
     - name: idf
       version: '>=5.4.2'
     - name: espressif/esp_video
       version: 2.5.0
     source:
-      git: https://github.com/Sudrien/feckless-camera-for-m5tab5.git
-      path: .
+      git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+      path: components/feckless_camera
       type: git
-    version: 44ad3dc698e9a615ecfab85e70e6a0e24a61efce
+    version: 9806e2198eab0717d3065ad80fd6d79abda6f825
   feckless_drivers:
-    component_hash: 3c2de6845ea3eb95038ce6557e480ca9950c2d6fabed90621adbb3c536fa4f9a
+    component_hash: a7fe273ba0d7518df6ed91798a267549ce8a5aef7fad6b288b1399c1d3e4f761
     dependencies:
     - name: idf
       version: '>=5.4.2'
@@ -260,33 +232,57 @@ dependencies:
     - name: espressif/esp_lcd_touch_gt911
       version: '*'
     source:
-      git: https://github.com/Sudrien/feckless-drivers-for-m5tab5.git
-      path: .
+      git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+      path: components/feckless_drivers
       type: git
-    version: cd9c246e82305bbc1d3ffe1ff5248251c68b68ee
+    version: 9806e2198eab0717d3065ad80fd6d79abda6f825
   feckless_graphics_handler:
-    component_hash: dbe765548ffbb53d449fb620d3b9636e97d9aa66d90bf5a3b51f3aca9f7db02d
+    component_hash: f1d68363ea2fdc4324099b88fa247a472c6e97c4d407422d74e8acb3f575ff66
     dependencies:
     - name: idf
       version: '>=5.4.2'
     - name: espressif/esp_lcd_st7121
       version: ^1.0.0
     source:
-      git: https://github.com/Sudrien/feckless-graphics-handler-for-m5tab5.git
-      path: .
+      git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+      path: components/feckless_graphics_handler
       type: git
-    version: e9c88afbedffabef75de3f7ccc51b4ddb5cf5801
+    version: 9806e2198eab0717d3065ad80fd6d79abda6f825
   idf:
     source:
       type: idf
     version: 6.1.0
+  usb_host_uac:
+    component_hash: acac20dd5ad9b3120047a5773732a84eeda368c7cea29e979ed295e905060025
+    dependencies:
+    - name: idf
+      version: '>=5.0'
+    - name: espressif/cmake_utilities
+      version: 0.5.*
+    - name: espressif/usb
+      public: true
+      rules:
+      - if: idf_version >=6.0
+      version: ^1.0.0
+    source:
+      git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+      path: components/usb_host_uac
+      type: git
+    targets:
+    - esp32s2
+    - esp32s3
+    - esp32s31
+    - esp32p4
+    - esp32h4
+    - linux
+    version: 9806e2198eab0717d3065ad80fd6d79abda6f825
 direct_dependencies:
 - espressif/cmake_utilities
-- espressif/usb_host_uac
 - feckless_camera
 - feckless_drivers
 - feckless_graphics_handler
 - idf
-manifest_hash: ae3a85ad6b2b887eaa9e802310ee8846d1b045be4b7d38fac733ad4f19ba8682
+- usb_host_uac
+manifest_hash: 4654ed648e72461bcab1ab3d7fd1a6f4b5720d3414a028d38b7dad3dc49c73ac
 target: esp32p4
 version: 3.0.0
