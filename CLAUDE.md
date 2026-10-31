@@ -37,10 +37,13 @@ look at the last one used (`git log`) and take the next.
 
 ## m5tab5/
 
-Built with ESP-IDF (>= 5.4.2) on the same libraries as
-[defeatist-music-player-for-m5tab5](https://github.com/Sudrien/defeatist-music-player-for-m5tab5):
+Built with ESP-IDF (>= 5.4.2) on the feckless libraries from
+[feckless-libs-for-m5tab5](https://github.com/Sudrien/feckless-libs-for-m5tab5),
+all named at one tag in `main/idf_component.yml`:
 `feckless_graphics_handler`, `feckless_drivers`, `feckless_camera` and,
-where it is needed, `feckless_storage_handler`. Its CLAUDE.md is the longer version of the
+where it is needed, `feckless_storage_handler`. The libraries came out
+of [defeatist-music-player-for-m5tab5](https://github.com/Sudrien/defeatist-music-player-for-m5tab5);
+its CLAUDE.md is the longer version of the
 board rules below, learned the hard way; read it before touching memory,
 stacks or the build.
 

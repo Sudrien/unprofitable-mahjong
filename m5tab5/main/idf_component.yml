@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: MIT
 ## Unprofitable Mahjong for the M5Stack Tab5.
 ##
-## The same libraries as defeatist-music-player-for-m5tab5, at the tags
-## it builds with. PINNED TO TAGS: a moving branch would change
+## The feckless libraries, from feckless-libs-for-m5tab5, every one at
+## the same tag. PINNED TO TAGS: a moving branch would change
 ## underneath a build that worked. Changing this file re-resolves
 ## dependencies.lock on the next build; read that diff before committing.
 dependencies:
@@ -11,24 +11,26 @@ dependencies:
 
   # The panel, the backlight, gfx and Ark12.
   feckless_graphics_handler:
-    git: https://github.com/Sudrien/feckless-graphics-handler-for-m5tab5.git
-    version: "v0.2.7"
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/feckless_graphics_handler
+    version: "v0.2.0"
 
   # tab5io (the I2C bus and expanders) and touch. The rest of the
   # component (USB host, audio, battery, clock) is built but not started.
   feckless_drivers:
-    git: https://github.com/Sudrien/feckless-drivers-for-m5tab5.git
-    version: "v0.5.9"
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/feckless_drivers
+    version: "v0.2.0"
 
-  # feckless_drivers requires usb_host_uac by name and leaves supplying it
-  # to the application (its README). The player vendors 1.5.0 with a
-  # descriptor-parser fix; nothing here uses USB audio, so the registry's
-  # 1.5.0 is enough. Exact, not ^, for the reason at the top.
-  espressif/usb_host_uac: "1.5.0"
+  # usb_host_uac, which feckless_drivers requires by name, is not here:
+  # since feckless-libs v0.2.0 the drivers' own manifest pins the
+  # registry's 1.5.0, as this one did.
 
   # The camera, for Scan a code: the SC202CS as grey frames, through
   # esp_video 2.5.0 (its own manifest pins that). Written here, in
-  # components/, and moved out once it had run on a board.
+  # components/, moved out once it had run on a board, and now one of
+  # feckless-libs' components.
   feckless_camera:
-    git: https://github.com/Sudrien/feckless-camera-for-m5tab5.git
-    version: "v0.1.0"
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/feckless_camera
+    version: "v0.2.0"

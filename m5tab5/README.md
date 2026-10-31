@@ -116,7 +116,7 @@ replaying every move from the seed:
   the rules -- or one from a newer version says so.
 
 The camera is an SC202CS on MIPI CSI, through Espressif's esp_video and
-the P4's ISP ([feckless-camera-for-m5tab5](https://github.com/Sudrien/feckless-camera-for-m5tab5)); it is started only while
+the P4's ISP (feckless_camera, from [feckless-libs-for-m5tab5](https://github.com/Sudrien/feckless-libs-for-m5tab5)); it is started only while
 scanning, and the ISP's per-frame complaints are kept out of the log
 meanwhile.
 
@@ -205,7 +205,7 @@ through that library's own host shim. Touch is replaced by a script of
 taps, or drags written `x,y>x2,y2`, and the screen is saved before each
 one:
 
-    make -C m5tab5/test/screen GFX=/path/to/feckless-graphics-handler-for-m5tab5
+    make -C m5tab5/test/screen GFX=/path/to/feckless-libs-for-m5tab5/components/feckless_graphics_handler
     cd m5tab5/test/screen && mkdir -p out
     ./screentest out/shot 660,660 310,290 640,435 75,660
 

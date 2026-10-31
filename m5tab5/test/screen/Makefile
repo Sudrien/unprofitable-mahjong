@@ -1,8 +1,10 @@
 # Run the firmware's ui.c on the host and save screenshots. Needs a
-# checkout of feckless-graphics-handler-for-m5tab5 (an IDF build puts one
-# in managed_components/); its own host shim compiles gfx.c here.
+# copy of feckless_graphics_handler (an IDF build puts one in
+# managed_components/; in a checkout of feckless-libs-for-m5tab5 it is
+# components/feckless_graphics_handler); its own host shim compiles
+# gfx.c here.
 #
-#   make -C m5tab5/test/screen GFX=/path/to/feckless-graphics-handler-for-m5tab5
+#   make -C m5tab5/test/screen GFX=/path/to/feckless_graphics_handler
 #   ./screentest out/shot 640,660 ...
 #
 # SPDX-License-Identifier: MIT
