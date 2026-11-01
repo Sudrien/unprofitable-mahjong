@@ -35,7 +35,7 @@
 #include "qrcodegen.h"
 #include "qricon.h"
 #include "tiledraw.h"
-#include "libversions.h"     /* generated: cmake/libversions.cmake */
+#include "libversions.h"     /* generated: feckless_libversions(), elf/CMakeLists.txt */
 #include "umach.h"
 #include "umcore.h"
 #include "umreplay.h"
@@ -937,6 +937,13 @@ static int s_mscroll, s_menu_h, s_lic_y, s_lic_cx[3];
 static bool s_lic_two;        /* too narrow for three columns: each entry on two lines */
 static struct { bool down, drag, ignore; int x0, y0, scroll0; } s_mtouch;   /* ignore: the press that opened it */
 static const char *const LIC_HEADS[3] = { N_("Module"), N_("Checkout"), N_("Licence") };
+/* Entry i's column c, in LIC_HEADS' order: feckless_libversions' rows are
+ * a struct, not the three strings cmake/libversions.cmake wrote. */
+static const char *lic_cell(int i, int c)
+{
+    const libv_t *e = &k_libversions[i];
+    return c == 0 ? e->module : c == 1 ? e->checkout : e->licence;
+}
 
 static int menu_max_scroll(void) { const int m = s_menu_h - gfx_h(); return m > 0 ? m : 0; }
 
@@ -996,7 +1003,7 @@ static void layout_menu(void)
     int w[3] = { 0, 0, 0 };
     for (int c = 0; c < 3; c++) w[c] = gfx_text_w(_(LIC_HEADS[c]), SMALL);
     for (int i = 0; i < LIBVERSIONS_COUNT; i++)
-        for (int c = 0; c < 3; c++) { const int tw = gfx_text_w(k_libversions[i][c], SMALL); if (tw > w[c]) w[c] = tw; }
+        for (int c = 0; c < 3; c++) { const int tw = gfx_text_w(lic_cell(i, c), SMALL); if (tw > w[c]) w[c] = tw; }
     s_lic_cx[0] = M_PAD;
     s_lic_cx[1] = s_lic_cx[0] + w[0] + 28;
     s_lic_cx[2] = s_lic_cx[1] + w[1] + 28;
@@ -1056,15 +1063,15 @@ static void draw_menu(void)
     for (int i = 0; i < LIBVERSIONS_COUNT; i++) {
         ly += LIC_LINE;
         if (s_lic_two) {
-            gfx_draw_text(s_lic_cx[0], ly, k_libversions[i][0], SMALL, right - s_lic_cx[0], C_INK);
+            gfx_draw_text(s_lic_cx[0], ly, lic_cell(i, 0), SMALL, right - s_lic_cx[0], C_INK);
             ly += LIC_LINE;
-            gfx_draw_text(s_lic_cx[1], ly, k_libversions[i][1], SMALL, s_lic_cx[2] - 12 - s_lic_cx[1], C_MUTED);
-            gfx_draw_text(s_lic_cx[2], ly, k_libversions[i][2], SMALL, right - s_lic_cx[2], C_MUTED);
+            gfx_draw_text(s_lic_cx[1], ly, lic_cell(i, 1), SMALL, s_lic_cx[2] - 12 - s_lic_cx[1], C_MUTED);
+            gfx_draw_text(s_lic_cx[2], ly, lic_cell(i, 2), SMALL, right - s_lic_cx[2], C_MUTED);
             continue;
         }
         if (ly + LIC_LINE < 0 || ly > gfx_h()) continue;
         for (int c = 0; c < 3; c++)
-            gfx_draw_text(s_lic_cx[c], ly, k_libversions[i][c], SMALL, (c < 2 ? s_lic_cx[c + 1] - 12 : right) - s_lic_cx[c], c ? C_MUTED : C_INK);
+            gfx_draw_text(s_lic_cx[c], ly, lic_cell(i, c), SMALL, (c < 2 ? s_lic_cx[c + 1] - 12 : right) - s_lic_cx[c], c ? C_MUTED : C_INK);
     }
 
     /* where in the panel the screen is */

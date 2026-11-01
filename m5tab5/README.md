@@ -60,7 +60,7 @@ from the table for what it would have scored (six tiles still go as
 Discard 6). Each takes effect as it is tapped and is saved; Done closes
 the settings. Below Done are the licences: every module this firmware
 was built from, its checkout and its licence, written by
-`cmake/libversions.cmake` from `dependencies.lock` and the vendored pins
+feckless_libversions from `dependencies.lock` and the vendored pins
 when the build is configured, so the list is what was compiled. The
 panel scrolls under a finger to reach them. The picture
 and the touch coordinates always turn together. The dark theme is the

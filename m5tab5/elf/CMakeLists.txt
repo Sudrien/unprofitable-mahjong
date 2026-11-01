@@ -66,7 +66,35 @@ project(unprofitable_mahjong)
 set(ELF_COMPONENTS umcore qrcodegen quirc)
 feckless_abi_elf(unprofitable_mahjong)
 
-# libversions.h, the settings' list of licences, which ui.c includes.
+# libversions.h, the settings' list of licences, which ui.c includes:
+# feckless_libversions() since 0097, which reads the lock, the vendored
+# components with a manifest (esp_ipa), the fonts and this repository's
+# commit. What only this game knows comes as EXTRA rows: qrcodegen and
+# quirc at the commit each README names, the tile faces' glyphs and the
+# replay code's hash. Writes libversions.tsv beside it, for the docs.
+set(_um_extra "")
+foreach(_vend "qrcodegen|qrcodegen (Project Nayuki)|MIT"
+              "quirc|quirc (Daniel Beer)|ISC")
+    string(REPLACE "|" ";" _vl "${_vend}")
+    list(GET _vl 0 _dir)
+    list(GET _vl 1 _name)
+    list(GET _vl 2 _lic)
+    set(_rd "${_m5}/components/${_dir}/README.md")
+    set(_v "vendored")
+    if(EXISTS "${_rd}")
+        set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS "${_rd}")
+        file(READ "${_rd}" _t)
+        if(_t MATCHES "commit `([0-9a-f]+)`")
+            string(SUBSTRING "${CMAKE_MATCH_1}" 0 7 _v)
+        endif()
+    endif()
+    list(APPEND _um_extra "${_name}|${_v}|${_lic}")
+endforeach()
+# Pictures of Noto Serif CJK glyphs, rendered by tools/gen_tiles.py: not
+# the font, so the OFL asks nothing of them, but it is where they come from.
+list(APPEND _um_extra "Noto Serif CJK, tile glyphs|rendered|OFL-1.1")
+list(APPEND _um_extra "MurmurHash2 (Austin Appleby)|-|public domain")
+
 idf_component_get_property(main_lib main COMPONENT_LIB)
-include(${_m5}/cmake/libversions.cmake)
-target_include_directories(${main_lib} PRIVATE "${LIBVERSIONS_DIR}")
+feckless_libversions(${main_lib} NAME "Unprofitable Mahjong" LICENSE MIT
+                     EXTRA ${_um_extra})

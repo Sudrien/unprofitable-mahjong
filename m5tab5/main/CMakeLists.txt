@@ -17,6 +17,7 @@ if(_um_elf)
                  feckless_drivers            # tab5io, touch
                  feckless_nvs_handler        # the game, the scores, the settings (save.c)
                  feckless_camera             # Scan a code (ui.c), through qrscan.c
+                 feckless_libversions        # the licences' table (ui.c); a header, nothing linked
                  umcore                      # the rules and replay codes, from ../core; linked into the ELF
                  qrcodegen                   # the replay link's QR code; linked into the ELF
                  quirc                       # reading one off the camera (qrscan.c); linked into the ELF
