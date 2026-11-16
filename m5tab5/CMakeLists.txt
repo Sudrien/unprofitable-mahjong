@@ -12,6 +12,14 @@
 # this build is main/standalone.c, which embeds that ELF and loads it.
 # The same ELF runs on a launcher (Avoidant) with no install. On its own:
 #   idf.py -C elf -B build-elf build
+# u-unprofit-0005: a CMake with policy CMP0225 warns at every
+# externalproject_add() that passes no CMAKE_INSTALL_PREFIX -- ESP-IDF's own
+# for the bootloader among them, which no line here can reach. OLD is what
+# every build so far has done: the prefix left at CMake's default, and
+# nothing installed anyway. As a default, not cmake_policy(): project.cmake
+# sets its own minimum version, and its project() runs under that. Before
+# the minimum version below, which is where a default is taken up.
+set(CMAKE_POLICY_DEFAULT_CMP0225 OLD)
 cmake_minimum_required(VERSION 3.16)
 include($ENV{IDF_PATH}/tools/cmake/project.cmake)
 

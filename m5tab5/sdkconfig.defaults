@@ -51,7 +51,6 @@ CONFIG_ESP_IPA_AWB_ALGORITHM=y
 CONFIG_ESP_IPA_ACC_ALGORITHM=y
 CONFIG_CAMERA_SC202CS_CUSTOMIZED_IPA_JSON_CONFIGURATION_FILE=y
 CONFIG_CAMERA_SC202CS_CUSTOMIZED_IPA_JSON_CONFIGURATION_FILE_PATH="camera/sc202cs_ipa.json"
-CONFIG_SPIRAM_XIP_FROM_PSRAM=y
 
 # The game is an ELF the firmware loads (elf/, and feckless_abi's
 # checks, which fail the build without these). esp_elf puts it in PSRAM,
@@ -59,7 +58,9 @@ CONFIG_SPIRAM_XIP_FROM_PSRAM=y
 # PMP splits it from IRAM. Memory protection off, as elf_loader's PSRAM
 # examples have it. Lothesome's sdkconfig.defaults sets the same.
 CONFIG_ELF_LOADER_LOAD_PSRAM=y
-CONFIG_ESP_SYSTEM_MEMPROT_FEATURE=n
+# u-unprofit-0005: ESP-IDF 6.1's name for CONFIG_ESP_SYSTEM_MEMPROT_FEATURE,
+# which it still took, with a notice.
+CONFIG_ESP_SYSTEM_MEMPROT=n
 # feckless_abi warns without it, on the build that runs the ELF: it is
 # compiled into the USB audio driver the drivers link, though nothing
 # here uses USB audio. Lothesome's sdkconfig.defaults says why.

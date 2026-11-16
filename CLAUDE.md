@@ -351,3 +351,39 @@ main's and Lothesome's and Spurious's too; this patch is this branch's.
 `CMAKE_ARGS` changing reconfigures `build/elf` once. *Not checked:* a
 CMake with CMP0225 -- the newest one a session could install (4.4.5)
 does not have it, so that the warning goes is read from its text.
+
+### u-unprofit-0005 -- a quiet configure
+
+u-unprofit-0004 on the same build: the warning for `um_elf` is gone, and
+the lock was written new, every feckless component at dbbb183. What the
+configure still said, and what is done about each:
+
+- **CMP0225 again, for `ExternalProject_Add(bootloader)`**, which is
+  ESP-IDF's (`components/bootloader/project_include.cmake`).
+  `set(CMAKE_POLICY_DEFAULT_CMP0225 OLD)` at the top of
+  `m5tab5/CMakeLists.txt` and `elf/CMakeLists.txt`, before their
+  `cmake_minimum_required()`. OLD is what every build has done. A
+  `cmake_policy(SET)` there would not reach it: IDF's `project.cmake`
+  sets a minimum version of its own, and a macro runs under the policies
+  of the file that defined it; a default is taken up wherever a version
+  leaves the policy unset. 0004's `CMAKE_INSTALL_PREFIX` stays, and is
+  no longer what keeps `um_elf` quiet.
+- **`CONFIG_ESP_SYSTEM_MEMPROT_FEATURE was replaced with
+  CONFIG_ESP_SYSTEM_MEMPROT`**: `sdkconfig.defaults` uses the new name.
+  The floor is 6.1 on this branch, so the old one is not needed.
+- **`SPIRAM_XIP_FROM_PSRAM assigned multiple times`**: the second
+  `CONFIG_SPIRAM_XIP_FROM_PSRAM=y`, among the camera's lines, is gone.
+
+`sdkconfig.defaults` changes in spelling only, so an existing sdkconfig
+holds the same values; **`rm sdkconfig`** all the same, by the rule.
+
+Left: the four `hex literal '0' without '0x' prefix` notices, which are
+about ESP-IDF's own Kconfig files; and the lock being solved twice in a
+first configure, without and then with `espressif/esp_h264`, an optional
+dependency of esp_video that its Kconfig decides.
+
+*Checked:* on a host with CMake 4.4.5, that a
+`CMAKE_POLICY_DEFAULT_CMPnnnn` set before `cmake_minimum_required()` is
+what a macro sees when the file that defines it sets a newer minimum
+version itself (with CMP0135; 4.4.5 has no CMP0225). *Not checked:* a
+CMake with CMP0225; an ESP-IDF build.

@@ -12,6 +12,9 @@
 #
 # SPDX-License-Identifier: MIT
 
+# u-unprofit-0005: as the top level's CMakeLists.txt, and for its reason:
+# this project has ESP-IDF's bootloader externalproject_add() too.
+set(CMAKE_POLICY_DEFAULT_CMP0225 OLD)
 cmake_minimum_required(VERSION 3.16)
 
 # The configuration is the .bin's, copied whole when the top-level
