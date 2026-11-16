@@ -15,11 +15,12 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include "camera.h"         /* absent.c's, in a box (u-unprofit-0001) */
+#include "camera.h"
 #include "esp_app_desc.h"
 #include "esp_check.h"
 #include "esp_log.h"
 #include "feckless_abi.h"
+#include "feckless_abi_camera.h"
 #include "feckless_abi_nvs.h"
 #include "feckless_box.h"   /* u-unprofit-0001 */
 #include "gfx.h"
@@ -44,8 +45,10 @@ void app_main(void)
      * launcher without either refuses it before any of this runs. */
     feckless_abi_require();
     feckless_abi_require_nvs();
-    /* u-unprofit-0001: and to a box. Not to the camera section any more: a
-     * box has no camera to answer with, and absent.c says so in its place. */
+    /* u-unprofit-0006: the camera section again, which a box answers since
+     * feckless-libs' u-feckless-0059 -- where its launcher links the camera. */
+    feckless_abi_require_camera();
+    /* u-unprofit-0001: and to a box. */
     feckless_abi_require_box();
 
     /* The line to start copying from, as in the player: everything above

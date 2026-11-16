@@ -174,6 +174,8 @@ Defeatist, and what their branches found is what this one starts from.
 
 **What a box does not do for the game**, each from one of them:
 
+- *(The next two are as u-unprofit-0001 found them. Since u-feckless-0059
+  a box answers the camera, and u-unprofit-0006 uses it.)*
 - **No camera.** The box's table has no `camera_*` and no
   `feckless_abi_camera_v1`. `main/absent.c` defines the six calls to
   fail as a Tab5 without a camera does (Defeatist's `absent.c` is the
@@ -387,3 +389,52 @@ dependency of esp_video that its Kconfig decides.
 what a macro sees when the file that defines it sets a newer minimum
 version itself (with CMP0135; 4.4.5 has no CMP0225). *Not checked:* a
 CMake with CMP0225; an ESP-IDF build.
+
+### u-unprofit-0006 -- Scan a code, through the box's camera
+
+On a Tab5, u-unprofit-0001 to 0005 as pushed (d0ad23a, lock at
+feckless-libs dbbb183), standalone: `2 saved values moved from "umj"`
+once and not on the next boot; `app in its box ... 16384 KB, 273
+calls`; `app_main on core 1`; `resumed a saved game`; a pair cleared,
+the Tab5 restarted from its power button, and the game there with the
+pair's point. A power-button restart logs `rst:0x7
+(HP_SYS_HP_WDT_RESET)` and `CPU has been reset by WDT`: not a fault.
+Scan a code said the camera was not available, as absent.c made it.
+
+feckless-libs' u-feckless-0059 answers the camera's six calls,
+`feckless_abi_camera_v1`, `gfx_px` and `gfx_rotation` in a box whose
+launcher links feckless_camera. So:
+
+- `main/absent.c` is gone, and its line in `main/CMakeLists.txt`.
+- `main.c` requires the camera section again
+  (`feckless_abi_require_camera()`), and the ELF's `main` requires
+  `feckless_abi_camera` again.
+- `ui.c`, the camera's view: each pixel is written into `gfx_fb()`, not
+  set with `gfx_px()`. `gfx_px` is answered now, at a trap a pixel, and
+  the view is up to a quarter of a million of them a frame. The frame
+  was already clipped to the screen. On a trusted launcher it draws the
+  same picture.
+- `standalone.c` is as it was: its .bin has linked feckless_camera all
+  along (`feckless_abi_camera`), which is what makes feckless_box_calls
+  answer the camera there. The game probes the camera itself, through
+  the box.
+
+**This needs u-feckless-0059 on feckless-libs' `umode` branch and the
+lock moved to it.** Against the lock as pushed (dbbb183) the ELF's build
+stops in boxcheck, naming the camera's calls. Under Avoidant's `umode`
+branch it needs Avoidant's lock moved too; Avoidant links the camera
+already, and an Avoidant without the patch refuses this ELF by
+`feckless_abi_camera_v1`.
+
+The loading secrets can be earned again. A scan's computation between
+host calls is quirc's over one frame, then reading the code; neither has
+been timed in a box, and neither checks in with the host as the proof of
+work does (u-unprofit-0002). If the view stalls core 1, that is where.
+
+*Checked:* the changed lines of ui.c compile on a host in
+`m5tab5/test/screen`'s build of it (`make -C m5tab5/test/screen
+screentest`, compiled, not run). *Not checked:* an ESP-IDF build; a
+board. *What to look for:* no `no camera` line at start-up; Scan a code
+opening the view, upright and mirrored as on main, at a frame rate near
+main's; a code read; `camera` stopping when the view closes; and the
+next app, or a restart, finding the camera idle.

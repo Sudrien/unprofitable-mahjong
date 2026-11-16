@@ -2249,8 +2249,15 @@ static void draw_scan(void)
         if (dw > avail_w) { dh = dh * avail_w / dw; dw = avail_w; }
         if (dh > avail_h) { dw = dw * avail_h / dh; dh = avail_h; }
         const int x0 = (gfx_w() - dw) / 2, y0 = top;
-        for (int y = 0; y < dh; y++) {
+        /* u-unprofit-0006: straight into the framebuffer, not gfx_px(). In
+         * a box every gfx call is a trap, and this is a quarter of a
+         * million pixels a frame. The frame lies inside the screen (dw and
+         * dh are clipped to the room above), so nothing is left to clip. */
+        uint16_t *fb = gfx_fb();
+        const int fbw = gfx_w();
+        for (int y = 0; fb && y < dh; y++) {
             const int ty = y * sh / dh;
+            uint16_t *row = fb + (size_t)(y0 + y) * (size_t)fbw + x0;
             for (int x = 0; x < dw; x++) {
                 const int tx = (SCAN_MIRROR ? dw - 1 - x : x) * sw / dw;
                 int fx, fy;     /* the camera's pixel under the turned frame's (tx, ty) */
@@ -2261,7 +2268,7 @@ static void draw_scan(void)
                 default: fx = tx;                 fy = ty;                break;
                 }
                 const uint8_t v = s_scan_buf[(size_t)fy * (size_t)s_scan_w + (size_t)fx];
-                gfx_px(x0 + x, y0 + y, RGB(v, v, v));
+                row[x] = RGB(v, v, v);
             }
         }
         const char *st = s_scan_seen ? _("A code is in view: hold it steady") : _("Looking for a code…");
