@@ -294,3 +294,41 @@ reads: `um_replay_yield` is NULL in `m5tab5/test/`. *Checked:*
 umreplay.c compiles on a host. *Not checked:* `m5tab5/test/` (not run),
 an ESP-IDF build, a board. *What to look for:* `replay code: ... ms` in
 the log near what main logs for the same game.
+
+### u-unprofit-0003 -- feckless_box_libc out of the .bin's link
+
+The first ESP-IDF build (6.1, riscv32-esp-elf 15.2.0) got as far as the
+.bin's link and stopped there:
+
+```
+box_stdio.c:43: multiple definition of `stderr'; ... picolibc_init.c:151: first defined here
+libc.a(libc_string_strerror.c.o): multiple definition of `strerror'; ... box_string.c:58: first defined here
+```
+
+and the same for `stdout`, `stdin`, `getc`, `fgetc`, `putc` and `fputc`.
+That is the firmware linking `feckless_box_libc`, which is the ELF's.
+main's manifest names it, the component manager makes every name there
+one of main's requirements, and so its archive is on the .bin's link
+line before the firmware's libc. A name the firmware left undefined at
+that point -- stdio's, `strerror` -- was taken from the box's
+`box_stdio.c` and `box_string.c`, and picolibc's own then collided with
+them. Lothesome and Spurious have the same archive on the same line and
+link; what differs here is read, not proved, as the camera, which only
+this .bin links (`feckless_abi_camera`, esp_video).
+
+`m5tab5/CMakeLists.txt`, after `project()`: the component's library is
+given one source file with no code in it, written into the build
+directory, in place of its own. The archive is still made and still
+linked, and has nothing to take. `elf/` is a separate project and is
+not touched: the ELF gets the whole of it, as it must.
+
+This is the firmware's side only. A `.bin` that links without this may
+still be taking a name or two from the box's libc where the archive
+order lets it (the box's `snprintf` for the firmware's, say), without a
+collision to say so; keeping the sources out of any build that is not
+an app's ELF is feckless_box_libc's to do, a patch against feckless-libs.
+
+*Checked:* replacing a static library's `SOURCES` after its directory
+has added them, in plain CMake 3.x on a host: the archive holds the one
+empty object. *Not checked:* an ESP-IDF build; whether the link has more
+to say once this is past.
