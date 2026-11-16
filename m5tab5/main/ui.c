@@ -2011,8 +2011,19 @@ static struct {
 
 /* The proof of work's pause, every 65536 tries (about half a second on
  * the board): a tick to the idle task, which feeds the task watchdog --
- * a whole game's code takes longer than its five seconds. */
-static void replay_yield(void) { vTaskDelay(1); }
+ * a whole game's code takes longer than its five seconds.
+ *
+ * u-unprofit-0002: called every 1024 tries now (umreplay.h), and the
+ * pause is every 64th call, so as often as before. The other 63 ask the
+ * time, for the call's sake: a box holds interrupts off on the game's
+ * core until its next host call (feckless-libs' u-feckless-0017), and
+ * half a second of hashing was one window. Now about 8 ms is. */
+static void replay_yield(void)
+{
+    static unsigned calls;
+    if (++calls % 64 == 0) vTaskDelay(1);
+    else (void)esp_timer_get_time();
+}
 
 static void share_open(void)
 {

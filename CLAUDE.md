@@ -266,3 +266,31 @@ branch:
 
 Neither the standalone .bin nor Avoidant gives a way out of the game
 but the power; the game never had an exit.
+
+### u-unprofit-0002 -- the proof of work checks in with the host
+
+Share's proof of work is about a million MurmurHash2 tries, some
+seconds, and it called the firmware once every 65536 of them, about
+half a second, for a `vTaskDelay(1)`. In a box that half second is one
+window, with every interrupt on the game's core held off for it
+(u-feckless-0017). On core 1 that is not the panel's, but it is that
+core's tick, and whether ESP-IDF's interrupt watchdog (300 ms unless
+configured) sits through it has not been seen on a board. Spurious met
+the same shape in its sort and made a host call every 2048 comparisons
+(u-spurious-0002).
+
+`UM_REPLAY_YIELD_EVERY` is 1024, and ui.c's `replay_yield()` asks the
+time (`esp_timer_get_time()`, a host call that ends the window) on 63
+calls of 64 and gives up the CPU on the 64th, so the `vTaskDelay(1)` is
+as often as it was. A window is then about 8 ms. Outside a box the 63
+calls cost a function call each.
+
+The other computations between host calls -- a new deal, a hint,
+qrcodegen choosing a mask -- are left: none has been timed in a box. If
+one stalls core 1 it wants the same.
+
+`core/umreplay.h` changes by that one number, which no rule or code
+reads: `um_replay_yield` is NULL in `m5tab5/test/`. *Checked:*
+umreplay.c compiles on a host. *Not checked:* `m5tab5/test/` (not run),
+an ESP-IDF build, a board. *What to look for:* `replay code: ... ms` in
+the log near what main logs for the same game.

@@ -42,8 +42,13 @@ int um_replay_code(const um_game_t *g, uint32_t nonce_from, int work, char *out,
 /* Called, when set, every UM_REPLAY_YIELD_EVERY tries of the proof of
  * work, which takes seconds on the board: the firmware sets it to give
  * up the CPU, so the idle task can feed the task watchdog. The rules
- * know nothing of tasks, so they only call it. NULL by default. */
-#define UM_REPLAY_YIELD_EVERY (1u << 16)
+ * know nothing of tasks, so they only call it. NULL by default.
+ *
+ * u-unprofit-0002: every 1024 tries, not every 65536 (about half a
+ * second on the board). In a box nothing interrupts the game's core
+ * between two of its calls to the host, and this is where the firmware
+ * makes one; how often it gives up the CPU is its own count (ui.c). */
+#define UM_REPLAY_YIELD_EVERY (1u << 10)
 extern void (*um_replay_yield)(void);
 
 /* Reading a code back, as far as the Tab5 needs: the web version's
