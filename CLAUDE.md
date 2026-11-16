@@ -332,3 +332,22 @@ an app's ELF is feckless_box_libc's to do, a patch against feckless-libs.
 has added them, in plain CMake 3.x on a host: the archive holds the one
 empty object. *Not checked:* an ESP-IDF build; whether the link has more
 to say once this is past.
+
+### u-unprofit-0004 -- the ELF's build is given an install prefix
+
+With u-unprofit-0003 the branch builds: ESP-IDF 6.1, riscv32-esp-elf
+15.2.0, the ELF and the .bin, as reported from the build, with no log
+kept here. Not yet run on a board.
+
+That build's CMake has policy CMP0225 and warned at
+`externalproject_add(um_elf ...)`: the default configure command has no
+`CMAKE_INSTALL_PREFIX`, and the policy is which one it should get. The
+ELF's build installs nothing (`INSTALL_COMMAND ""`), so either answer
+builds the same. `main/CMakeLists.txt` now passes
+`-DCMAKE_INSTALL_PREFIX=<build>/elf/install` in `CMAKE_ARGS`, which is
+valid on any CMake and leaves the policy nothing to decide. The call is
+main's and Lothesome's and Spurious's too; this patch is this branch's.
+
+`CMAKE_ARGS` changing reconfigures `build/elf` once. *Not checked:* a
+CMake with CMP0225 -- the newest one a session could install (4.4.5)
+does not have it, so that the warning goes is read from its text.

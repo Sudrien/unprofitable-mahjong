@@ -53,6 +53,10 @@ if(NOT CMAKE_BUILD_EARLY_EXPANSION)
                    -DSDKCONFIG=${_elf_dir}/sdkconfig
                    -DUM_HOST_SDKCONFIG=${_sdkconfig}
                    -DUM_PROJECT_VER=${_project_ver}
+                   # u-unprofit-0004: said outright, so a CMake with policy
+                   # CMP0225 has nothing to choose and nothing to warn of.
+                   # Nothing is installed (INSTALL_COMMAND "" below).
+                   -DCMAKE_INSTALL_PREFIX=${_elf_dir}/install
         CMAKE_GENERATOR "Unix Makefiles"
         BUILD_COMMAND make elf
         BUILD_ALWAYS 1
