@@ -64,7 +64,10 @@ project(unprofitable_mahjong)
 
 # Into the ELF, not the ABI: the game's own libraries.
 set(ELF_COMPONENTS umcore qrcodegen quirc)
-feckless_abi_elf(unprofitable_mahjong)
+# u-unprofit-0001: for a box (feckless-libs' umode branch): the pure part of
+# libc, its maths and heap_caps linked into the ELF, and a check that it
+# imports none of it and nothing a box does not answer.
+feckless_abi_box_elf(unprofitable_mahjong)
 
 # libversions.h, the settings' list of licences, which ui.c includes:
 # feckless_libversions() since 0097, which reads the lock, the vendored

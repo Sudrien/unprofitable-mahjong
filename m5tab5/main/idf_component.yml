@@ -5,9 +5,14 @@
 ## the same tag. PINNED TO TAGS: a moving branch would change
 ## underneath a build that worked. Changing this file re-resolves
 ## dependencies.lock on the next build; read that diff before committing.
+##
+## u-unprofit-0001: on the umode branch every feckless pin is feckless-libs'
+## own umode branch, not a tag, while the box is tested; the lock records
+## its commit.
 dependencies:
   idf:
-    version: ">=5.4.2"
+    # u-unprofit-0001: 6.1, as feckless-libs' umode branch requires.
+    version: ">=6.1"
 
   # The feckless ABI: the list of what the game's ELF may take from a
   # launcher (elf/), and its two sections the game takes from -- NVS,
@@ -17,42 +22,42 @@ dependencies:
   feckless_abi:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/feckless_abi
-    version: "v0.8.7"
+    version: "umode"
   feckless_abi_nvs:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/feckless_abi_nvs
-    version: "v0.8.7"
+    version: "umode"
   feckless_abi_camera:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/feckless_abi_camera
-    version: "v0.8.7"
+    version: "umode"
 
   # The game, the best scores and the settings, in NVS (main/save.c).
   # v0.4.0 is the first tag with it.
   feckless_nvs_handler:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/feckless_nvs_handler
-    version: "v0.8.7"
+    version: "umode"
 
   # The settings' licences table (libversions.h), generated when elf/ is
   # configured. v0.8.7 is the first tag with it.
   feckless_libversions:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/feckless_libversions
-    version: "v0.8.7"
+    version: "umode"
 
   # The panel, the backlight, gfx and Ark12.
   feckless_graphics_handler:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/feckless_graphics_handler
-    version: "v0.8.7"
+    version: "umode"
 
   # tab5io (the I2C bus and expanders) and touch. The rest of the
   # component (USB host, audio, battery, clock) is built but not started.
   feckless_drivers:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/feckless_drivers
-    version: "v0.8.7"
+    version: "umode"
 
   # usb_host_uac, which feckless_drivers requires by name and links:
   # feckless-libs' copy since v0.3.0, the registry's 1.5.0 with the
@@ -61,7 +66,7 @@ dependencies:
   usb_host_uac:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/usb_host_uac
-    version: "v0.8.7"
+    version: "umode"
 
   # The camera, for Scan a code: the SC202CS as grey frames, through
   # esp_video 2.5.0 (its own manifest pins that). Written here, in
@@ -70,4 +75,37 @@ dependencies:
   feckless_camera:
     git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
     path: components/feckless_camera
-    version: "v0.8.7"
+    version: "umode"
+
+  # u-unprofit-0001: a box. feckless_box_libc goes into the ELF
+  # (feckless_abi_box_elf()); the box itself, feckless_umode and
+  # feckless_box_calls, into standalone.c's .bin.
+  feckless_box_libc:
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/feckless_box_libc
+    version: "umode"
+  feckless_umode:
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/feckless_umode
+    version: "umode"
+  feckless_box_calls:
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/feckless_box_calls
+    version: "umode"
+  # What feckless_box_calls requires by name and the game did not pin: it
+  # answers a boxed app's storage calls too, so the storage handler, and
+  # that the FatFs and USB mass-storage forks (Lothesome's u-lothesome-0002
+  # found the configure failing without them). The game makes no storage
+  # call; they are linked into the .bin, not used.
+  feckless_storage_handler:
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/feckless_storage_handler
+    version: "umode"
+  fatfs:
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/fatfs
+    version: "umode"
+  usb_host_msc:
+    git: https://github.com/Sudrien/feckless-libs-for-m5tab5.git
+    path: components/usb_host_msc
+    version: "umode"

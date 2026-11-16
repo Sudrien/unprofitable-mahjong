@@ -35,6 +35,18 @@ gives `0002-<subject>.patch`. So the subject is just the subject
 (`m5tab5: game rules in C`), never `0002: ...`. Before choosing a number,
 look at the last one used (`git log`) and take the next.
 
+**The `umode` branch has a numbering of its own: `u-unprofit-NNNN`.**
+Its patches are named `u-unprofit-0001-<subject>.patch`, `u-unprofit-0002-...`,
+and apply to the `umode` branch, not to main. They are numbered from
+`--start-number 1` and renamed with the prefix; the subject has neither.
+Their entries are under "The `umode` branch" at the end of this file,
+headed `u-unprofit-NNNN`; look at the last one for the next number. The
+branch pins feckless-libs' own `umode` branch (`u-feckless-NNNN`), not a
+tag, and needs ESP-IDF 6.1; Avoidant's `umode` branch (`u-avoidant-NNNN`)
+is the launcher that runs it. Where that section and the rules under
+`m5tab5/` below disagree, on this branch that section is right. When the
+branch merges, its entries move into this file's own sections.
+
 ## m5tab5/
 
 Built with ESP-IDF (>= 5.4.2) on the feckless libraries from
@@ -149,3 +161,108 @@ and a patch that changes either side runs it.
 - tab5: watching a code with moves on the Tab5 itself -- Scan a code
   reads and checks the whole game (um_replay_read_game) but sends it to
   the website to be watched.
+
+## The `umode` branch
+
+The game built for a box. It runs in RISC-V user mode, in one block of
+PSRAM that the PMP grants it and nothing else, and the launcher answers
+and checks every call it makes outside that block. The launcher side is
+feckless-libs' `umode` branch (read here at dbbb183, `u-feckless-0001` to
+`0058`) and Avoidant's (01785a4, `u-avoidant-0001` to `0004`). The game
+is the fourth app built for the box, after Spurious, Lothesome and
+Defeatist, and what their branches found is what this one starts from.
+
+**What a box does not do for the game**, each from one of them:
+
+- **No camera.** The box's table has no `camera_*` and no
+  `feckless_abi_camera_v1`. `main/absent.c` defines the six calls to
+  fail as a Tab5 without a camera does (Defeatist's `absent.c` is the
+  shape), so Scan a code says "The camera is not available." and nothing
+  is scanned: no scanned deals, and Guaranteed Random, Try Try Again and
+  Shadows of the Past cannot be earned on this branch. Getting it back
+  is a patch against feckless-libs first: the camera answered in a box.
+- **`gfx_px` and `gfx_rotation` are not answered** either. Only the
+  camera's view calls them; `absent.c` has both.
+- **NVS only in the namespace the launcher names** (u-feckless-0053),
+  and Avoidant names the file's name up to its first `_` or `.`
+  (u-avoidant-0004): `unprofitable`, for `unprofitable_mahjong...elf`. So
+  save.c's namespace is `unprofitable`, no longer `umj`. Under any other
+  name every read finds nothing and every write is refused, quietly. A
+  file renamed so that it starts otherwise saves nothing, or saves beside
+  another app's. Blobs are 8 KB at most; the game's are 3 KB and 1.5 KB.
+- **`nvsh_migrate` is not answered**, so the move from `umj` is
+  standalone.c's, outside the box. A game saved by the trusted ELF under
+  Avoidant's main branch stays in `umj`, where a box cannot reach it.
+- **A window holds interrupts off on its core until the app's next host
+  call** (u-feckless-0017). On core 0 that starved the panel (Spurious's
+  blue, Lothesome's cyan), so a launcher brings the board up on core 0
+  and runs the app on core 1 (u-feckless-0031); standalone.c does the
+  same. A long computation still needs a host call now and then
+  (u-spurious-0002): see u-unprofit-0002.
+- **Every host call is a trap**, a few microseconds; `gfx_fb()`,
+  `gfx_w()` and `gfx_h()` about one (u-feckless-0030). tiledraw.c asks
+  for the three once a tile, not once a pixel, which is left as it is.
+- **No `rand`, no `open`/`read`, no threads beyond eight.** The game
+  uses none of them.
+- **A boxed ELF runs only in a box.** Avoidant's main branch, and any
+  launcher without `feckless_abi_box_v1`, refuses it by that name; this
+  branch's `.elf` is for Avoidant's `umode` branch.
+
+### u-unprofit-0001 -- the game in a box
+
+- `elf/CMakeLists.txt`: `feckless_abi_box_elf()` replaces
+  `feckless_abi_elf()`. The ELF links in `feckless_box_libc` -- the pure
+  part of libc, the float and double maths quirc and qrcodegen use, the
+  log calls' formatting, `heap_caps_malloc` -- and the build fails if it
+  imports any of that, or a name the box does not answer. The rules,
+  qrcodegen and quirc are linked in as before.
+- `main.c`: `feckless_abi_require_box()`; `feckless_abi_require_camera()`
+  is gone, since a box does not answer that symbol.
+- `main/absent.c`, new: the camera's six calls, `gfx_px` and
+  `gfx_rotation`, as above. The ELF's `main` no longer requires
+  `feckless_abi_camera`; it keeps `feckless_camera` for `camera.h`.
+- `save.c`: the namespace `unprofitable`.
+- `standalone.c`: the .bin runs its embedded ELF in a box, not through
+  `feckless_abi_run()`, which would refuse it. It moves `umj`'s ten keys
+  into `unprofitable` (`nvsh_migrate`), names that namespace for the
+  box, brings up the board on core 0, and runs the game on core 1 in the
+  largest PSRAM block less 3 MB, at most 16 MB, with a 64 KB stack. Its
+  component still requires `feckless_abi_nvs` and `feckless_abi_camera`,
+  unused now: the .bin's configuration is left as main's.
+- `sdkconfig.defaults`: `CONFIG_BOOTLOADER_REGION_PROTECTION_ENABLE=n`,
+  as the other umode branches have it. **`rm sdkconfig`.**
+- `main/idf_component.yml`: the nine feckless pins move from `v0.8.7`
+  to `umode`; `feckless_box_libc`, `feckless_umode`,
+  `feckless_box_calls`, and the `feckless_storage_handler`, `fatfs` and
+  `usb_host_msc` that the last requires by name (u-lothesome-0002) are
+  added. The IDF floor moves from 5.4.2 to 6.1. **`dependencies.lock`
+  is not updated**: the next build re-resolves it.
+
+The ELF's imports were read from the sources, not from a link: every
+identifier in `main/`, `core/`, qrcodegen and quirc that is one of the
+ABI's names (82 of them) was looked up in feckless-libs' `inapp.txt` and
+`boxcalls_names.txt`. Eight were in neither -- the camera's six,
+`gfx_px`, `gfx_rotation` -- and are absent.c's. `esp_app_get_description`
+is linked into the ELF by `feckless_abi_elf()`. A name this missed fails
+the ELF's build (abicheck or boxcheck), by name.
+
+*Checked:* absent.c and standalone.c compile against feckless-libs'
+umode headers on a host, with stand-ins for IDF's. *Not checked:* an
+ESP-IDF build of the ELF or the .bin -- the move to IDF 6.1, with
+`components/esp_ipa`'s prebuilt library, and from v0.8.7's ABI to the
+branch's (picolibc) come with this patch; a board; `m5tab5/test/`, which this does not touch (save.c's
+namespace is a string to savecheck's fake NVS).
+
+*What to look for on a Tab5*, standalone or under Avoidant's umode
+branch:
+- in the ELF's build: `feckless_box_libc: boxed, N imports`;
+- standalone: `N saved values moved from "umj"` once, on a Tab5 that had
+  a game; under Avoidant: `...: NVS in "unprofitable"`;
+- `feckless_umode: app in its box`, then `=== Unprofitable Mahjong ===`;
+- `no camera -- seeds cannot be read from QR codes`, always;
+- a deal drawn, a move made, the Tab5 restarted, the game still there;
+- Share: the QR code, and no cyan while "Working..." shows;
+- Scan a code: "The camera is not available."
+
+Neither the standalone .bin nor Avoidant gives a way out of the game
+but the power; the game never had an exit.

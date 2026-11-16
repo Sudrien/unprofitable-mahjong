@@ -8,15 +8,16 @@ idf_build_get_property(_um_elf UM_ELF)
 if(_um_elf)
     idf_component_register(
         SRCS "main.c" "ui.c" "tiledraw.c" "save.c" "tilefaces.c" "qricon.c" "i18n.c" "i18n_tab.c" "guide.c" "qrscan.c"
+             "absent.c"                  # u-unprofit-0001: what a box does not answer
         INCLUDE_DIRS "."
         REQUIRES esp_timer esp_hw_support esp_lcd esp_app_format
                  feckless_abi                # the ABI the ELF is checked against
                  feckless_abi_nvs            # its nvs section: save.c
-                 feckless_abi_camera         # its camera section: Scan a code
+                 feckless_box_libc           # u-unprofit-0001: linked into the ELF
                  feckless_graphics_handler   # gfx, lcd, ark12
                  feckless_drivers            # tab5io, touch
                  feckless_nvs_handler        # the game, the scores, the settings (save.c)
-                 feckless_camera             # Scan a code (ui.c), through qrscan.c
+                 feckless_camera             # camera.h only, since u-unprofit-0001: absent.c answers it
                  feckless_libversions        # the licences' table (ui.c); a header, nothing linked
                  umcore                      # the rules and replay codes, from ../core; linked into the ELF
                  qrcodegen                   # the replay link's QR code; linked into the ELF
@@ -28,6 +29,8 @@ endif()
 idf_component_register(
     SRCS "standalone.c"
     PRIV_REQUIRES feckless_abi feckless_abi_nvs feckless_abi_camera feckless_nvs_handler
+                  feckless_umode feckless_box_calls            # u-unprofit-0001: the box
+                  feckless_drivers feckless_graphics_handler   # u-unprofit-0001: the board first
 )
 
 if(NOT CMAKE_BUILD_EARLY_EXPANSION)

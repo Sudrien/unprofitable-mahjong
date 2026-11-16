@@ -12,7 +12,11 @@
 #include "nvs_handler.h"    /* feckless_nvs_handler: the feckless ABI's nvs section */
 
 static const char *TAG = "save";
-#define NS          "umj"
+/* u-unprofit-0001: "unprofitable", not "umj". A box answers NVS only in the
+ * namespace its launcher names, and Avoidant names the file's name up to its
+ * first '_' or '.' (its boxns.c): unprofitable_mahjong...elf gets this one.
+ * standalone.c names the same, and moves what "umj" held into it first. */
+#define NS          "unprofitable"
 #define GAME_VER    (4u)    /* 4: the game's number and what it cleared, for achievements; 3: the moves are kept, for replay codes; 2: the rail keeps 64 */
 
 /* Version 1 is version 2 with a 32-entry log: the log is the last member
