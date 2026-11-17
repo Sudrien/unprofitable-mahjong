@@ -438,3 +438,39 @@ board. *What to look for:* no `no camera` line at start-up; Scan a code
 opening the view, upright and mirrored as on main, at a frame rate near
 main's; a code read; `camera` stopping when the view closes; and the
 next app, or a restart, finding the camera idle.
+
+### u-unprofit-0007 -- the branch on a Tab5
+
+No code. What a Tab5 showed for u-unprofit-0006 (4645fe4), standalone,
+with feckless-libs' `umode` at 80283a8 (u-feckless-0059 and 0060) --
+**the lock in the repository still names dbbb183, and wants moving to
+it**: against dbbb183 the ELF's build stops in boxcheck.
+
+- **Scan a code works.** With u-feckless-0059 alone the game found the
+  sensor through the box and `camera_start` failed (`dw-gdma: ... alloc
+  interrupt failed`, `camera: STREAMON: errno 16`): the box started the
+  camera from core 1, and IDF 6.1 adds its DMA interrupt to the panel's
+  group only from core 0. u-feckless-0060 starts it there. Then:
+
+      I (2095) camera: sensor found, /dev/video0
+      I (11990) camera: 1280x720 UYVY, 2560 bytes a line
+      I (23177) ui: scanned a code: 17 chars, read 0 after 0 moves, 0 put right
+      I (28795) ui: game 3: loaded deal 520379927
+      I (28828) ui: game 3: secret Guaranteed Random
+
+  A loading secret earned in a box, which u-unprofit-0001 could not.
+- **Share: the code, and no flash** of cyan while it is worked out
+  (u-unprofit-0002's check-in, and the game on core 1).
+- **A hint runs.** A new deal ran (`game 2: new deal`), earlier.
+- A save written through the box is there after a restart
+  (u-unprofit-0006's entry has that log).
+
+*Not reported:* `replay code: ... ms` against main's for the same game;
+the camera view's frame rate against main's; the camera stopping when
+the view closes; the same ELF under Avoidant's `umode` branch, which
+wants Avoidant's lock moved to feckless-libs 80283a8 as well.
+
+What is left of "What a box does not do for the game", above: the NVS
+namespace is the launcher's to name, `nvsh_migrate` is standalone.c's,
+and a boxed ELF runs only in a box. The camera and the two gfx calls
+are answered.
